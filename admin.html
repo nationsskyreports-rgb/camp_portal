@@ -147,12 +147,12 @@ textarea.input{resize:vertical;min-height:70px}
 
 <script>
 // ============ CONFIG ============
-var ADMIN_PASSWORD = 'zomra2025'; // Change this!
+var ADMIN_PASSWORD = 'zomra2026'; // Change this!
 var SUPABASE_URL = 'https://biwrdwxgfyhnltzddlwu.supabase.co';
 var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpd3Jkd3hnZnlobmx0emRkbHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTczMTYsImV4cCI6MjA4OTc5MzMxNn0.EMOV5v3cGaDEqQJusnyrWTWdSPPwKeyuguPzxJvtKdQ';
 var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 var COLORS = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
-var SHIFT_COLORS = {Off:'#475569'}; function shiftColor(s){return isWorking(s)?'#10b981':'#475569';}
+var SHIFT_COLORS = {Off:'#475569', Morning:'#10b981', Afternoon:'#f59e0b', Night:'#8b5cf6'}; function shiftColor(s){return isWorking(s)?'#10b981':'#475569';}
 var ADMIN_PAGES = [{id:'dashboard',label:'Dashboard',icon:'layout-dashboard'},{id:'campaigns',label:'Campaigns',icon:'target'},{id:'upload',label:'Upload & Distribute',icon:'upload'},{id:'qa',label:'Q&A Inbox',icon:'message-circle-question'},{id:'reports',label:'Reports & Export',icon:'file-bar-chart'},{id:'team',label:'Team Management',icon:'users'},{id:'my-clients',label:'All Clients',icon:'contact'}];
 var EMP_PAGES = [{id:'my-clients',label:'My Clients',icon:'contact'},{id:'ask-question',label:'Ask a Question',icon:'send'},{id:'my-questions',label:'My Questions',icon:'messages-square'},{id:'notifications',label:'Notifications',icon:'bell'}];
 var S={role:null,employee:null,currentPage:'',employees:[],campaigns:[],clients:[],questions:[],notifications:[],presence:[],contactHistory:[]};
@@ -263,10 +263,16 @@ function runAutoSync(){
   var schedGid='';var gm=schedSheetUrl.match(/[?&]gid=(\d+)/);if(gm)schedGid=gm[1];
   var schedRange='https://docs.google.com/spreadsheets/d/e/'+schedId+'/pub?output=csv'+(schedGid?'&gid='+schedGid:'')+'&range=A1:BZ60&_cb='+Date.now();
 
-  Promise.all([
-    fetch(refSheetUrl+'&_cb='+Date.now()).then(function(r){return r.text()}),
-    fetch(schedRange).then(function(r){return r.text()})
-  ]).then(function(results){
+    Promise.all([
+      fetch(refSheetUrl+'&_cb='+Date.now()).then(function(r){
+        if(!r.ok) throw new Error('Reference Sheet: ' + r.statusText);
+        return r.text();
+      }),
+      fetch(schedRange).then(function(r){
+        if(!r.ok) throw new Error('Schedule Sheet: ' + r.statusText);
+        return r.text();
+      })
+    ]).then(function(results){
     var refData=parseCSV(results[0]);
     var schedData=parseCSV(results[1]);
 
@@ -293,7 +299,7 @@ function runAutoSync(){
         xcally_id:(row[4]||'').trim(),
         phone:(row[5]||'').trim(),
         agent_code:(row[7]||'').trim(),
-        shift:'Morning' // default, will be overridden by schedule
+        shift:'Off' // default, will be overridden by schedule below
       });
     }
 
@@ -346,10 +352,18 @@ function runAutoSync(){
       for(var r=2;r<schedData.length;r++){
         var eName=(schedData[r][0]||'').trim();
         if(!eName||eName==='Agent Name')continue;
-        var shiftVal=(schedData[r][todayCol]||'').toString().trim();
-        var mapped=mapShift(shiftVal);
+        var rawVal = (schedData[r][todayCol]||'').toString().trim();
+        
+        // IMPORTANT: If cell is empty in the sheet, DO NOT overwrite the existing shift
+        if(!rawVal) continue; 
+        
+        var mapped = mapShift(rawVal);
         for(var e=0;e<employees.length;e++){
-          if(employees[e].name===eName){employees[e].shift=mapped;break;}
+          // Smart matching: ignore case and extra spaces
+          if(employees[e].name.trim().toLowerCase() === eName.trim().toLowerCase()){
+            employees[e].shift = mapped;
+            break;
+          }
         }
       }
     }
@@ -397,7 +411,14 @@ function runAutoSync(){
         if(S.currentPage==='dashboard')renderDashboard();
       });
     }).catch(function(e){toast('Sync DB error: '+e.message,'error');});
-  }).catch(function(e){toast('Sync failed - تأكد إن الشيت منشور','error');});
+  }).catch(function(e){
+    console.error('Sync error details:', e);
+    var msg = 'Sync failed: ' + e.message;
+    if(e.message.indexOf('404') !== -1 || e.message.indexOf('403') !== -1 || e.message.indexOf('Not Found') !== -1) {
+      msg = 'Sync failed - تأكد إن الشيت منشور (Publish to Web)';
+    }
+    toast(msg, 'error');
+  });
 }
 
 
@@ -777,9 +798,15 @@ function mapShift(val){
   if(!val||!val.toString().trim())return 'Off';
   val=val.toString().trim();
   if(val.match(/\d{1,2}:\d{2}/))return val; // store actual time e.g. "10:00 - 16:00"
+  if(val==='Morning'||val==='Afternoon'||val==='Night')return val; // named shifts
   return 'Off'; // OFF, Task, PH, Training, anything else
 }
-function isWorking(shift){return !!(shift&&shift!=='Off'&&shift.match&&shift.match(/\d{1,2}:\d{2}/));}
+function isWorking(shift){
+  if(!shift)return false;
+  if(shift==='Morning'||shift==='Afternoon'||shift==='Night')return true;
+  if(shift.match&&shift.match(/\d{1,2}:\d{2}/))return true;
+  return false;
+}
 
 // ============ INIT ============
 // Only load employee list for dropdown - no sensitive data before login
