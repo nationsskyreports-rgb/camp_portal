@@ -156,7 +156,7 @@ var SHIFT_COLORS = {Off:'#475569'}; function shiftColor(s){return isWorking(s)?'
 var ADMIN_PAGES = [{id:'dashboard',label:'Dashboard',icon:'layout-dashboard'},{id:'campaigns',label:'Campaigns',icon:'target'},{id:'upload',label:'Upload & Distribute',icon:'upload'},{id:'qa',label:'Q&A Inbox',icon:'message-circle-question'},{id:'reports',label:'Reports & Export',icon:'file-bar-chart'},{id:'team',label:'Team Management',icon:'users'},{id:'my-clients',label:'All Clients',icon:'contact'}];
 var EMP_PAGES = [{id:'my-clients',label:'My Clients',icon:'contact'},{id:'ask-question',label:'Ask a Question',icon:'send'},{id:'my-questions',label:'My Questions',icon:'messages-square'},{id:'notifications',label:'Notifications',icon:'bell'}];
 var S={role:null,employee:null,currentPage:'',employees:[],campaigns:[],clients:[],questions:[],notifications:[],presence:[],contactHistory:[]};
-var U={campaignId:'',cf1Label:'',cf2Label:'',rows:[{name:'',phone:'',offer:'',cf1:'',cf2:''}],preview:null};
+var U={campaignId:'',cf1Label:'',cf2Label:'',rows:[{name:'',phone:'',offer:'',cf1:'',cf2:''}],preview:null,uploadTab:'paste'};
 var T={showForm:false,editId:null,name:'',email:'',phone:'',shift:'Morning'};
 var showCampForm=false,selectedCampId=null,expandedClientId=null,qSent=false,confirmCb=null;
 var qaFilter={employee:'',campaign:'',status:''};
@@ -453,6 +453,8 @@ function createCamp(){var n=document.getElementById('cn').value.trim(),t=documen
 function changeCampStatus(id,st){sb.from('campaigns').update({status:st}).eq('id',id).then(function(){toast('Updated');fetchAll().then(renderCampaigns)}).catch(function(e){toast(e.message,'error');});}
 
 // ============ UPLOAD ============
+function setUploadTab(tab){U.uploadTab=tab;renderUpload();}
+function tabBtn(tab,icon,label){var act=U.uploadTab===tab;return '<button class="btn btn-sm '+(act?'btn-primary':'btn-ghost')+'" onclick="setUploadTab(\''+ tab +'\')">'+'<i data-lucide="'+ icon +'" class="w-3.5 h-3.5"></i> '+ label +'</button>';}
 function renderUpload(){
   var m=document.getElementById('main-content');
   var campOpts='<option value="">Select campaign...</option>'+S.campaigns.map(function(c){return '<option value="'+c.id+'" '+(U.campaignId===c.id?'selected':'')+'>'+esc(c.name)+'</option>'}).join('');
@@ -470,10 +472,10 @@ function renderUpload(){
   '<div><label class="text-xs text-slate-400 mb-1 block">Field 2 Label</label><input class="input" placeholder="e.g. Region" value="'+esc(U.cf2Label)+'" onchange="U.cf2Label=this.value"></div>'+
   '</div>'+
   // Tabs
-  '<div class="flex gap-2 mb-4 border-b border-white/10 pb-2">'+
-  '<button class="btn btn-sm '+(U.uploadTab==='paste'?'btn-primary':'btn-ghost')+'" onclick="U.uploadTab='paste';renderUpload()"><i data-lucide="clipboard" class="w-3.5 h-3.5"></i> Paste from Excel</button>'+
-  '<button class="btn btn-sm '+(U.uploadTab==='excel'?'btn-primary':'btn-ghost')+'" onclick="U.uploadTab='excel';renderUpload()"><i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Upload Excel File</button>'+
-  '<button class="btn btn-sm '+(U.uploadTab==='manual'?'btn-primary':'btn-ghost')+'" onclick="U.uploadTab='manual';renderUpload()"><i data-lucide="table" class="w-3.5 h-3.5"></i> Manual Entry</button>'+
+  '<div class="flex gap-2 mb-4 border-b border-white/10 pb-2" id="upload-tabs">'+
+  tabBtn('paste','clipboard','Paste from Excel')+
+  tabBtn('excel','file-spreadsheet','Upload Excel/CSV')+
+  tabBtn('manual','table','Manual Entry')+
   '</div>'+
   // Paste Tab
   (U.uploadTab==='paste'?
