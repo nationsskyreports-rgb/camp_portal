@@ -358,20 +358,26 @@ function runAutoSync(){
       return;
     }
 
-    // Try multiple date formats to find today in schedule
+    // Universal date matching - normalize any format to d/m/yyyy
     var todayD=new Date();
-    var dd=('0'+todayD.getDate()).slice(-2);
-    var mm=('0'+(todayD.getMonth()+1)).slice(-2);
-    var yyyy=todayD.getFullYear();
-    var dateFormats=[dd+'/'+mm+'/'+yyyy, todayD.getDate()+'/'+mm+'/'+yyyy, dd+'/'+(todayD.getMonth()+1)+'/'+yyyy, todayD.getDate()+'/'+(todayD.getMonth()+1)+'/'+yyyy];
+    var todayNorm=todayD.getDate()+'/'+(todayD.getMonth()+1)+'/'+todayD.getFullYear();
+
+    function normDate(val){
+      if(!val)return '';
+      val=val.toString().trim();
+      var m1=val.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/);
+      if(m1){var yr=parseInt(m1[3]);if(yr<100)yr+=2000;return parseInt(m1[1])+'/'+parseInt(m1[2])+'/'+yr;}
+      var m2=val.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
+      if(m2){return parseInt(m2[3])+'/'+parseInt(m2[2])+'/'+parseInt(m2[1]);}
+      var d=new Date(val);
+      if(!isNaN(d.getTime())&&d.getFullYear()>2000){return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();}
+      return '';
+    }
 
     var todayCol=-1;
     outerLoop:for(var r=0;r<schedData.length;r++){
       for(var c=1;c<schedData[r].length;c++){
-        var cell=(schedData[r][c]||'').toString().trim();
-        for(var f=0;f<dateFormats.length;f++){
-          if(cell===dateFormats[f]){todayCol=c;break outerLoop;}
-        }
+        if(normDate(schedData[r][c])===todayNorm){todayCol=c;break outerLoop;}
       }
     }
 
