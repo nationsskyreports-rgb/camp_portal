@@ -108,13 +108,6 @@ textarea.input{resize:vertical;min-height:70px}
   .mobile-menu-btn{display:flex!important}
 }
 .mobile-menu-btn{display:none;position:fixed;top:14px;left:14px;z-index:45;background:#0d1628;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px;cursor:pointer;align-items:center;justify-content:center}
-/* Schedule page styles */
-.schedule-card{background:rgba(13,22,40,0.95);border:1px solid rgba(59,130,246,0.1);border-radius:12px;padding:16px;transition:all .2s}
-.schedule-card.online{border-color:rgba(16,185,129,0.25);background:rgba(16,185,129,0.03)}
-.schedule-card.offline{border-color:rgba(100,116,139,0.15)}
-.pulse-dot{width:10px;height:10px;border-radius:50%;background:#10b981;position:relative;flex-shrink:0}
-.pulse-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;background:rgba(16,185,129,0.3);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:0}}
 </style>
 </head>
 <body class="grid-bg">
@@ -196,7 +189,7 @@ textarea.input{resize:vertical;min-height:70px}
       <button onclick="closeColConfig()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
     <div class="modal-body">
-      <p class="text-xs text-slate-400 mb-4">Drag to reorder · Toggle visibility · Edit label name</p>
+      <p class="text-xs text-slate-400 mb-4">Drag to reorder · Toggle visibility · Double-click label to rename</p>
       <div id="col-config-list" class="space-y-2 mb-6"></div>
       <div class="flex gap-2">
         <button class="btn btn-primary flex-1" onclick="saveColConfig()"><i data-lucide="save" class="w-4 h-4"></i> Save Config</button>
@@ -214,10 +207,10 @@ textarea.input{resize:vertical;min-height:70px}
 var ADMIN_PASSWORD = 'zomra2025';
 var SUPABASE_URL = 'https://biwrdwxgfyhnltzddlwu.supabase.co';
 var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpd3Jkd3hnZnlobmx0emRkbHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTczMTYsImV4cCI6MjA4OTc5MzMxNn0.EMOV5v3cGaDEqQJusnyrWTWdSPPwKeyuguPzxJvtKdQ';
-var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); var _origFrom = sb.from.bind(sb); sb.from = function(table) {   var builder = _origFrom(table);   if (!builder.catch) {     builder.catch = function(onReject) {       return this.then(function(r) { return r; }, onReject);     };   }   return builder; }; var _from = sb.from.bind(sb); sb.from = function(t){ return Promise.resolve(_from(t)); };
+var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 var COLORS = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
 
-// DEFAULT COLUMN DEFINITIONS — matches the screenshot headers
+// DEFAULT COLUMN DEFINITIONS (from the screen shared)
 var DEFAULT_COLUMNS = [
   {key:'contract_id',    label:'Contract ID',      visible:true,  order:0},
   {key:'customer',       label:'Customer',         visible:true,  order:1},
@@ -232,14 +225,13 @@ var DEFAULT_COLUMNS = [
 ];
 
 var ADMIN_PAGES = [
-  {id:'dashboard',   label:'Dashboard',          icon:'layout-dashboard'},
-  {id:'campaigns',   label:'Campaigns',          icon:'target'},
-  {id:'upload',      label:'Upload & Distribute', icon:'upload'},
-  {id:'schedule',    label:'Schedule / Status',  icon:'calendar-check'},
-  {id:'qa',          label:'Q&A Inbox',           icon:'message-circle-question'},
-  {id:'reports',     label:'Reports & Export',    icon:'file-bar-chart'},
-  {id:'team',        label:'Team Management',     icon:'users'},
-  {id:'my-clients',  label:'All Clients',         icon:'contact'}
+  {id:'dashboard',   label:'Dashboard',         icon:'layout-dashboard'},
+  {id:'campaigns',   label:'Campaigns',         icon:'target'},
+  {id:'upload',      label:'Upload & Distribute',icon:'upload'},
+  {id:'qa',          label:'Q&A Inbox',          icon:'message-circle-question'},
+  {id:'reports',     label:'Reports & Export',   icon:'file-bar-chart'},
+  {id:'team',        label:'Team Management',    icon:'users'},
+  {id:'my-clients',  label:'All Clients',        icon:'contact'}
 ];
 var EMP_PAGES = [
   {id:'my-clients',    label:'My Clients',    icon:'contact'},
@@ -259,7 +251,8 @@ var S = {
 
 // Upload state
 var U = {
-  campaignId:'', rows:[], preview:null, uploadTab:'paste'
+  campaignId:'', rows:[], preview:null, uploadTab:'paste',
+  colConfig: null // will load from campaign or default
 };
 
 // Team form state
@@ -277,15 +270,14 @@ var empClientFilter = '';
 var RPT_PAGE_SIZE = 100;
 
 // Column config modal state
-var colConfigCampaignId = null;
-var colConfigWorking = [];
+var colConfigCampaignId = null; // null = upload default
+var colConfigWorking = []; // working copy during edit
 var colConfigDragSrc = null;
-var colConfigContext = 'upload'; // 'upload' | 'campaign' | 'view'
 
 // ============================================================
 // UTILS
 // ============================================================
-function initials(n){return(n||'?').split(' ').map(function(w){return w[0]}).join('').toUpperCase().slice(0,2);}
+function initials(n){return n.split(' ').map(function(w){return w[0]}).join('').toUpperCase().slice(0,2);}
 function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function timeAgo(ts){if(!ts)return'-';var d=(Date.now()-new Date(ts).getTime())/1000;if(d<60)return'just now';if(d<3600)return Math.floor(d/60)+'m ago';if(d<86400)return Math.floor(d/3600)+'h ago';return Math.floor(d/86400)+'d ago';}
 function fmtDT(d){if(!d)return'-';return new Date(d).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}
@@ -337,9 +329,8 @@ function hideAdminPass(){document.getElementById('admin-btn').classList.remove('
 function getDefaultCols(){return JSON.parse(JSON.stringify(DEFAULT_COLUMNS));}
 
 function getCampaignCols(campId){
-  if(!campId) return getDefaultCols();
   var camp=campById(campId);
-  if(camp && camp.column_config && Array.isArray(camp.column_config) && camp.column_config.length>0){
+  if(camp&&camp.column_config&&Array.isArray(camp.column_config)&&camp.column_config.length>0){
     return JSON.parse(JSON.stringify(camp.column_config));
   }
   return getDefaultCols();
@@ -350,16 +341,12 @@ function getVisibleCols(campId){
   return cols.filter(function(c){return c.visible;}).sort(function(a,b){return a.order-b.order;});
 }
 
-// Get visible cols for current upload context
-function getCurrentUploadCols(){
-  if(U.campaignId) return getVisibleCols(U.campaignId);
-  return getDefaultCols().filter(function(c){return c.visible;});
-}
-
-// Build header row HTML for upload table
+// Build header row from column config for upload rows
 function buildUploadHeaderHTML(cols){
   var html='';
-  cols.forEach(function(c){html+='<th>'+esc(c.label)+'</th>';});
+  cols.forEach(function(c){
+    html+='<th>'+esc(c.label)+'</th>';
+  });
   html+='<th></th>';
   return html;
 }
@@ -371,41 +358,35 @@ function buildUploadRowHTML(cols,i,row){
     var val=row[c.key]||'';
     html+='<td><input class="input" style="min-width:90px" placeholder="'+esc(c.label)+'" value="'+esc(val)+'" onchange="U.rows['+i+'][\''+c.key+'\']=this.value"></td>';
   });
-  html+='<td><button class="btn btn-danger btn-sm" onclick="removeUploadRow('+i+')" style="padding:6px"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>';
+  html+='<td><button class="btn btn-danger btn-sm" onclick="U.rows.splice('+i+',1);renderUpload()" style="padding:6px"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>';
   return html;
 }
 
-function removeUploadRow(i){
-  U.rows.splice(i,1);
-  renderUpload();
+// Map uploaded file row (array) to object using current column config
+function mapFileRowToObj(rowArr, cols){
+  var obj={};
+  cols.forEach(function(c,i){
+    obj[c.key]=(rowArr[i]||'').toString().trim();
+  });
+  return obj;
 }
 
 // ============================================================
 // COLUMN CONFIG MODAL
 // ============================================================
-function openColConfig(campId, context){
-  colConfigContext = context || (campId ? 'campaign' : 'upload');
+function openColConfig(campId){
   colConfigCampaignId = campId || null;
-  // Load from campaign if available, else from U context or default
-  if(campId){
-    colConfigWorking = getCampaignCols(campId);
-  } else if(U.campaignId){
-    colConfigWorking = getCampaignCols(U.campaignId);
-    colConfigCampaignId = U.campaignId;
-  } else {
-    colConfigWorking = getDefaultCols();
-  }
+  colConfigWorking = getCampaignCols(campId || (U.campaignId||null));
   renderColConfigList();
   document.getElementById('col-config-modal').classList.remove('hidden');
   lucide.createIcons();
 }
-
 function closeColConfig(){document.getElementById('col-config-modal').classList.add('hidden');}
 
 function renderColConfigList(){
   var sorted=colConfigWorking.slice().sort(function(a,b){return a.order-b.order;});
   var html='';
-  sorted.forEach(function(col){
+  sorted.forEach(function(col,idx){
     html+='<div class="col-config-item" draggable="true" data-key="'+esc(col.key)+'" '+
       'ondragstart="colDragStart(event,\''+esc(col.key)+'\')" '+
       'ondragover="colDragOver(event)" '+
@@ -416,7 +397,7 @@ function renderColConfigList(){
         'onchange="updateColLabel(\''+esc(col.key)+'\',this.value)" '+
         'onclick="event.stopPropagation()">'+
       '<button onclick="toggleColVisible(\''+esc(col.key)+'\')" class="btn btn-sm '+(col.visible?'btn-success':'btn-ghost')+' flex-shrink-0" style="padding:4px 10px;font-size:11px">'+
-        (col.visible?'<i data-lucide="eye" class="w-3.5 h-3.5"></i>':'<i data-lucide="eye-off" class="w-3.5 h-3.5"></i>')+
+        (col.visible?'<i data-lucide="eye" class="w-3.5 h-3.5"></i> Visible':'<i data-lucide="eye-off" class="w-3.5 h-3.5"></i> Hidden')+
       '</button>'+
       (col.custom?'<button onclick="removeColConfig(\''+esc(col.key)+'\')" class="btn btn-danger btn-sm flex-shrink-0" style="padding:4px 8px"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>':'')+
     '</div>';
@@ -425,15 +406,20 @@ function renderColConfigList(){
   lucide.createIcons();
 }
 
-function colDragStart(e,key){colConfigDragSrc=key;e.target.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
+function colDragStart(e,key){
+  colConfigDragSrc=key;
+  e.target.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+}
 function colDragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
 function colDrop(e,targetKey){
-  e.preventDefault();e.currentTarget.classList.remove('drag-over');
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
   if(!colConfigDragSrc||colConfigDragSrc===targetKey)return;
-  var src=colConfigWorking.find(function(c){return c.key===colConfigDragSrc;});
-  var tgt=colConfigWorking.find(function(c){return c.key===targetKey;});
-  if(!src||!tgt)return;
-  var tmp=src.order;src.order=tgt.order;tgt.order=tmp;
+  var srcCol=colConfigWorking.find(function(c){return c.key===colConfigDragSrc;});
+  var tgtCol=colConfigWorking.find(function(c){return c.key===targetKey;});
+  if(!srcCol||!tgtCol)return;
+  var tmp=srcCol.order;srcCol.order=tgtCol.order;tgtCol.order=tmp;
   renderColConfigList();
 }
 function colDragEnd(e){
@@ -450,30 +436,25 @@ function addCustomColumn(){
   colConfigWorking.push({key:newKey,label:'New Column',visible:true,order:maxOrder,custom:true});
   renderColConfigList();
 }
-
 function saveColConfig(){
-  // Re-number orders sequentially
+  // Renumber orders
   colConfigWorking.sort(function(a,b){return a.order-b.order;});
   colConfigWorking.forEach(function(c,i){c.order=i;});
 
-  var finalCampId = colConfigCampaignId;
-
-  if(finalCampId){
-    sb.from('campaigns').update({column_config:colConfigWorking}).eq('id',finalCampId)
-      .then(function(){
-        toast('Column config saved');
-        fetchAll().then(function(){
-          closeColConfig();
-          if(S.currentPage==='upload') renderUpload();
-          else if(S.currentPage==='my-clients') renderMyClients();
-          else if(S.currentPage==='campaigns') renderCampaigns();
-          else if(S.currentPage==='reports') renderReports();
-        });
-      }).catch(function(e){toast(e.message,'error');});
+  var campId=colConfigCampaignId||(U.campaignId||null);
+  if(campId){
+    sb.from('campaigns').update({column_config:colConfigWorking}).eq('id',campId).then(function(){
+      toast('Column config saved');
+      fetchAll().then(function(){
+        closeColConfig();
+        if(S.currentPage==='upload')renderUpload();
+        if(S.currentPage==='my-clients')renderMyClients();
+      });
+    }).catch(function(e){toast(e.message,'error');});
   } else {
-    // No campaign — just close and re-render upload with working cols
-    // Store temporarily in U for the session
-    toast('Columns applied for this session');
+    // Save as upload default (no campaign selected)
+    U.colConfig=colConfigWorking.slice();
+    toast('Column config applied');
     closeColConfig();
     renderUpload();
   }
@@ -489,132 +470,110 @@ function fetchAll(){
     sb.from('clients').select('*').order('created_at',{ascending:false}),
     sb.from('questions').select('*').order('created_at',{ascending:false})
   ]).then(function(res){
-    S.employees = res[0].data || [];
-    S.campaigns = res[1].data || [];
-    S.clients   = res[2].data || [];
-    S.questions = res[3].data || [];
+    S.employees=res[0].data||[];
+    S.campaigns=res[1].data||[];
+    S.clients=res[2].data||[];
+    S.questions=res[3].data||[];
 
-    // Refresh current employee object
-    if(S.role==='employee' && S.employee){
-      var fresh = S.employees.find(function(e){return e.id===S.employee.id;});
-      if(fresh) S.employee = fresh;
+    // Update current employee object if logged in
+    if(S.role==='employee'&&S.employee){
+      var fresh=S.employees.find(function(e){return e.id===S.employee.id;});
+      if(fresh)S.employee=fresh;
     }
 
-    if(S.role==='employee' && S.employee){
-      var ids = S.clients
-        .filter(function(c){return c.assigned_employee_id===S.employee.id;})
-        .map(function(c){return c.id;});
+    if(S.role==='employee'&&S.employee){
+      var ids=S.clients.filter(function(c){return c.assigned_employee_id===S.employee.id;}).map(function(c){return c.id;});
       return Promise.all([
         sb.from('notifications').select('*').eq('employee_id',S.employee.id).order('created_at',{ascending:false}),
-        ids.length
-          ? sb.from('contact_history').select('*').in('client_id',ids).order('created_at',{ascending:false})
-          : Promise.resolve({data:[]})
-      ]).then(function(r2){
-        S.notifications   = r2[0].data || [];
-        S.contactHistory  = r2[1].data || [];
-      });
+        ids.length?sb.from('contact_history').select('*').in('client_id',ids).order('created_at',{ascending:false}):Promise.resolve({data:[]})
+      ]).then(function(r2){S.notifications=r2[0].data||[];S.contactHistory=r2[1].data||[];});
     } else if(S.role==='admin'){
       return Promise.all([
-        sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(200),
+        sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(100),
         sb.from('contact_history').select('*').order('created_at',{ascending:false})
-      ]).then(function(r2){
-        S.notifications  = r2[0].data || [];
-        S.contactHistory = r2[1].data || [];
-      });
-    } else {
-      S.notifications = []; S.contactHistory = [];
-    }
+      ]).then(function(r2){S.notifications=r2[0].data||[];S.contactHistory=r2[1].data||[];});
+    } else {S.notifications=[];S.contactHistory=[];}
   }).catch(function(e){console.error('Fetch error:',e);});
 }
 
 // ============================================================
-// ACTIVE STATUS TOGGLE (Employee)
+// ACTIVE STATUS TOGGLE
 // ============================================================
 function toggleActiveStatus(){
-  if(!S.employee) return;
-  var newActive = !S.employee.is_active;
-  S.employee.is_active = newActive;
+  if(!S.employee)return;
+  var newActive=!S.employee.is_active;
+  S.employee.is_active=newActive;
   updateActiveToggleUI();
   sb.from('employees').update({is_active:newActive}).eq('id',S.employee.id)
     .then(function(){
-      toast(newActive ? 'You are now Active' : 'You are now Inactive', newActive ? 'success' : 'info');
+      toast(newActive?'You are now Active':'You are now Inactive',(newActive?'success':'info'));
       fetchAll().then(buildSidebar);
     })
     .catch(function(e){
-      S.employee.is_active = !newActive;
+      S.employee.is_active=!newActive; // revert
       updateActiveToggleUI();
       toast(e.message,'error');
     });
 }
-
 function updateActiveToggleUI(){
-  if(!S.employee) return;
-  var active = S.employee.is_active;
-  var btn   = document.getElementById('active-toggle-btn');
-  var track = document.getElementById('toggle-track');
-  var thumb = document.getElementById('toggle-thumb');
-  var label = document.getElementById('toggle-label');
-  var sub   = document.getElementById('toggle-sublabel');
-  var badge = document.getElementById('toggle-badge');
-  if(!btn) return;
-  btn.className = 'active-toggle ' + (active ? 'is-active' : 'is-inactive');
-  track.className = 'toggle-track ' + (active ? 'on' : 'off');
-  thumb.className = 'toggle-thumb ' + (active ? 'on' : 'off');
-  label.textContent = active ? 'Active' : 'Set Active';
-  label.style.color = active ? '#10b981' : '#94a3b8';
-  sub.textContent   = active ? "You're online & receiving clients" : "You're currently offline";
-  badge.textContent = active ? 'Online' : 'Offline';
-  badge.style.background = active ? 'rgba(16,185,129,0.15)' : 'rgba(100,116,139,0.15)';
-  badge.style.color      = active ? '#10b981' : '#64748b';
+  if(!S.employee)return;
+  var active=S.employee.is_active;
+  var btn=document.getElementById('active-toggle-btn');
+  var track=document.getElementById('toggle-track');
+  var thumb=document.getElementById('toggle-thumb');
+  var label=document.getElementById('toggle-label');
+  var sub=document.getElementById('toggle-sublabel');
+  var badge=document.getElementById('toggle-badge');
+  if(!btn)return;
+  btn.className='active-toggle '+(active?'is-active':'is-inactive');
+  track.className='toggle-track '+(active?'on':'off');
+  thumb.className='toggle-thumb '+(active?'on':'off');
+  label.textContent=active?'Active':'Set Active';
+  label.style.color=active?'#10b981':'#94a3b8';
+  sub.textContent=active?'You\'re online & receiving clients':'You\'re currently offline';
+  badge.textContent=active?'Online':'Offline';
+  badge.style.background=active?'rgba(16,185,129,0.15)':'rgba(100,116,139,0.15)';
+  badge.style.color=active?'#10b981':'#64748b';
 }
 
 // ============================================================
 // SIDEBAR & NAVIGATION
 // ============================================================
 function buildSidebar(){
-  var pages = S.role==='admin' ? ADMIN_PAGES : EMP_PAGES;
-  var html = '';
+  var pages=S.role==='admin'?ADMIN_PAGES:EMP_PAGES;
+  var html='';
   for(var i=0;i<pages.length;i++){
-    var p = pages[i];
-    var extra = '';
-    if(p.id==='notifications' && S.role==='employee'){var uc=unreadCount();if(uc>0)extra='<span class="ml-auto text-xs bg-blue-500/20 text-blue-400 rounded-full px-2 py-0.5">'+uc+'</span>';}
-    html += '<div class="sidebar-item '+(S.currentPage===p.id?'active':'')+'" onclick="navigateTo(\''+p.id+'\');closeMobileSidebar()"><i data-lucide="'+p.icon+'" class="w-[18px] h-[18px]"></i><span>'+p.label+'</span>'+extra+'</div>';
+    var p=pages[i];
+    var extra='';
+    if(p.id==='notifications'&&S.role==='employee'){var uc=unreadCount();if(uc>0)extra='<span class="ml-auto text-xs bg-blue-500/20 text-blue-400 rounded-full px-2 py-0.5">'+uc+'</span>';}
+    html+='<div class="sidebar-item '+(S.currentPage===p.id?'active':'')+'" onclick="navigateTo(\''+p.id+'\');closeMobileSidebar()"><i data-lucide="'+p.icon+'" class="w-[18px] h-[18px]"></i><span>'+p.label+'</span>'+extra+'</div>';
   }
-  document.getElementById('sidebar-nav').innerHTML = html;
+  document.getElementById('sidebar-nav').innerHTML=html;
 
-  var ud = document.getElementById('sidebar-user');
-  var ta = document.getElementById('active-toggle-area');
+  var ud=document.getElementById('sidebar-user');
+  var ta=document.getElementById('active-toggle-area');
   if(S.role==='admin'){
-    ud.innerHTML = av('AD','#3b82f6',28)+'<div><p class="text-sm font-semibold text-white">Admin</p><p class="text-[11px] text-slate-500">Full Access</p></div>';
+    ud.innerHTML=av('AD','#3b82f6',28)+'<div><p class="text-sm font-semibold text-white">Admin</p><p class="text-[11px] text-slate-500">Full Access</p></div>';
     ta.classList.add('hidden');
   } else if(S.employee){
-    var e = S.employee;
-    ud.innerHTML = av(e.name,e.color||'#3b82f6',28)+'<div><p class="text-sm font-semibold text-white">'+esc(e.name)+'</p><p class="text-[11px] '+(e.is_active?'text-emerald-400':'text-slate-500')+'">'+esc(e.is_active?'Active':'Inactive')+'</p></div>';
+    var e=S.employee;
+    ud.innerHTML=av(e.name,e.color||'#3b82f6',28)+'<div><p class="text-sm font-semibold text-white">'+esc(e.name)+'</p><p class="text-[11px] '+(e.is_active?'text-emerald-400':'text-slate-500')+'">'+esc(e.is_active?'Active':'Inactive')+'</p></div>';
     ta.classList.remove('hidden');
     updateActiveToggleUI();
   }
-  document.getElementById('sidebar-title').textContent  = S.role==='admin' ? 'Admin Portal' : 'Employee Portal';
-  document.getElementById('sidebar-subtitle').textContent = S.role==='admin' ? 'Management' : 'Dashboard';
+  document.getElementById('sidebar-title').textContent=S.role==='admin'?'Admin Portal':'Employee Portal';
+  document.getElementById('sidebar-subtitle').textContent=S.role==='admin'?'Management':'Dashboard';
   lucide.createIcons();
 }
-
 function navigateTo(page){S.currentPage=page;buildSidebar();renderPage();}
-
 function renderPage(){
-  var m = document.getElementById('main-content');
-  m.innerHTML = '<div class="flex items-center justify-center py-20"><div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>';
+  var m=document.getElementById('main-content');
+  m.innerHTML='<div class="flex items-center justify-center py-20"><div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>';
   setTimeout(function(){
-    var fn={
-      dashboard:renderDashboard, campaigns:renderCampaigns, upload:renderUpload,
-      schedule:renderSchedule, qa:renderQA, reports:renderReports, team:renderTeam,
-      'my-clients':renderMyClients, 'ask-question':renderAskQuestion,
-      'my-questions':renderMyQuestions, notifications:renderNotifPage
-    };
-    if(fn[S.currentPage]) fn[S.currentPage]();
-    else renderDashboard();
+    var fn={dashboard:renderDashboard,campaigns:renderCampaigns,upload:renderUpload,qa:renderQA,reports:renderReports,team:renderTeam,'my-clients':renderMyClients,'ask-question':renderAskQuestion,'my-questions':renderMyQuestions,notifications:renderNotifPage};
+    if(fn[S.currentPage])fn[S.currentPage]();else renderDashboard();
   },80);
 }
-
 function hdr(title,desc,actions){
   return '<div class="flex items-start justify-between mb-6 fade-in flex-wrap gap-3"><div><h1 class="text-2xl font-bold text-white">'+title+'</h1>'+(desc?'<p class="text-slate-400 text-sm mt-1">'+desc+'</p>':'')+'</div>'+(actions?'<div class="flex gap-2 flex-wrap">'+actions+'</div>':'')+'</div>';
 }
@@ -623,27 +582,27 @@ function hdr(title,desc,actions){
 // DASHBOARD
 // ============================================================
 function renderDashboard(){
-  var m = document.getElementById('main-content');
-  var ac  = S.campaigns.filter(function(c){return c.status==='Active';});
-  var pq  = S.questions.filter(function(q){return q.status==='pending';});
-  var onlineEmps = activeEmps();
-  var dist = onlineEmps.map(function(e){return{name:e.name,color:e.color,count:S.clients.filter(function(c){return c.assigned_employee_id===e.id;}).length};}).sort(function(a,b){return b.count-a.count;});
-  var mx   = Math.max.apply(null,dist.map(function(d){return d.count;}).concat([1]));
-  var offList = S.employees.filter(function(e){return !e.is_active;});
+  var m=document.getElementById('main-content');
+  var ac=S.campaigns.filter(function(c){return c.status==='Active';});
+  var pq=S.questions.filter(function(q){return q.status==='pending';});
+  var onlineEmps=activeEmps();
+  var dist=onlineEmps.map(function(e){return{name:e.name,color:e.color,count:S.clients.filter(function(c){return c.assigned_employee_id===e.id;}).length};}).sort(function(a,b){return b.count-a.count;});
+  var mx=Math.max.apply(null,dist.map(function(d){return d.count;}).concat([1]));
+  var offList=S.employees.filter(function(e){return!e.is_active;});
 
-  m.innerHTML = hdr('Dashboard','Overview') +
-  '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 fade-in">' +
-  '<div class="card stat-card blue"><p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Campaigns</p><p class="text-3xl font-bold text-white">'+S.campaigns.length+'</p><p class="text-xs text-blue-400 mt-1">'+ac.length+' active</p></div>' +
-  '<div class="card stat-card green"><p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Clients</p><p class="text-3xl font-bold text-white">'+S.clients.length+'</p><p class="text-xs text-emerald-400 mt-1">'+S.clients.filter(function(c){return c.status==='Closed';}).length+' closed</p></div>' +
-  '<div class="card stat-card amber"><p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Pending Q&A</p><p class="text-3xl font-bold text-white">'+pq.length+'</p><p class="text-xs text-amber-400 mt-1">needs attention</p></div>' +
-  '<div class="card stat-card red"><p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Active Agents</p><p class="text-3xl font-bold text-white">'+onlineEmps.length+'/'+S.employees.length+'</p><p class="text-xs text-slate-400 mt-1">online now</p></div></div>' +
-  '<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">' +
-  '<div class="card lg:col-span-2"><h3 class="text-sm font-bold text-white mb-4">Active Campaigns</h3>'+(ac.length?'<div class="space-y-2">'+ac.map(function(c){var cc=S.clients.filter(function(cl){return cl.campaign_id===c.id;}).length;return'<div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] table-row"><div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-blue-500"></div><div><p class="text-sm font-medium text-white">'+esc(c.name)+'</p><p class="text-xs text-slate-500">'+esc(c.type)+'</p></div></div><div class="flex items-center gap-3"><span class="text-xs text-slate-400">'+cc+' clients</span>'+sBadge(c.status)+'</div></div>';}).join('')+'</div>':'<p class="text-slate-500 text-sm">No active campaigns</p>')+'</div>' +
-  '<div class="card"><h3 class="text-sm font-bold text-white mb-4">Client Distribution</h3><div class="space-y-3">'+dist.map(function(d){return'<div><div class="flex items-center justify-between mb-1"><div class="flex items-center gap-2">'+av(d.name,d.color,20)+'<span class="text-xs text-slate-300">'+esc(d.name)+'</span></div><span class="text-xs font-semibold text-white">'+d.count+'</span></div><div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:'+(d.count/mx)*100+'%;background:'+d.color+'"></div></div></div>';}).join('')+(dist.length?'':'<p class="text-slate-500 text-sm">No active employees</p>')+'</div></div></div>' +
-  '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 fade-in">' +
+  m.innerHTML=hdr('Dashboard','Overview')+
+  '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 fade-in">'+
+  '<div class="card stat-card blue"><p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Campaigns</p><p class="text-3xl font-bold text-white">'+S.campaigns.length+'</p><p class="text-xs text-blue-400 mt-1">'+ac.length+' active</p></div>'+
+  '<div class="card stat-card green"><p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Clients</p><p class="text-3xl font-bold text-white">'+S.clients.length+'</p><p class="text-xs text-emerald-400 mt-1">'+S.clients.filter(function(c){return c.status==='Closed';}).length+' closed</p></div>'+
+  '<div class="card stat-card amber"><p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Pending Q&A</p><p class="text-3xl font-bold text-white">'+pq.length+'</p><p class="text-xs text-amber-400 mt-1">needs attention</p></div>'+
+  '<div class="card stat-card red"><p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Active Agents</p><p class="text-3xl font-bold text-white">'+onlineEmps.length+'/'+S.employees.length+'</p><p class="text-xs text-slate-400 mt-1">online now</p></div></div>'+
+  '<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">'+
+  '<div class="card lg:col-span-2"><h3 class="text-sm font-bold text-white mb-4">Active Campaigns</h3>'+(ac.length?'<div class="space-y-2">'+ac.map(function(c){var cc=S.clients.filter(function(cl){return cl.campaign_id===c.id;}).length;return'<div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] table-row"><div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-blue-500"></div><div><p class="text-sm font-medium text-white">'+esc(c.name)+'</p><p class="text-xs text-slate-500">'+esc(c.type)+'</p></div></div><div class="flex items-center gap-3"><span class="text-xs text-slate-400">'+cc+' clients</span>'+sBadge(c.status)+'</div></div>';}).join('')+'</div>':'<p class="text-slate-500 text-sm">No active campaigns</p>')+'</div>'+
+  '<div class="card"><h3 class="text-sm font-bold text-white mb-4">Client Distribution</h3><div class="space-y-3">'+dist.map(function(d){return'<div><div class="flex items-center justify-between mb-1"><div class="flex items-center gap-2">'+av(d.name,d.color,20)+'<span class="text-xs text-slate-300">'+esc(d.name)+'</span></div><span class="text-xs font-semibold text-white">'+d.count+'</span></div><div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:'+(d.count/mx)*100+'%;background:'+d.color+'"></div></div></div>';}).join('')+(dist.length?'':'<p class="text-slate-500 text-sm">No active employees</p>')+'</div></div></div>'+
+  '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 fade-in">'+
   '<div class="card"><div class="flex items-center justify-between mb-4"><h3 class="text-sm font-bold text-white">Active Now</h3><span class="badge badge-active">'+onlineEmps.length+'</span></div><div class="space-y-2">'+
   onlineEmps.map(function(e){var cc=S.clients.filter(function(c){return c.assigned_employee_id===e.id;}).length;return'<div class="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02]"><div class="flex items-center gap-2">'+av(e.name,e.color||'#3b82f6',30)+'<div><p class="text-sm font-medium text-white">'+esc(e.name)+'</p><p class="text-xs text-emerald-400 font-medium">Active</p></div></div><div class="flex items-center gap-2"><span class="text-xs text-slate-400">'+cc+' clients</span>'+pDot(true)+'</div></div>';}).join('')+
-  (onlineEmps.length?'':'<p class="text-slate-500 text-sm text-center py-4">No agents active</p>')+'</div></div>' +
+  (onlineEmps.length?'':'<p class="text-slate-500 text-sm text-center py-4">No agents active</p>')+'</div></div>'+
   '<div class="card"><div class="flex items-center justify-between mb-4"><h3 class="text-sm font-bold text-white">Inactive</h3><span class="badge badge-ended">'+offList.length+'</span></div><div class="space-y-2">'+
   offList.map(function(e){return'<div class="flex items-center gap-2 p-2.5 rounded-lg bg-white/[0.02]">'+av(e.name,e.color||'#475569',28)+'<p class="text-sm text-slate-500">'+esc(e.name)+'</p></div>';}).join('')+
   (offList.length?'':'<p class="text-slate-500 text-sm text-center py-4">Everyone is active!</p>')+'</div></div>';
@@ -651,143 +610,55 @@ function renderDashboard(){
 }
 
 // ============================================================
-// SCHEDULE PAGE (Admin) — live active/inactive view
-// ============================================================
-function renderSchedule(){
-  var m = document.getElementById('main-content');
-  var online  = activeEmps();
-  var offline = S.employees.filter(function(e){return !e.is_active;});
-
-  var onlineCards = online.map(function(e){
-    var cc = S.clients.filter(function(c){return c.assigned_employee_id===e.id;}).length;
-    var answered = S.questions.filter(function(q){return q.employee_id===e.id && q.status==='answered';}).length;
-    var pending  = S.questions.filter(function(q){return q.employee_id===e.id && q.status==='pending';}).length;
-    return '<div class="schedule-card online fade-in">' +
-      '<div class="flex items-center gap-3 mb-3">' +
-      av(e.name,e.color||'#10b981',40) +
-      '<div class="flex-1 min-w-0"><p class="font-semibold text-white text-sm">'+esc(e.name)+'</p><p class="text-xs text-slate-400 truncate">'+esc(e.email)+'</p></div>' +
-      '<div class="pulse-dot"></div>' +
-      '</div>' +
-      '<div class="grid grid-cols-3 gap-2 text-center">' +
-      '<div class="p-2 rounded-lg bg-white/[0.04]"><p class="text-lg font-bold text-white">'+cc+'</p><p class="text-[10px] text-slate-500 uppercase tracking-wide">Clients</p></div>' +
-      '<div class="p-2 rounded-lg bg-white/[0.04]"><p class="text-lg font-bold text-emerald-400">'+answered+'</p><p class="text-[10px] text-slate-500 uppercase tracking-wide">Answered</p></div>' +
-      '<div class="p-2 rounded-lg bg-white/[0.04]"><p class="text-lg font-bold text-amber-400">'+pending+'</p><p class="text-[10px] text-slate-500 uppercase tracking-wide">Pending Q</p></div>' +
-      '</div>' +
-      '<div class="mt-3 flex gap-2">' +
-      '<button class="btn btn-sm flex-1" style="background:rgba(100,116,139,0.1);color:#64748b;border:1px solid rgba(100,116,139,0.2)" onclick="adminSetActive(\''+e.id+'\',false)"><i data-lucide="power" class="w-3.5 h-3.5"></i> Deactivate</button>' +
-      '</div>' +
-      '</div>';
-  }).join('');
-
-  var offlineCards = offline.map(function(e){
-    var cc = S.clients.filter(function(c){return c.assigned_employee_id===e.id;}).length;
-    return '<div class="schedule-card offline fade-in">' +
-      '<div class="flex items-center gap-3 mb-3">' +
-      av(e.name,e.color||'#475569',40) +
-      '<div class="flex-1 min-w-0"><p class="font-semibold text-slate-400 text-sm">'+esc(e.name)+'</p><p class="text-xs text-slate-600 truncate">'+esc(e.email)+'</p></div>' +
-      '<span class="presence-dot presence-offline"></span>' +
-      '</div>' +
-      '<div class="flex items-center justify-between mb-3">' +
-      '<span class="text-xs text-slate-500">'+cc+' clients assigned</span>' +
-      '<span class="badge" style="background:rgba(100,116,139,0.15);color:#64748b;font-size:10px">Offline</span>' +
-      '</div>' +
-      '<button class="btn btn-success btn-sm w-full" onclick="adminSetActive(\''+e.id+'\',true)"><i data-lucide="power" class="w-3.5 h-3.5"></i> Activate</button>' +
-      '</div>';
-  }).join('');
-
-  m.innerHTML = hdr('Schedule / Status', S.employees.length + ' total agents') +
-  // Live summary bar
-  '<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 fade-in">' +
-  '<div class="card stat-card green text-center"><div class="flex items-center justify-center gap-2 mb-1"><div class="pulse-dot" style="width:8px;height:8px;flex-shrink:0"></div><p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Online Now</p></div><p class="text-3xl font-bold text-white">'+online.length+'</p></div>' +
-  '<div class="card stat-card red text-center"><p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Offline</p><p class="text-3xl font-bold text-white">'+offline.length+'</p></div>' +
-  '<div class="card text-center"><p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Coverage</p><p class="text-3xl font-bold text-white">'+(S.employees.length?Math.round(online.length/S.employees.length*100):0)+'%</p></div>' +
-  '</div>' +
-  // Online agents
-  (online.length ? '<div class="mb-6"><div class="flex items-center gap-2 mb-3"><div class="pulse-dot" style="width:8px;height:8px;flex-shrink:0"></div><h3 class="text-sm font-bold text-white">Active Agents ('+online.length+')</h3></div><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">'+onlineCards+'</div></div>' : '') +
-  // Offline agents
-  (offline.length ? '<div><h3 class="text-sm font-bold text-slate-500 mb-3">Inactive Agents ('+offline.length+')</h3><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">'+offlineCards+'</div></div>' : '') +
-  (S.employees.length===0 ? '<div class="card text-center py-12"><p class="text-slate-500">No employees yet. Add some from Team Management.</p></div>' : '');
-
-  lucide.createIcons();
-}
-
-// ============================================================
 // CAMPAIGNS
 // ============================================================
 function renderCampaigns(){
-  var m = document.getElementById('main-content');
+  var m=document.getElementById('main-content');
   if(selectedCampId){
-    var vc = campById(selectedCampId);
-    if(!vc){selectedCampId=null;renderCampaigns();return;}
-    var cc = S.clients.filter(function(c){return c.campaign_id===vc.id;});
-    var sBtns = '';
-    ['Active','Paused','Ended'].forEach(function(s){
-      sBtns += '<button class="btn btn-sm '+(vc.status===s?'btn-primary':'btn-ghost')+'" onclick="changeCampStatus(\''+vc.id+'\',\''+s+'\')">'+s+'</button>';
+    var vc=campById(selectedCampId);if(!vc){selectedCampId=null;renderCampaigns();return;}
+    var cc=S.clients.filter(function(c){return c.campaign_id===vc.id;});
+    var sBtns='';['Active','Paused','Ended'].forEach(function(s){
+      sBtns+='<button class="btn btn-sm '+(vc.status===s?'btn-primary':'btn-ghost')+'" onclick="changeCampStatus(\''+vc.id+'\',\''+s+'\')">'+s+'</button>';
     });
-    var visCols = getVisibleCols(vc.id);
-
-    m.innerHTML = hdr(esc(vc.name), esc(vc.type),
-      '<button class="btn btn-ghost" onclick="selectedCampId=null;renderCampaigns()"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back</button>' +
-      '<button class="btn btn-ghost btn-sm" onclick="openColConfig(\''+vc.id+'\',\'campaign\')"><i data-lucide="settings-2" class="w-4 h-4"></i> Columns</button>' +
-      sBadge(vc.status)) +
-    '<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 fade-in">' +
-    '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Total</p><p class="text-2xl font-bold text-white">'+cc.length+'</p></div>' +
-    '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Contacted</p><p class="text-2xl font-bold text-violet-400">'+cc.filter(function(c){return c.status==='Contacted';}).length+'</p></div>' +
-    '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Closed</p><p class="text-2xl font-bold text-emerald-400">'+cc.filter(function(c){return c.status==='Closed';}).length+'</p></div></div>' +
-    '<div class="card mb-6 fade-in"><div class="flex items-center gap-3"><span class="text-sm text-slate-400">Status:</span>'+sBtns+'</div></div>' +
-    '<div class="card fade-in"><h3 class="text-sm font-bold text-white mb-4">Clients ('+cc.length+')</h3>' +
-    (cc.length ?
-      '<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5">' +
-      visCols.map(function(c){return'<th class="pb-3 pr-4">'+esc(c.label)+'</th>';}).join('') +
-      '<th class="pb-3 pr-4">Assigned To</th><th class="pb-3">Status</th></tr></thead><tbody>' +
-      cc.map(function(c){
-        var e = empById(c.assigned_employee_id);
-        var extra = c.extra_data || {};
-        return '<tr class="table-row border-b border-white/[0.03]">' +
-          visCols.map(function(col){return'<td class="py-3 pr-4 text-slate-300 text-xs">'+esc(extra[col.key]||c[col.key]||'-')+'</td>';}).join('') +
-          '<td class="py-3 pr-4">'+(e?av(e.name,e.color||'#3b82f6',22)+'<span class="text-xs text-slate-300 ml-1">'+esc(e.name)+'</span>':'<span class="text-slate-500 text-xs">Unassigned</span>')+'</td>' +
-          '<td class="py-3">'+sBadge(c.status)+'</td></tr>';
-      }).join('') +
-      '</tbody></table></div>' : '<p class="text-slate-500 text-sm">No clients yet</p>') +
-    '</div>';
-    lucide.createIcons(); return;
+    var visCols=getVisibleCols(vc.id);
+    m.innerHTML=hdr(esc(vc.name),esc(vc.type),
+      '<button class="btn btn-ghost" onclick="selectedCampId=null;renderCampaigns()"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back</button>'+
+      '<button class="btn btn-ghost btn-sm" onclick="openColConfig(\''+vc.id+'\')"><i data-lucide="settings-2" class="w-4 h-4"></i> Columns</button>'+
+      sBadge(vc.status))+
+    '<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 fade-in">'+
+    '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Total</p><p class="text-2xl font-bold text-white">'+cc.length+'</p></div>'+
+    '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Contacted</p><p class="text-2xl font-bold text-violet-400">'+cc.filter(function(c){return c.status==='Contacted';}).length+'</p></div>'+
+    '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Closed</p><p class="text-2xl font-bold text-emerald-400">'+cc.filter(function(c){return c.status==='Closed';}).length+'</p></div></div>'+
+    '<div class="card mb-6 fade-in"><div class="flex items-center gap-3"><span class="text-sm text-slate-400">Status:</span>'+sBtns+'</div></div>'+
+    '<div class="card fade-in"><h3 class="text-sm font-bold text-white mb-4">Clients ('+cc.length+')</h3>'+
+    (cc.length?'<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5">'+
+    visCols.map(function(c){return'<th class="pb-3 pr-4">'+esc(c.label)+'</th>';}).join('')+
+    '<th class="pb-3 pr-4">Assigned To</th><th class="pb-3">Status</th></tr></thead><tbody>'+
+    cc.map(function(c){
+      var e=empById(c.assigned_employee_id);
+      var extra=c.extra_data||{};
+      return'<tr class="table-row border-b border-white/[0.03]">'+
+      visCols.map(function(col){return'<td class="py-3 pr-4 text-slate-300">'+esc(extra[col.key]||c[col.key]||'-')+'</td>';}).join('')+
+      '<td class="py-3 pr-4">'+(e?av(e.name,e.color||'#3b82f6',22)+'<span class="text-xs text-slate-300 ml-1">'+esc(e.name)+'</span>':'<span class="text-slate-500 text-xs">Unassigned</span>')+'</td>'+
+      '<td class="py-3">'+sBadge(c.status)+'</td></tr>';
+    }).join('')+'</tbody></table></div>':'<p class="text-slate-500 text-sm">No clients</p>')+'</div>';
+    lucide.createIcons();return;
   }
-
-  m.innerHTML = hdr('Campaigns','Manage campaigns',
-    '<button class="btn btn-primary" onclick="showCampForm=!showCampForm;renderCampaigns()"><i data-lucide="plus" class="w-4 h-4"></i> New</button>') +
-  (showCampForm ?
-    '<div class="card mb-6 fade-in border-blue-500/20"><h3 class="text-sm font-bold text-white mb-4">Create Campaign</h3>' +
-    '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">' +
-    '<div><label class="text-xs text-slate-400 mb-1 block">Name *</label><input id="cn" class="input" placeholder="Campaign name"></div>' +
-    '<div><label class="text-xs text-slate-400 mb-1 block">Type</label><input id="ct" class="input" placeholder="e.g. Sales, Leads..."></div>' +
-    '<div><label class="text-xs text-slate-400 mb-1 block">Start Date</label><input id="cs" type="date" class="input"></div>' +
-    '<div><label class="text-xs text-slate-400 mb-1 block">End Date</label><input id="ce" type="date" class="input"></div>' +
-    '</div><div class="flex gap-2 mt-4"><button class="btn btn-primary" onclick="createCamp()">Create</button><button class="btn btn-ghost" onclick="showCampForm=false;renderCampaigns()">Cancel</button></div></div>' : '') +
-  '<div class="space-y-3 fade-in">' +
-  (S.campaigns.length ? S.campaigns.map(function(c){
-    var cc = S.clients.filter(function(cl){return cl.campaign_id===c.id;}).length;
-    return '<div class="card card-hover cursor-pointer" onclick="selectedCampId=\''+c.id+'\';renderCampaigns()">' +
-      '<div class="flex items-center justify-between"><div class="flex items-center gap-4">' +
-      '<div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400"><i data-lucide="target" class="w-5 h-5"></i></div>' +
-      '<div><p class="font-semibold text-white">'+esc(c.name)+'</p><p class="text-xs text-slate-500">'+esc(c.type)+'</p></div>' +
-      '</div><div class="flex items-center gap-4"><span class="text-sm text-slate-400">'+cc+' clients</span>'+sBadge(c.status)+'</div></div></div>';
-  }).join('') : '<div class="card text-center py-12"><p class="text-slate-500">No campaigns yet</p></div>') +
-  '</div>';
+  m.innerHTML=hdr('Campaigns','Manage campaigns','<button class="btn btn-primary" onclick="showCampForm=!showCampForm;renderCampaigns()"><i data-lucide="plus" class="w-4 h-4"></i> New</button>')+
+  (showCampForm?'<div class="card mb-6 fade-in border-blue-500/20"><h3 class="text-sm font-bold text-white mb-4">Create Campaign</h3><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="text-xs text-slate-400 mb-1 block">Name *</label><input id="cn" class="input" placeholder="Campaign name"></div><div><label class="text-xs text-slate-400 mb-1 block">Type</label><input id="ct" class="input" placeholder="e.g. Sales, Leads..."></div><div><label class="text-xs text-slate-400 mb-1 block">Start Date</label><input id="cs" type="date" class="input"></div><div><label class="text-xs text-slate-400 mb-1 block">End Date</label><input id="ce" type="date" class="input"></div></div><div class="flex gap-2 mt-4"><button class="btn btn-primary" onclick="createCamp()">Create</button><button class="btn btn-ghost" onclick="showCampForm=false;renderCampaigns()">Cancel</button></div></div>':'')+
+  '<div class="space-y-3 fade-in">'+(S.campaigns.length?S.campaigns.map(function(c){var cc=S.clients.filter(function(cl){return cl.campaign_id===c.id;}).length;return'<div class="card card-hover cursor-pointer" onclick="selectedCampId=\''+c.id+'\';renderCampaigns()"><div class="flex items-center justify-between"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400"><i data-lucide="target" class="w-5 h-5"></i></div><div><p class="font-semibold text-white">'+esc(c.name)+'</p><p class="text-xs text-slate-500">'+esc(c.type)+'</p></div></div><div class="flex items-center gap-4"><span class="text-sm text-slate-400">'+cc+' clients</span>'+sBadge(c.status)+'</div></div></div>';}).join(''):'<div class="card text-center py-12"><p class="text-slate-500">No campaigns yet</p></div>')+'</div>';
   lucide.createIcons();
 }
-
 function createCamp(){
-  var n = document.getElementById('cn').value.trim();
-  var t = document.getElementById('ct').value.trim();
-  var s = document.getElementById('cs').value;
-  var e = document.getElementById('ce').value;
+  var n=document.getElementById('cn').value.trim();
+  var t=document.getElementById('ct').value.trim();
+  var s=document.getElementById('cs').value;
+  var e=document.getElementById('ce').value;
   if(!n){toast('Name required','error');return;}
-  // New campaigns get a copy of DEFAULT_COLUMNS
-  sb.from('campaigns').insert({name:n,type:t||'General',start_date:s||null,end_date:e||null,status:'Active',column_config:JSON.parse(JSON.stringify(DEFAULT_COLUMNS))})
+  sb.from('campaigns').insert({name:n,type:t||'General',start_date:s||null,end_date:e||null,column_config:DEFAULT_COLUMNS})
     .then(function(){toast('Campaign created');showCampForm=false;fetchAll().then(renderCampaigns);})
     .catch(function(e){toast(e.message,'error');});
 }
-
 function changeCampStatus(id,st){
   sb.from('campaigns').update({status:st}).eq('id',id)
     .then(function(){toast('Updated');fetchAll().then(renderCampaigns);})
@@ -799,129 +670,103 @@ function changeCampStatus(id,st){
 // ============================================================
 function setUploadTab(tab){U.uploadTab=tab;renderUpload();}
 function tabBtn(tab,icon,label){
-  var act = U.uploadTab===tab;
-  return '<button class="btn btn-sm '+(act?'btn-primary':'btn-ghost')+'" onclick="setUploadTab(\''+tab+'\')"><i data-lucide="'+icon+'" class="w-3.5 h-3.5"></i> '+label+'</button>';
+  var act=U.uploadTab===tab;
+  return'<button class="btn btn-sm '+(act?'btn-primary':'btn-ghost')+'" onclick="setUploadTab(\''+tab+'\')"><i data-lucide="'+icon+'" class="w-3.5 h-3.5"></i> '+label+'</button>';
+}
+
+function getCurrentUploadCols(){
+  // If campaign selected, use campaign cols. Else use U.colConfig or default
+  if(U.campaignId){
+    return getVisibleCols(U.campaignId);
+  }
+  var cfg=U.colConfig||DEFAULT_COLUMNS;
+  return cfg.filter(function(c){return c.visible;}).sort(function(a,b){return a.order-b.order;});
 }
 
 function renderUpload(){
-  var m = document.getElementById('main-content');
-  var cols = getCurrentUploadCols();
-  var campOpts = '<option value="">Select campaign...</option>' +
-    S.campaigns.map(function(c){return'<option value="'+c.id+'" '+(U.campaignId===c.id?'selected':'')+'>'+esc(c.name)+'</option>';}).join('');
+  var m=document.getElementById('main-content');
+  var cols=getCurrentUploadCols();
+  var campOpts='<option value="">Select campaign...</option>'+S.campaigns.map(function(c){return'<option value="'+c.id+'" '+(U.campaignId===c.id?'selected':'')+'>'+esc(c.name)+'</option>';}).join('');
 
   // Preview section
-  var previewHtml = '';
+  var previewHtml='';
   if(U.preview){
-    var mx = Math.max.apply(null, Object.values(U.preview).map(function(a){return a.length;}).concat([1]));
-    previewHtml = '<div class="card border-emerald-500/20 mb-6 fade-in">' +
-      '<h3 class="text-sm font-bold text-white mb-1">Preview — '+U.rows.length+' clients → active agents</h3>' +
-      '<p class="text-xs text-slate-500 mb-4">Inactive agents excluded from distribution</p>' +
-      '<div class="space-y-3">' +
-      Object.keys(U.preview).map(function(eid){
-        var e=empById(eid);if(!e)return'';
-        var cls=U.preview[eid];
-        return '<div><div class="flex items-center justify-between mb-1"><div class="flex items-center gap-2">'+av(e.name,e.color||'#3b82f6',22)+'<span class="text-xs text-slate-300">'+esc(e.name)+'</span><span class="badge badge-active ml-1" style="font-size:10px">Active</span></div><span class="text-xs font-bold text-white">'+cls.length+'</span></div><div class="w-full h-2 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full bg-emerald-500/70" style="width:'+(cls.length/mx)*100+'%"></div></div></div>';
-      }).join('') +
-      '</div><div class="flex gap-2 mt-5">' +
-      '<button class="btn btn-success" onclick="confirmDistribute()"><i data-lucide="check" class="w-4 h-4"></i> Confirm & Distribute</button>' +
-      '<button class="btn btn-ghost" onclick="U.preview=null;renderUpload()">Cancel</button>' +
-      '</div></div>';
+    var mx=Math.max.apply(null,Object.values(U.preview).map(function(a){return a.length;}).concat([1]));
+    previewHtml='<div class="card border-emerald-500/20 mb-6 fade-in"><h3 class="text-sm font-bold text-white mb-1">Preview - '+U.rows.length+' clients → active agents</h3><p class="text-xs text-slate-500 mb-4">Inactive agents excluded from distribution</p><div class="space-y-3">'+
+    Object.keys(U.preview).map(function(eid){
+      var e=empById(eid);if(!e)return'';
+      var cls=U.preview[eid];
+      return'<div><div class="flex items-center justify-between mb-1"><div class="flex items-center gap-2">'+av(e.name,e.color||'#3b82f6',22)+'<span class="text-xs text-slate-300">'+esc(e.name)+'</span><span class="badge badge-active ml-1" style="font-size:10px">Active</span></div><span class="text-xs font-bold text-white">'+cls.length+'</span></div><div class="w-full h-2 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full bg-emerald-500/70" style="width:'+(cls.length/mx)*100+'%"></div></div></div>';
+    }).join('')+
+    '</div><div class="flex gap-2 mt-5"><button class="btn btn-success" onclick="confirmDistribute()"><i data-lucide="check" class="w-4 h-4"></i> Confirm & Distribute</button><button class="btn btn-ghost" onclick="U.preview=null;renderUpload()">Cancel</button></div></div>';
   }
 
   // Build manual rows table
-  var manualHtml = '';
+  var manualHtml='';
   if(U.uploadTab==='manual'){
-    var tRows = '';
+    var tRows='';
     for(var i=0;i<U.rows.length;i++){
-      tRows += '<tr>'+buildUploadRowHTML(cols,i,U.rows[i])+'</tr>';
+      tRows+='<tr>'+buildUploadRowHTML(cols,i,U.rows[i])+'</tr>';
     }
-    manualHtml = '<div class="flex items-center justify-between mb-3">' +
-      '<h3 class="text-sm font-bold text-white">Entries ('+U.rows.length+')</h3>' +
-      '<button class="btn btn-ghost btn-sm" onclick="addUploadRows(5)"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Add 5 rows</button>' +
-      '</div>' +
-      '<div class="overflow-x-auto max-h-[400px] overflow-y-auto"><table class="upload-tbl">' +
-      '<thead><tr>'+buildUploadHeaderHTML(cols)+'</tr></thead>' +
-      '<tbody>'+tRows+'</tbody></table></div>';
+    manualHtml='<div class="flex items-center justify-between mb-3"><h3 class="text-sm font-bold text-white">Entries ('+U.rows.length+')</h3><button class="btn btn-ghost btn-sm" onclick="addUploadRows(5)"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Add 5 rows</button></div>'+
+    '<div class="overflow-x-auto max-h-[400px] overflow-y-auto"><table class="upload-tbl"><thead><tr>'+buildUploadHeaderHTML(cols)+'</tr></thead><tbody>'+tRows+'</tbody></table></div>';
   }
 
-  m.innerHTML = hdr('Upload & Distribute','Upload data and distribute to active employees') + previewHtml +
-  '<div class="card fade-in mb-4">' +
-  '<div class="flex items-center justify-between mb-5 flex-wrap gap-3">' +
-  '<select class="input max-w-xs" onchange="U.campaignId=this.value;U.preview=null;U.rows=[];renderUpload()">'+campOpts+'</select>' +
-  '<button class="btn btn-ghost btn-sm" onclick="openColConfig(U.campaignId||\'\',\'upload\')"><i data-lucide="settings-2" class="w-4 h-4"></i> Configure Columns</button>' +
-  '</div>' +
-  // Column chips preview
-  '<div class="flex flex-wrap gap-2 mb-5 p-3 rounded-lg bg-white/[0.02] border border-white/5">' +
-  '<span class="text-xs text-slate-500 self-center mr-1">Columns:</span>' +
-  cols.map(function(c){return'<span class="badge badge-new text-[11px]">'+esc(c.label)+'</span>';}).join('') +
-  '</div>' +
-  '<div class="flex gap-2 mb-4 border-b border-white/10 pb-2">'+tabBtn('paste','clipboard','Paste from Excel')+tabBtn('excel','file-spreadsheet','Upload File')+tabBtn('manual','table','Manual Entry')+'</div>' +
+  m.innerHTML=hdr('Upload & Distribute','Upload data and distribute to active employees')+previewHtml+
+  '<div class="card fade-in mb-4">'+
+  '<div class="flex items-center justify-between mb-5">'+
+  '<div class="flex items-center gap-3"><select class="input max-w-xs" onchange="U.campaignId=this.value;U.preview=null;U.rows=[];renderUpload()">'+campOpts+'</select></div>'+
+  '<button class="btn btn-ghost btn-sm" onclick="openColConfig(null)"><i data-lucide="settings-2" class="w-4 h-4"></i> Configure Columns</button>'+
+  '</div>'+
+  // Column preview chips
+  '<div class="flex flex-wrap gap-2 mb-5 p-3 rounded-lg bg-white/[0.02] border border-white/5">'+
+  '<span class="text-xs text-slate-500 self-center mr-1">Columns:</span>'+
+  cols.map(function(c){return'<span class="badge badge-new text-[11px]">'+esc(c.label)+'</span>';}).join('')+
+  '</div>'+
+  '<div class="flex gap-2 mb-4 border-b border-white/10 pb-2">'+tabBtn('paste','clipboard','Paste from Excel')+tabBtn('excel','file-spreadsheet','Upload File')+tabBtn('manual','table','Manual Entry')+'</div>'+
   // PASTE tab
-  (U.uploadTab==='paste' ?
-    '<div class="space-y-3">' +
-    '<p class="text-xs text-slate-400 mb-2">Copy from Excel — columns should match: <strong class="text-slate-300">'+cols.map(function(c){return c.label;}).join(', ')+'</strong></p>' +
-    '<textarea id="paste-area" class="input font-mono text-xs" rows="10" placeholder="Paste tab-separated rows here..."></textarea>' +
-    '<button class="btn btn-primary" onclick="parsePaste()"><i data-lucide="clipboard-check" class="w-4 h-4"></i> Parse & Preview</button>' +
-    '</div>' : '') +
+  (U.uploadTab==='paste'?'<div class="space-y-3"><p class="text-xs text-slate-400 mb-2">Copy from Excel — columns should match: <strong class="text-slate-300">'+cols.map(function(c){return c.label;}).join(', ')+'</strong></p><textarea id="paste-area" class="input font-mono text-xs" rows="10" placeholder="Paste tab-separated rows here..."></textarea><button class="btn btn-primary" onclick="parsePaste()"><i data-lucide="clipboard-check" class="w-4 h-4"></i> Parse & Preview</button></div>':'')+
   // EXCEL tab
-  (U.uploadTab==='excel' ?
-    '<div class="space-y-3">' +
-    '<p class="text-xs text-slate-400">Upload .xlsx, .xls or .csv — first row = headers matching column config</p>' +
-    '<div class="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:border-blue-500/40 transition-colors" ondrop="handleExcelDrop(event)" ondragover="event.preventDefault()">' +
-    '<i data-lucide="file-spreadsheet" class="w-10 h-10 text-slate-600 mx-auto mb-3"></i>' +
-    '<p class="text-slate-400 text-sm mb-3">Drag & drop file here</p>' +
-    '<label class="btn btn-ghost cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i> Browse<input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleExcelFile(this)"></label>' +
-    '</div>' +
-    (U.rows.length ? '<p class="text-emerald-400 text-sm font-medium">✓ '+U.rows.length+' rows loaded</p>' : '') +
-    '</div>' : '') +
+  (U.uploadTab==='excel'?'<div class="space-y-3"><p class="text-xs text-slate-400">Upload .xlsx, .xls or .csv — first row = headers matching column config</p><div class="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:border-blue-500/40 transition-colors" ondrop="handleExcelDrop(event)" ondragover="event.preventDefault()"><i data-lucide="file-spreadsheet" class="w-10 h-10 text-slate-600 mx-auto mb-3"></i><p class="text-slate-400 text-sm mb-3">Drag & drop file here</p><label class="btn btn-ghost cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i> Browse<input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleExcelFile(this)"></label></div>'+(U.rows.length?'<p class="text-emerald-400 text-sm font-medium">✓ '+U.rows.length+' rows loaded</p>':'')+'</div>':'')+
   // MANUAL tab
-  manualHtml +
-  (U.rows.length ?
-    '<div class="mt-4 pt-4 border-t border-white/10">' +
-    '<button class="btn btn-primary" onclick="previewDistribute()"><i data-lucide="shuffle" class="w-4 h-4"></i> Preview Distribution ('+U.rows.length+' rows)</button>' +
-    '</div>' : '') +
-  '</div>';
+  manualHtml+
+  (U.rows.length?'<div class="mt-4 pt-4 border-t border-white/10"><button class="btn btn-primary" onclick="previewDistribute()"><i data-lucide="shuffle" class="w-4 h-4"></i> Preview Distribution ('+U.rows.length+' rows)</button></div>':'')+'</div>';
   lucide.createIcons();
 }
 
 function addUploadRows(n){
-  var cols = getCurrentUploadCols();
+  var cols=getCurrentUploadCols();
   for(var i=0;i<n;i++){
-    var r={};
-    cols.forEach(function(c){r[c.key]='';});
+    var r={};cols.forEach(function(c){r[c.key]='';});
     U.rows.push(r);
   }
   renderUpload();
 }
 
 function parsePaste(){
-  var raw = document.getElementById('paste-area').value.trim();
+  var raw=document.getElementById('paste-area').value.trim();
   if(!raw){toast('Paste data first','error');return;}
-  var cols = getCurrentUploadCols();
-  var lines = raw.split('\n');
-  var rows = [];
-  // Auto-detect header row
-  var startIdx = 0;
-  var firstLower = (lines[0]||'').toLowerCase();
-  var hasHeader = cols.some(function(c){
-    return firstLower.indexOf(c.label.toLowerCase())!==-1 || firstLower.indexOf(c.key.toLowerCase())!==-1;
-  });
-  if(hasHeader) startIdx = 1;
-
+  var cols=getCurrentUploadCols();
+  var lines=raw.split('\n');
+  var rows=[];
+  // Auto-detect if first line is a header
+  var startIdx=0;
+  var firstLine=lines[0]?lines[0].toLowerCase():'';
+  var colLabelsLower=cols.map(function(c){return c.label.toLowerCase();});
+  if(colLabelsLower.some(function(lbl){return firstLine.indexOf(lbl)!==-1;})){startIdx=1;}
   for(var i=startIdx;i<lines.length;i++){
-    var line = lines[i].replace(/\r/g,'').trim();
-    if(!line) continue;
-    var parts = line.split('\t');
-    var obj = {};
+    var line=lines[i].replace(/\r/g,'').trim();if(!line)continue;
+    var parts=line.split('\t');
+    var obj={};
     cols.forEach(function(c,ci){obj[c.key]=(parts[ci]||'').trim();});
-    // Skip rows where first column is empty
-    var firstKey = cols[0] ? cols[0].key : '';
-    if(firstKey && !obj[firstKey]) continue;
+    // Only add if first column has value
+    var firstKey=cols[0]?cols[0].key:'';
+    if(firstKey&&!obj[firstKey])continue;
     rows.push(obj);
   }
   if(!rows.length){toast('No valid rows found','error');return;}
-  U.rows = rows;
-  toast(rows.length+' rows parsed');
+  U.rows=rows;
+  toast(rows.length+' rows parsed','success');
   renderUpload();
 }
 
@@ -929,157 +774,122 @@ function handleExcelDrop(e){e.preventDefault();var f=e.dataTransfer.files[0];if(
 function handleExcelFile(input){var f=input.files[0];if(f)readExcelFile(f);}
 
 function readExcelFile(file){
-  var cols = getCurrentUploadCols();
-  var name = file.name.toLowerCase();
-
+  var cols=getCurrentUploadCols();
+  var name=file.name.toLowerCase();
   if(name.endsWith('.csv')){
-    var reader = new FileReader();
-    reader.onload = function(e){
-      var lines = e.target.result.split('\n');
-      var rows = [];
-      var startIdx = 0;
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var lines=e.target.result.split('\n');
+      var rows=[];
+      // Detect header row
+      var startIdx=0;
       if(lines[0]){
-        var firstLower = lines[0].toLowerCase();
-        var hasHeader = cols.some(function(c){
-          return firstLower.indexOf(c.label.toLowerCase())!==-1 || firstLower.indexOf(c.key.toLowerCase())!==-1;
-        });
-        if(hasHeader) startIdx = 1;
+        var firstLower=lines[0].toLowerCase();
+        var hasHeader=cols.some(function(c){return firstLower.indexOf(c.label.toLowerCase())!==-1||firstLower.indexOf(c.key.toLowerCase())!==-1;});
+        if(hasHeader)startIdx=1;
       }
       for(var i=startIdx;i<lines.length;i++){
-        var parts = lines[i].replace(/\r/g,'').split(',');
-        var obj = {};
+        var parts=lines[i].replace(/\r/g,'').split(',');
+        var obj={};
         cols.forEach(function(c,ci){obj[c.key]=(parts[ci]||'').replace(/^"|"$/g,'').trim();});
-        var firstKey = cols[0]?cols[0].key:'';
-        if(firstKey && !obj[firstKey]) continue;
+        var firstKey=cols[0]?cols[0].key:'';
+        if(firstKey&&!obj[firstKey])continue;
         rows.push(obj);
       }
-      U.rows = rows;
-      toast(rows.length+' rows from CSV');
-      renderUpload();
+      U.rows=rows;toast(rows.length+' rows from CSV');renderUpload();
     };
     reader.readAsText(file);
   } else if(window.XLSX){
-    var reader = new FileReader();
-    reader.onload = function(e){
+    var reader=new FileReader();
+    reader.onload=function(e){
       try{
-        var wb = XLSX.read(e.target.result,{type:'array'});
-        var ws = wb.Sheets[wb.SheetNames[0]];
-        var data = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        var wb=XLSX.read(e.target.result,{type:'array'});
+        var ws=wb.Sheets[wb.SheetNames[0]];
+        var data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
         if(!data.length){toast('Empty file','error');return;}
-
         // Detect header row
-        var startIdx = 0;
-        var headerRow = data[0] || [];
-        var firstRowStr = headerRow.join(',').toLowerCase();
-        var hasHeader = cols.some(function(c){
-          return firstRowStr.indexOf(c.label.toLowerCase())!==-1 || firstRowStr.indexOf(c.key.toLowerCase())!==-1;
-        });
-
-        // Build column map: file column index → our key
-        var colMap = {};
+        var startIdx=0;
+        var firstRowStr=(data[0]||[]).join(',').toLowerCase();
+        var hasHeader=cols.some(function(c){return firstRowStr.indexOf(c.label.toLowerCase())!==-1||firstRowStr.indexOf(c.key.toLowerCase())!==-1;});
+        if(hasHeader){startIdx=1;}
+        // Try to match columns by header name
+        var colMap={};// index in file → col key
         if(hasHeader){
-          startIdx = 1;
+          var headerRow=data[0];
           headerRow.forEach(function(h,hi){
-            var hLower = (h||'').toString().toLowerCase().trim();
+            var hLower=(h||'').toString().toLowerCase().trim();
             cols.forEach(function(c){
-              if(hLower===c.label.toLowerCase() || hLower===c.key.toLowerCase()){
-                colMap[hi] = c.key;
+              if(hLower===c.label.toLowerCase()||hLower===c.key.toLowerCase()){
+                colMap[hi]=c.key;
               }
             });
           });
         } else {
-          // No header — map by position
           cols.forEach(function(c,ci){colMap[ci]=c.key;});
         }
-
-        var rows = [];
+        var rows=[];
         for(var i=startIdx;i<data.length;i++){
-          var row = data[i];
-          var obj = {};
-          Object.keys(colMap).forEach(function(ci){
-            obj[colMap[ci]] = (row[parseInt(ci)]||'').toString().trim();
-          });
-          var firstKey = cols[0]?cols[0].key:'';
-          if(firstKey && !obj[firstKey]) continue;
+          var row=data[i];
+          var obj={};
+          Object.keys(colMap).forEach(function(ci){obj[colMap[ci]]=(row[parseInt(ci)]||'').toString().trim();});
+          var firstKey=cols[0]?cols[0].key:'';
+          if(firstKey&&!obj[firstKey])continue;
           rows.push(obj);
         }
-        U.rows = rows;
-        toast(rows.length+' rows from Excel');
-        renderUpload();
+        U.rows=rows;toast(rows.length+' rows from Excel');renderUpload();
       }catch(err){toast('Could not read file: '+err.message,'error');}
     };
     reader.readAsArrayBuffer(file);
-  } else {
-    toast('XLSX library not loaded','error');
-  }
+  } else {toast('XLSX library not loaded','error');}
 }
 
 function previewDistribute(){
-  var cols = getCurrentUploadCols();
-  var firstKey = cols[0] ? cols[0].key : '';
-  var valid = U.rows.filter(function(r){
-    return firstKey ? (r[firstKey]&&r[firstKey].trim()) : true;
-  });
+  var firstKey=getCurrentUploadCols()[0]?getCurrentUploadCols()[0].key:'';
+  var valid=U.rows.filter(function(r){return firstKey?r[firstKey]&&r[firstKey].trim():true;});
   if(!valid.length){toast('Add clients first','error');return;}
-  if(!U.campaignId){toast('Select a campaign first','error');return;}
-  var actEmps = activeEmps();
+  if(!U.campaignId){toast('Select a campaign','error');return;}
+  var actEmps=activeEmps();
   if(!actEmps.length){toast('No active employees to distribute to','error');return;}
-
-  var dist = {};
+  var dist={};
   actEmps.forEach(function(e){dist[e.id]=[];});
-  valid.forEach(function(c,i){
-    dist[actEmps[i % actEmps.length].id].push(c);
-  });
-  U.preview = dist;
+  valid.forEach(function(c,i){dist[actEmps[i%actEmps.length].id].push(c);});
+  U.preview=dist;
   renderUpload();
 }
 
 function confirmDistribute(){
-  if(!U.preview || !U.campaignId) return;
-  var campName = (campById(U.campaignId)||{}).name || 'Campaign';
-  var cols = getCurrentUploadCols();
-
-  var rows = [];
+  if(!U.preview||!U.campaignId)return;
+  var campName=(campById(U.campaignId)||{}).name||'Campaign';
+  var cols=getCurrentUploadCols();
+  var rows=[];
   Object.keys(U.preview).forEach(function(eid){
     U.preview[eid].forEach(function(c){
-      // Store ALL column data in extra_data
-      var extraData = {};
-      cols.forEach(function(col){
-        extraData[col.key] = c[col.key] || '';
-      });
-
-      // Map standard fields: use customer col or first col as display name
-      var nameKey  = cols.find(function(col){return col.key==='customer';}) ? 'customer' : (cols[0]?cols[0].key:'');
-      var phoneKey = cols.find(function(col){return col.key==='phone';});
-      var displayName = c[nameKey] || Object.values(c).find(function(v){return v;}) || 'Client';
-
+      // Build extra_data from all columns
+      var extraData={};
+      cols.forEach(function(col){extraData[col.key]=c[col.key]||'';});
+      // Try to map standard fields
+      var name=c[cols[0]?cols[0].key:''||'customer']||c['customer']||c['name']||Object.values(c)[0]||'';
+      var phone=c['phone']||c['Phone']||'';
       rows.push({
-        name: displayName.trim(),
-        phone: phoneKey ? (c[phoneKey.key]||null) : null,
-        extra_data: extraData,
-        status: 'New',
-        assigned_employee_id: eid,
-        campaign_id: U.campaignId
+        name:name.trim(),
+        phone:phone||null,
+        extra_data:extraData,
+        status:'New',
+        assigned_employee_id:eid,
+        campaign_id:U.campaignId
       });
     });
   });
-
   sb.from('clients').insert(rows).then(function(){
-    // Send notifications
-    var notifs = [];
+    var notifs=[];
     Object.keys(U.preview).forEach(function(eid){
       if(U.preview[eid].length){
-        notifs.push({
-          employee_id: eid,
-          type: 'data_updated',
-          message: 'New data — '+U.preview[eid].length+' client(s) in '+campName,
-          read: false
-        });
+        notifs.push({employee_id:eid,type:'data_updated',message:'New data - '+U.preview[eid].length+' client(s) in '+campName,read:false});
       }
     });
-    if(notifs.length) sb.from('notifications').insert(notifs).then(function(){},function(){});
+    if(notifs.length)sb.from('notifications').insert(notifs).catch(function(){});
     toast(rows.length+' clients distributed successfully');
-    U = {campaignId:'',rows:[],preview:null,uploadTab:'paste'};
+    U={campaignId:'',rows:[],preview:null,uploadTab:'paste',colConfig:null};
     fetchAll().then(renderUpload);
   }).catch(function(e){toast(e.message,'error');});
 }
@@ -1088,58 +898,53 @@ function confirmDistribute(){
 // Q&A
 // ============================================================
 function renderQA(){
-  var m = document.getElementById('main-content');
-  var qs = S.questions.slice();
-  if(qaFilter.employee) qs = qs.filter(function(q){return q.employee_id===qaFilter.employee;});
-  if(qaFilter.campaign) qs = qs.filter(function(q){return q.related_campaign_id===qaFilter.campaign;});
-  if(qaFilter.status)   qs = qs.filter(function(q){return q.status===qaFilter.status;});
+  var m=document.getElementById('main-content');
+  var qs=S.questions.slice();
+  if(qaFilter.employee)qs=qs.filter(function(q){return q.employee_id===qaFilter.employee;});
+  if(qaFilter.campaign)qs=qs.filter(function(q){return q.related_campaign_id===qaFilter.campaign;});
+  if(qaFilter.status)qs=qs.filter(function(q){return q.status===qaFilter.status;});
   qs.sort(function(a,b){
-    if(a.status==='pending'&&b.status!=='pending') return -1;
-    if(a.status!=='pending'&&b.status==='pending') return 1;
+    if(a.status==='pending'&&b.status!=='pending')return -1;
+    if(a.status!=='pending'&&b.status==='pending')return 1;
     return new Date(b.created_at)-new Date(a.created_at);
   });
-
-  var empOpts  = '<option value="">All Employees</option>'+S.employees.map(function(e){return'<option value="'+e.id+'" '+(qaFilter.employee===e.id?'selected':'')+'>'+esc(e.name)+'</option>';}).join('');
-  var campOpts = '<option value="">All Campaigns</option>'+S.campaigns.map(function(c){return'<option value="'+c.id+'" '+(qaFilter.campaign===c.id?'selected':'')+'>'+esc(c.name)+'</option>';}).join('');
-  var pc = S.questions.filter(function(q){return q.status==='pending';}).length;
-
-  m.innerHTML = hdr('Q&A Inbox', pc+' pending') +
-  '<div class="card mb-6 fade-in"><div class="grid grid-cols-1 sm:grid-cols-3 gap-3">' +
-  '<select class="input" onchange="qaFilter.employee=this.value;renderQA()">'+empOpts+'</select>' +
-  '<select class="input" onchange="qaFilter.campaign=this.value;renderQA()">'+campOpts+'</select>' +
-  '<select class="input" onchange="qaFilter.status=this.value;renderQA()"><option value="">All Status</option><option value="pending" '+(qaFilter.status==='pending'?'selected':'')+'>Pending</option><option value="answered" '+(qaFilter.status==='answered'?'selected':'')+'>Answered</option></select>' +
-  '</div></div>' +
-  '<div class="space-y-3 fade-in">' + (qs.length ? qs.map(function(q){
-    var emp = empById(q.employee_id);
-    var cl  = q.related_client_id ? clientById(q.related_client_id) : null;
-    var cp  = q.related_campaign_id ? campById(q.related_campaign_id) : null;
-    return '<div class="card"><div class="flex items-start gap-3">' +
-      (emp ? av(emp.name,emp.color||'#3b82f6',36) : '<div class="avatar" style="width:36px;height:36px;background:#475569">?</div>') +
-      '<div class="flex-1 min-w-0"><div class="flex items-center gap-2 mb-1 flex-wrap">' +
-      '<span class="text-sm font-semibold text-white">'+esc(q.employee_name||'Employee')+'</span>' +
-      sBadge(q.status) +
-      '<span class="text-xs text-slate-500">'+timeAgo(q.created_at)+'</span>' +
-      (cl?'<span class="text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">'+esc(cl.name)+'</span>':'') +
-      (cp?'<span class="text-xs text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded">'+esc(cp.name)+'</span>':'') +
-      '</div><p class="text-sm text-slate-300 mb-3">'+esc(q.question_text)+'</p>' +
-      (q.status==='pending' ?
-        '<div class="flex gap-2"><textarea id="reply-'+q.id+'" class="input flex-1" placeholder="Type your reply..." rows="2"></textarea><button class="btn btn-primary self-end" onclick="sendReply(\''+q.id+'\')"><i data-lucide="send" class="w-4 h-4"></i> Send</button></div>' :
-        '<div class="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10"><p class="text-xs text-emerald-400 font-medium mb-1">Reply — '+fmtDT(q.replied_at)+'</p><p class="text-sm text-slate-200">'+esc(q.admin_reply)+'</p></div>') +
-      '</div></div></div>';
-  }).join('') : '<div class="card text-center py-12"><p class="text-slate-500">No questions</p></div>') + '</div>';
+  var empOpts='<option value="">All Employees</option>'+S.employees.map(function(e){return'<option value="'+e.id+'" '+(qaFilter.employee===e.id?'selected':'')+'>'+esc(e.name)+'</option>';}).join('');
+  var campOpts='<option value="">All Campaigns</option>'+S.campaigns.map(function(c){return'<option value="'+c.id+'" '+(qaFilter.campaign===c.id?'selected':'')+'>'+esc(c.name)+'</option>';}).join('');
+  var pc=S.questions.filter(function(q){return q.status==='pending';}).length;
+  m.innerHTML=hdr('Q&A Inbox',pc+' pending')+
+  '<div class="card mb-6 fade-in"><div class="grid grid-cols-1 sm:grid-cols-3 gap-3">'+
+  '<select class="input" onchange="qaFilter.employee=this.value;renderQA()">'+empOpts+'</select>'+
+  '<select class="input" onchange="qaFilter.campaign=this.value;renderQA()">'+campOpts+'</select>'+
+  '<select class="input" onchange="qaFilter.status=this.value;renderQA()"><option value="">All Status</option><option value="pending" '+(qaFilter.status==='pending'?'selected':'')+'>Pending</option><option value="answered" '+(qaFilter.status==='answered'?'selected':'')+'>Answered</option></select>'+
+  '</div></div>'+
+  '<div class="space-y-3 fade-in">'+(qs.length?qs.map(function(q){
+    var emp=empById(q.employee_id);
+    var cl=q.related_client_id?clientById(q.related_client_id):null;
+    var cp=q.related_campaign_id?campById(q.related_campaign_id):null;
+    return'<div class="card"><div class="flex items-start gap-3">'+
+    (emp?av(emp.name,emp.color||'#3b82f6',36):'<div class="avatar" style="width:36px;height:36px;background:#475569">?</div>')+
+    '<div class="flex-1 min-w-0"><div class="flex items-center gap-2 mb-1 flex-wrap">'+
+    '<span class="text-sm font-semibold text-white">'+esc(q.employee_name||'Employee')+'</span>'+
+    sBadge(q.status)+
+    '<span class="text-xs text-slate-500">'+timeAgo(q.created_at)+'</span>'+
+    (cl?'<span class="text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">'+esc(cl.name)+'</span>':'')+
+    (cp?'<span class="text-xs text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded">'+esc(cp.name)+'</span>':'')+
+    '</div><p class="text-sm text-slate-300 mb-3">'+esc(q.question_text)+'</p>'+
+    (q.status==='pending'?
+      '<div class="flex gap-2"><textarea id="reply-'+q.id+'" class="input flex-1" placeholder="Type your reply..." rows="2"></textarea><button class="btn btn-primary self-end" onclick="sendReply(\''+q.id+'\')"><i data-lucide="send" class="w-4 h-4"></i> Send</button></div>':
+      '<div class="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10"><p class="text-xs text-emerald-400 font-medium mb-1">Reply — '+fmtDT(q.replied_at)+'</p><p class="text-sm text-slate-200">'+esc(q.admin_reply)+'</p></div>')+
+    '</div></div></div>';
+  }).join(''):'<div class="card text-center py-12"><p class="text-slate-500">No questions</p></div>')+'</div>';
   lucide.createIcons();
 }
-
 function sendReply(qid){
-  var ta = document.getElementById('reply-'+qid);
+  var ta=document.getElementById('reply-'+qid);
   if(!ta||!ta.value.trim()){toast('Type a reply','error');return;}
   sb.from('questions').update({status:'answered',admin_reply:ta.value.trim(),replied_at:new Date().toISOString()}).eq('id',qid)
     .then(function(){
-      var q = S.questions.find(function(x){return x.id===qid;});
-      if(q&&q.employee_id)
-        sb.from('notifications').insert({employee_id:q.employee_id,type:'question_answered',message:'Your question has been answered',read:false}).then(function(){},function(){});
-      toast('Reply sent');
-      fetchAll().then(renderQA);
+      var q=S.questions.find(function(x){return x.id===qid;});
+      if(q&&q.employee_id)sb.from('notifications').insert({employee_id:q.employee_id,type:'question_answered',message:'Your question has been answered',read:false}).catch(function(){});
+      toast('Reply sent');fetchAll().then(renderQA);
     }).catch(function(e){toast(e.message,'error');});
 }
 
@@ -1147,172 +952,133 @@ function sendReply(qid){
 // REPORTS
 // ============================================================
 function renderReports(){
-  var m = document.getElementById('main-content');
-  var data = S.clients.slice();
-  if(rptFilter.campaign) data = data.filter(function(c){return c.campaign_id===rptFilter.campaign;});
-  if(rptFilter.employee) data = data.filter(function(c){return c.assigned_employee_id===rptFilter.employee;});
-  if(rptFilter.status)   data = data.filter(function(c){return c.status===rptFilter.status;});
-  if(rptFilter.dateFrom) data = data.filter(function(c){return c.created_at>=rptFilter.dateFrom;});
-  if(rptFilter.dateTo)   data = data.filter(function(c){return c.created_at<=rptFilter.dateTo+'T23:59:59';});
+  var m=document.getElementById('main-content');
+  var data=S.clients.slice();
+  if(rptFilter.campaign)data=data.filter(function(c){return c.campaign_id===rptFilter.campaign;});
+  if(rptFilter.employee)data=data.filter(function(c){return c.assigned_employee_id===rptFilter.employee;});
+  if(rptFilter.status)data=data.filter(function(c){return c.status===rptFilter.status;});
+  if(rptFilter.dateFrom)data=data.filter(function(c){return c.created_at>=rptFilter.dateFrom;});
+  if(rptFilter.dateTo)data=data.filter(function(c){return c.created_at<=rptFilter.dateTo+'T23:59:59';});
+  var totalPages=Math.ceil(data.length/RPT_PAGE_SIZE)||1;
+  if(rptFilter.page>=totalPages)rptFilter.page=0;
+  var pageData=data.slice(rptFilter.page*RPT_PAGE_SIZE,(rptFilter.page+1)*RPT_PAGE_SIZE);
 
-  var totalPages = Math.ceil(data.length/RPT_PAGE_SIZE)||1;
-  if(rptFilter.page>=totalPages) rptFilter.page=0;
-  var pageData = data.slice(rptFilter.page*RPT_PAGE_SIZE,(rptFilter.page+1)*RPT_PAGE_SIZE);
-  var visCols  = rptFilter.campaign ? getVisibleCols(rptFilter.campaign) : DEFAULT_COLUMNS.filter(function(c){return c.visible;});
+  // Get visible cols for selected campaign (or default)
+  var visCols=rptFilter.campaign?getVisibleCols(rptFilter.campaign):DEFAULT_COLUMNS.filter(function(c){return c.visible;});
 
-  m.innerHTML = hdr('Reports & Export','Filter and export client data') +
-  '<div class="card mb-6 fade-in"><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">' +
-  '<select class="input" onchange="rptFilter.campaign=this.value;rptFilter.page=0;renderReports()"><option value="">All Campaigns</option>'+S.campaigns.map(function(c){return'<option value="'+c.id+'" '+(rptFilter.campaign===c.id?'selected':'')+'>'+esc(c.name)+'</option>';}).join('')+'</select>' +
-  '<select class="input" onchange="rptFilter.employee=this.value;rptFilter.page=0;renderReports()"><option value="">All Employees</option>'+S.employees.map(function(e){return'<option value="'+e.id+'" '+(rptFilter.employee===e.id?'selected':'')+'>'+esc(e.name)+'</option>';}).join('')+'</select>' +
-  '<select class="input" onchange="rptFilter.status=this.value;rptFilter.page=0;renderReports()"><option value="">All Status</option>'+['New','Contacted','Interested','Closed'].map(function(s){return'<option value="'+s+'" '+(rptFilter.status===s?'selected':'')+'>'+s+'</option>';}).join('')+'</select>' +
-  '<input type="date" class="input" value="'+rptFilter.dateFrom+'" onchange="rptFilter.dateFrom=this.value;rptFilter.page=0;renderReports()">' +
-  '<input type="date" class="input" value="'+rptFilter.dateTo+'" onchange="rptFilter.dateTo=this.value;rptFilter.page=0;renderReports()">' +
-  '</div></div>' +
-  '<div class="flex gap-2 mb-6 fade-in flex-wrap">' +
-  '<button class="btn btn-primary btn-sm" onclick="exportClientsCSV()"><i data-lucide="download" class="w-3.5 h-3.5"></i> Export Clients</button>' +
-  '<button class="btn btn-primary btn-sm" onclick="exportQaCSV()"><i data-lucide="download" class="w-3.5 h-3.5"></i> Export Q&A</button>' +
-  '<button class="btn btn-primary btn-sm" onclick="exportCampSummaryCSV()"><i data-lucide="download" class="w-3.5 h-3.5"></i> Export Campaigns</button>' +
-  '</div>' +
-  '<div class="card fade-in">' +
-  '<div class="flex items-center justify-between mb-4 flex-wrap gap-2">' +
-  '<h3 class="text-sm font-bold text-white">Results</h3>' +
-  '<div class="flex items-center gap-3"><span class="text-xs text-slate-400">'+data.length+' total · Page '+(rptFilter.page+1)+'/'+totalPages+'</span>' +
-  '<div class="flex gap-1">' +
-  '<button class="btn btn-ghost btn-sm" '+(rptFilter.page===0?'disabled style="opacity:0.4"':'')+' onclick="rptFilter.page--;renderReports()"><i data-lucide="chevron-left" class="w-3.5 h-3.5"></i></button>' +
-  '<button class="btn btn-ghost btn-sm" '+(rptFilter.page>=totalPages-1?'disabled style="opacity:0.4"':'')+' onclick="rptFilter.page++;renderReports()"><i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></button>' +
-  '</div></div></div>' +
-  (pageData.length ?
-    '<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5">' +
-    visCols.map(function(c){return'<th class="pb-3 pr-4">'+esc(c.label)+'</th>';}).join('') +
-    '<th class="pb-3 pr-4">Employee</th><th class="pb-3">Status</th></tr></thead><tbody>' +
+  m.innerHTML=hdr('Reports & Export','Filter and export client data')+
+  '<div class="card mb-6 fade-in"><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">'+
+  '<select class="input" onchange="rptFilter.campaign=this.value;rptFilter.page=0;renderReports()"><option value="">All Campaigns</option>'+S.campaigns.map(function(c){return'<option value="'+c.id+'" '+(rptFilter.campaign===c.id?'selected':'')+'>'+esc(c.name)+'</option>';}).join('')+'</select>'+
+  '<select class="input" onchange="rptFilter.employee=this.value;rptFilter.page=0;renderReports()"><option value="">All Employees</option>'+S.employees.map(function(e){return'<option value="'+e.id+'" '+(rptFilter.employee===e.id?'selected':'')+'>'+esc(e.name)+'</option>';}).join('')+'</select>'+
+  '<select class="input" onchange="rptFilter.status=this.value;rptFilter.page=0;renderReports()"><option value="">All Status</option>'+['New','Contacted','Interested','Closed'].map(function(s){return'<option value="'+s+'" '+(rptFilter.status===s?'selected':'')+'>'+s+'</option>';}).join('')+'</select>'+
+  '<input type="date" class="input" value="'+rptFilter.dateFrom+'" onchange="rptFilter.dateFrom=this.value;rptFilter.page=0;renderReports()">'+
+  '<input type="date" class="input" value="'+rptFilter.dateTo+'" onchange="rptFilter.dateTo=this.value;rptFilter.page=0;renderReports()">'+
+  '</div></div>'+
+  '<div class="flex gap-2 mb-6 fade-in flex-wrap">'+
+  '<button class="btn btn-primary btn-sm" onclick="exportClientsCSV()"><i data-lucide="download" class="w-3.5 h-3.5"></i> Export Clients</button>'+
+  '<button class="btn btn-primary btn-sm" onclick="exportQaCSV()"><i data-lucide="download" class="w-3.5 h-3.5"></i> Export Q&A</button>'+
+  '<button class="btn btn-primary btn-sm" onclick="exportCampSummaryCSV()"><i data-lucide="download" class="w-3.5 h-3.5"></i> Export Campaigns</button>'+
+  '</div>'+
+  '<div class="card fade-in">'+
+  '<div class="flex items-center justify-between mb-4 flex-wrap gap-2">'+
+  '<h3 class="text-sm font-bold text-white">Results</h3>'+
+  '<div class="flex items-center gap-3"><span class="text-xs text-slate-400">'+data.length+' total · Page '+(rptFilter.page+1)+'/'+totalPages+'</span>'+
+  '<div class="flex gap-1">'+
+  '<button class="btn btn-ghost btn-sm" '+(rptFilter.page===0?'disabled style="opacity:0.4"':'')+' onclick="rptFilter.page--;renderReports()"><i data-lucide="chevron-left" class="w-3.5 h-3.5"></i></button>'+
+  '<button class="btn btn-ghost btn-sm" '+(rptFilter.page>=totalPages-1?'disabled style="opacity:0.4"':'')+' onclick="rptFilter.page++;renderReports()"><i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></button>'+
+  '</div></div></div>'+
+  (pageData.length?
+    '<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5">'+
+    visCols.map(function(c){return'<th class="pb-3 pr-4">'+esc(c.label)+'</th>';}).join('')+
+    '<th class="pb-3 pr-4">Employee</th><th class="pb-3">Status</th></tr></thead><tbody>'+
     pageData.map(function(c){
-      var ep    = empById(c.assigned_employee_id);
-      var extra = c.extra_data || {};
-      return '<tr class="table-row border-b border-white/[0.03]">' +
-        visCols.map(function(col){return'<td class="py-2.5 pr-4 text-slate-300 text-xs">'+esc(extra[col.key]||c[col.key]||'-')+'</td>';}).join('') +
-        '<td class="py-2.5 pr-4 text-xs text-slate-400">'+esc(ep?ep.name:'')+'</td>' +
-        '<td class="py-2.5">'+sBadge(c.status)+'</td></tr>';
-    }).join('') +
-    '</tbody></table></div>' :
-    '<p class="text-slate-500 text-sm text-center py-6">No results</p>') +
-  '</div>';
+      var ep=empById(c.assigned_employee_id);
+      var extra=c.extra_data||{};
+      return'<tr class="table-row border-b border-white/[0.03]">'+
+      visCols.map(function(col){return'<td class="py-2.5 pr-4 text-slate-300 text-xs">'+esc(extra[col.key]||c[col.key]||'-')+'</td>';}).join('')+
+      '<td class="py-2.5 pr-4 text-xs text-slate-400">'+esc(ep?ep.name:'')+'</td>'+
+      '<td class="py-2.5">'+sBadge(c.status)+'</td></tr>';
+    }).join('')+'</tbody></table></div>':
+    '<p class="text-slate-500 text-sm text-center py-6">No results</p>')+'</div>';
   lucide.createIcons();
 }
-
 function exportClientsCSV(){
-  var visCols = rptFilter.campaign ? getVisibleCols(rptFilter.campaign) : DEFAULT_COLUMNS.filter(function(c){return c.visible;});
-  var data = S.clients.slice();
-  if(rptFilter.campaign) data=data.filter(function(c){return c.campaign_id===rptFilter.campaign;});
-  if(rptFilter.employee) data=data.filter(function(c){return c.assigned_employee_id===rptFilter.employee;});
-  if(rptFilter.status)   data=data.filter(function(c){return c.status===rptFilter.status;});
+  var visCols=rptFilter.campaign?getVisibleCols(rptFilter.campaign):DEFAULT_COLUMNS.filter(function(c){return c.visible;});
   csvExport('clients.csv',
     visCols.map(function(c){return c.label;}).concat(['Employee','Status']),
-    data.map(function(c){
-      var ep    = empById(c.assigned_employee_id);
-      var extra = c.extra_data || {};
+    S.clients.map(function(c){
+      var ep=empById(c.assigned_employee_id);
+      var extra=c.extra_data||{};
       return visCols.map(function(col){return extra[col.key]||c[col.key]||'';}).concat([ep?ep.name:'',c.status]);
     })
-  );
-  toast('Exported');
+  );toast('Exported');
 }
-function exportQaCSV(){
-  csvExport('qa.csv',['Employee','Question','Status','Reply','Date'],
-    S.questions.map(function(q){return[q.employee_name||'',q.question_text,q.status,q.admin_reply||'',q.created_at];}));
-  toast('Exported');
-}
-function exportCampSummaryCSV(){
-  csvExport('campaigns.csv',['Campaign','Type','Status','Clients','New','Contacted','Closed'],
-    S.campaigns.map(function(c){
-      var cc=S.clients.filter(function(cl){return cl.campaign_id===c.id;});
-      return[c.name,c.type,c.status,cc.length,
-        cc.filter(function(x){return x.status==='New';}).length,
-        cc.filter(function(x){return x.status==='Contacted';}).length,
-        cc.filter(function(x){return x.status==='Closed';}).length];
-    }));
-  toast('Exported');
-}
+function exportQaCSV(){csvExport('qa.csv',['Employee','Question','Status','Reply','Date'],S.questions.map(function(q){return[q.employee_name||'',q.question_text,q.status,q.admin_reply||'',q.created_at];}));toast('Exported');}
+function exportCampSummaryCSV(){csvExport('campaigns.csv',['Campaign','Type','Status','Clients','New','Contacted','Closed'],S.campaigns.map(function(c){var cc=S.clients.filter(function(cl){return cl.campaign_id===c.id;});return[c.name,c.type,c.status,cc.length,cc.filter(function(x){return x.status==='New';}).length,cc.filter(function(x){return x.status==='Contacted';}).length,cc.filter(function(x){return x.status==='Closed';}).length];}));toast('Exported');}
 
 // ============================================================
 // TEAM MANAGEMENT
 // ============================================================
 function renderTeam(){
-  var m = document.getElementById('main-content');
-  var activeList   = activeEmps();
-  var inactiveList = S.employees.filter(function(e){return !e.is_active;});
-
-  m.innerHTML = hdr('Team Management',S.employees.length+' total employees',
-    '<button class="btn btn-primary" onclick="T={showForm:true,editId:null,name:\'\',email:\'\',phone:\'\'};renderTeam()"><i data-lucide="plus" class="w-4 h-4"></i> Add Employee</button>') +
-  (T.showForm ?
-    '<div class="card mb-6 fade-in border-blue-500/20"><h3 class="text-sm font-bold text-white mb-4">'+(T.editId?'Edit':'Add')+' Employee</h3>' +
-    '<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">' +
-    '<div><label class="text-xs text-slate-400 mb-1 block">Name *</label><input id="tn" class="input" value="'+esc(T.name)+'" placeholder="Full name"></div>' +
-    '<div><label class="text-xs text-slate-400 mb-1 block">Email *</label><input id="te" class="input" value="'+esc(T.email)+'" placeholder="Email"></div>' +
-    '<div><label class="text-xs text-slate-400 mb-1 block">Phone</label><input id="tp" class="input" value="'+esc(T.phone)+'" placeholder="Phone"></div>' +
-    '</div><div class="flex gap-2 mt-4">' +
-    '<button class="btn btn-primary" onclick="saveEmployee()">'+(T.editId?'Update':'Add')+'</button>' +
-    '<button class="btn btn-ghost" onclick="T={showForm:false,editId:null,name:\'\',email:\'\',phone:\'\'};renderTeam()">Cancel</button>' +
-    '</div></div>' : '') +
+  var m=document.getElementById('main-content');
+  var activeList=activeEmps();
+  var inactiveList=S.employees.filter(function(e){return!e.is_active;});
+  m.innerHTML=hdr('Team Management',S.employees.length+' total employees',
+    '<button class="btn btn-primary" onclick="T={showForm:true,editId:null,name:\'\',email:\'\',phone:\'\'};renderTeam()"><i data-lucide="plus" class="w-4 h-4"></i> Add Employee</button>')+
+  (T.showForm?'<div class="card mb-6 fade-in border-blue-500/20"><h3 class="text-sm font-bold text-white mb-4">'+(T.editId?'Edit':'Add')+' Employee</h3>'+
+  '<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">'+
+  '<div><label class="text-xs text-slate-400 mb-1 block">Name *</label><input id="tn" class="input" value="'+esc(T.name)+'" placeholder="Full name"></div>'+
+  '<div><label class="text-xs text-slate-400 mb-1 block">Email *</label><input id="te" class="input" value="'+esc(T.email)+'" placeholder="Email"></div>'+
+  '<div><label class="text-xs text-slate-400 mb-1 block">Phone</label><input id="tp" class="input" value="'+esc(T.phone)+'" placeholder="Phone"></div>'+
+  '</div><div class="flex gap-2 mt-4"><button class="btn btn-primary" onclick="saveEmployee()">'+(T.editId?'Update':'Add')+'</button><button class="btn btn-ghost" onclick="T={showForm:false,editId:null,name:\'\',email:\'\',phone:\'\'};renderTeam()">Cancel</button></div></div>':'')+
 
   // Active section
-  '<div class="card mb-6 fade-in"><div class="flex items-center justify-between mb-4"><h3 class="text-sm font-bold text-white">Active Agents</h3><span class="badge badge-active">'+activeList.length+'</span></div>' +
-  (activeList.length ?
-    '<div class="space-y-2">'+activeList.map(function(e){
-      var cc = S.clients.filter(function(c){return c.assigned_employee_id===e.id;}).length;
-      return '<div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] table-row">' +
-        '<div class="flex items-center gap-3">'+av(e.name,e.color||'#3b82f6',34)+
-        '<div><p class="text-sm font-semibold text-white">'+esc(e.name)+'</p><p class="text-xs text-slate-500">'+esc(e.email)+'</p></div></div>' +
-        '<div class="flex items-center gap-3">' +
-        '<span class="badge badge-active text-xs">Active</span>'+pDot(true)+
-        '<span class="text-xs text-white font-semibold">'+cc+'</span><span class="text-xs text-slate-500">clients</span>' +
-        '<button class="btn btn-sm" style="background:rgba(100,116,139,0.1);color:#64748b;border:1px solid rgba(100,116,139,0.2)" onclick="adminSetActive(\''+e.id+'\',false)"><i data-lucide="power" class="w-3.5 h-3.5"></i> Deactivate</button>' +
-        '<button class="btn btn-ghost btn-sm" onclick="editEmployee(\''+e.id+'\')"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>' +
-        '<button class="btn btn-danger btn-sm" onclick="deleteEmployee(\''+e.id+'\',\''+esc(e.name).replace(/'/g,'')+'\')"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>' +
-        '</div></div>';
-    }).join('') + '</div>' :
-    '<p class="text-slate-500 text-sm text-center py-4">No active agents</p>') +
-  '</div>' +
+  '<div class="card mb-6 fade-in">'+
+  '<div class="flex items-center justify-between mb-4"><h3 class="text-sm font-bold text-white">Active Agents</h3><span class="badge badge-active">'+activeList.length+'</span></div>'+
+  (activeList.length?'<div class="space-y-2">'+activeList.map(function(e){
+    var cc=S.clients.filter(function(c){return c.assigned_employee_id===e.id;}).length;
+    return'<div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] table-row">'+
+    '<div class="flex items-center gap-3">'+av(e.name,e.color||'#3b82f6',34)+
+    '<div><p class="text-sm font-semibold text-white">'+esc(e.name)+'</p><p class="text-xs text-slate-500">'+esc(e.email)+'</p></div></div>'+
+    '<div class="flex items-center gap-3">'+
+    '<span class="badge badge-active text-xs">Active</span>'+pDot(true)+
+    '<span class="text-xs text-white font-semibold">'+cc+'</span><span class="text-xs text-slate-500">clients</span>'+
+    '<button class="btn btn-sm" style="background:rgba(100,116,139,0.1);color:#64748b;border:1px solid rgba(100,116,139,0.2)" onclick="adminSetActive(\''+e.id+'\',false)"><i data-lucide="power" class="w-3.5 h-3.5"></i> Deactivate</button>'+
+    '<button class="btn btn-ghost btn-sm" onclick="editEmployee(\''+e.id+'\')"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>'+
+    '<button class="btn btn-danger btn-sm" onclick="deleteEmployee(\''+e.id+'\',\''+esc(e.name).replace(/'/g,'')+'\')"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>'+
+    '</div></div>';
+  }).join('')+'</div>':'<p class="text-slate-500 text-sm text-center py-4">No active agents</p>')+'</div>'+
 
   // Inactive section
-  '<div class="card fade-in"><div class="flex items-center justify-between mb-4"><h3 class="text-sm font-bold text-white">Inactive Agents</h3><span class="badge badge-ended">'+inactiveList.length+'</span></div>' +
-  (inactiveList.length ?
-    '<div class="space-y-2">'+inactiveList.map(function(e){
-      return '<div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] table-row">' +
-        '<div class="flex items-center gap-3">'+av(e.name,e.color||'#475569',34)+
-        '<div><p class="text-sm text-slate-400">'+esc(e.name)+'</p><p class="text-xs text-slate-600">'+esc(e.email)+'</p></div></div>' +
-        '<div class="flex items-center gap-2">'+pDot(false)+
-        '<button class="btn btn-success btn-sm" onclick="adminSetActive(\''+e.id+'\',true)"><i data-lucide="power" class="w-3.5 h-3.5"></i> Activate</button>' +
-        '<button class="btn btn-ghost btn-sm" onclick="editEmployee(\''+e.id+'\')"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>' +
-        '<button class="btn btn-danger btn-sm" onclick="deleteEmployee(\''+e.id+'\',\''+esc(e.name).replace(/'/g,'')+'\')"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>' +
-        '</div></div>';
-    }).join('') + '</div>' :
-    '<p class="text-slate-500 text-sm text-center py-4">Everyone is active!</p>') +
-  '</div>';
+  '<div class="card fade-in">'+
+  '<div class="flex items-center justify-between mb-4"><h3 class="text-sm font-bold text-white">Inactive Agents</h3><span class="badge badge-ended">'+inactiveList.length+'</span></div>'+
+  (inactiveList.length?'<div class="space-y-2">'+inactiveList.map(function(e){
+    return'<div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] table-row">'+
+    '<div class="flex items-center gap-3">'+av(e.name,e.color||'#475569',34)+
+    '<div><p class="text-sm text-slate-400">'+esc(e.name)+'</p><p class="text-xs text-slate-600">'+esc(e.email)+'</p></div></div>'+
+    '<div class="flex items-center gap-2">'+pDot(false)+
+    '<button class="btn btn-success btn-sm" onclick="adminSetActive(\''+e.id+'\',true)"><i data-lucide="power" class="w-3.5 h-3.5"></i> Activate</button>'+
+    '<button class="btn btn-ghost btn-sm" onclick="editEmployee(\''+e.id+'\')"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>'+
+    '<button class="btn btn-danger btn-sm" onclick="deleteEmployee(\''+e.id+'\',\''+esc(e.name).replace(/'/g,'')+'\')"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>'+
+    '</div></div>';
+  }).join('')+'</div>':'<p class="text-slate-500 text-sm text-center py-4">Everyone is active!</p>')+'</div>';
   lucide.createIcons();
 }
 
 function adminSetActive(eid,val){
   sb.from('employees').update({is_active:val}).eq('id',eid)
-    .then(function(){
-      toast(val ? 'Activated' : 'Deactivated');
-      fetchAll().then(function(){
-        renderTeam();
-        if(S.currentPage==='dashboard') renderDashboard();
-        if(S.currentPage==='schedule')  renderSchedule();
-      });
-    })
+    .then(function(){toast(val?'Activated':'Deactivated');fetchAll().then(function(){renderTeam();if(S.currentPage==='dashboard')renderDashboard();});})
     .catch(function(e){toast(e.message,'error');});
 }
-
 function editEmployee(id){
-  var e = empById(id);if(!e)return;
-  T = {showForm:true,editId:id,name:e.name,email:e.email,phone:e.phone||''};
+  var e=empById(id);if(!e)return;
+  T={showForm:true,editId:id,name:e.name,email:e.email,phone:e.phone||''};
   renderTeam();
 }
-
 function saveEmployee(){
-  var n  = document.getElementById('tn').value.trim();
-  var em = document.getElementById('te').value.trim();
-  var ph = document.getElementById('tp').value.trim();
+  var n=document.getElementById('tn').value.trim();
+  var em=document.getElementById('te').value.trim();
+  var ph=document.getElementById('tp').value.trim();
   if(!n||!em){toast('Name and email required','error');return;}
   if(T.editId){
     sb.from('employees').update({name:n,email:em,phone:ph}).eq('id',T.editId)
@@ -1324,7 +1090,6 @@ function saveEmployee(){
       .catch(function(e){toast(e.message,'error');});
   }
 }
-
 function deleteEmployee(id,name){
   showConfirm('Delete Employee','Delete "'+name+'"? This cannot be undone.',function(){
     sb.from('employees').delete().eq('id',id)
@@ -1337,81 +1102,65 @@ function deleteEmployee(id,name){
 // MY CLIENTS (Employee + Admin view)
 // ============================================================
 function renderMyClients(){
-  var m = document.getElementById('main-content');
-  var cls = myClients();
-  if(empClientFilter) cls = cls.filter(function(c){return c.campaign_id===empClientFilter;});
+  var m=document.getElementById('main-content');
+  var cls=myClients();
+  if(empClientFilter)cls=cls.filter(function(c){return c.campaign_id===empClientFilter;});
 
-  var campOpts = '<option value="">All Campaigns</option>';
-  var seen = {};
+  var campOpts='<option value="">All Campaigns</option>';
+  var seen={};
   myClients().forEach(function(c){
     if(!seen[c.campaign_id]){
-      seen[c.campaign_id] = true;
-      var cp = campById(c.campaign_id);
-      if(cp) campOpts += '<option value="'+c.campaign_id+'" '+(empClientFilter===c.campaign_id?'selected':'')+'>'+esc(cp.name)+'</option>';
+      seen[c.campaign_id]=true;
+      var cp=campById(c.campaign_id);
+      if(cp)campOpts+='<option value="'+c.campaign_id+'" '+(empClientFilter===c.campaign_id?'selected':'')+'>'+esc(cp.name)+'</option>';
     }
   });
 
-  // Actions for employee: show configure columns button if employee
-  var actions = S.role==='employee' ?
-    '<button class="btn btn-ghost btn-sm" onclick="openColConfig(\''+empClientFilter+'\',\'view\')"><i data-lucide="settings-2" class="w-4 h-4"></i> Columns</button>' : '';
+  m.innerHTML=hdr(S.role==='admin'?'All Clients':'My Clients',cls.length+' clients')+
+  '<div class="mb-6 fade-in"><select class="input max-w-xs" onchange="empClientFilter=this.value||\'\';renderMyClients()">'+campOpts+'</select></div>'+
+  '<div class="space-y-3 fade-in">'+(cls.length?cls.map(function(c){
+    var isExp=expandedClientId===c.id;
+    var hist=clientHistory(c.id);
+    var extra=c.extra_data||{};
+    var camp=campById(c.campaign_id);
+    var visCols=camp?getVisibleCols(camp.id):DEFAULT_COLUMNS.filter(function(x){return x.visible;});
+    // Get display name from extra_data first col or client name
+    var displayName=c.name||Object.values(extra)[0]||'Client';
+    var subInfo=visCols.slice(1,3).map(function(col){return extra[col.key]||c[col.key]||'';}).filter(Boolean).join(' · ');
 
-  m.innerHTML = hdr(S.role==='admin'?'All Clients':'My Clients', cls.length+' clients', actions) +
-  '<div class="mb-6 fade-in flex gap-3 flex-wrap items-center">' +
-  '<select class="input max-w-xs" onchange="empClientFilter=this.value||\'\';renderMyClients()">'+campOpts+'</select>' +
-  (S.role==='admin' ? '<button class="btn btn-ghost btn-sm" onclick="openColConfig(empClientFilter||\'\',\'view\')"><i data-lucide="settings-2" class="w-4 h-4"></i> Columns</button>' : '') +
-  '</div>' +
-  '<div class="space-y-3 fade-in">' +
-  (cls.length ? cls.map(function(c){
-    var isExp = expandedClientId===c.id;
-    var hist  = clientHistory(c.id);
-    var extra = c.extra_data || {};
-    var camp  = campById(c.campaign_id);
-    var visCols = camp ? getVisibleCols(camp.id) : DEFAULT_COLUMNS.filter(function(x){return x.visible;});
-    var displayName = (extra[visCols[0]?visCols[0].key:''] || c.name || 'Client');
-    var subInfo = visCols.slice(1,3).map(function(col){return extra[col.key]||'';}).filter(Boolean).join(' · ');
-
-    return '<div class="card client-card '+(isExp?'border-blue-500/30':'')+'">'+
-      '<div class="flex items-center justify-between" onclick="expandedClientId='+(isExp?'null':'\''+c.id+'\'')+';renderMyClients()">' +
-      '<div class="flex items-center gap-3">' +
-      '<div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400"><i data-lucide="user" class="w-5 h-5"></i></div>' +
-      '<div><p class="font-semibold text-white">'+esc(displayName)+'</p><p class="text-xs text-slate-500">'+esc(subInfo)+'</p></div>' +
-      '</div>' +
-      '<div class="flex items-center gap-3">'+sBadge(c.status)+'<i data-lucide="'+(isExp?'chevron-up':'chevron-down')+'" class="w-4 h-4 text-slate-400"></i></div></div>' +
-      (isExp ?
-        '<div class="mt-4 pt-4 border-t border-white/5 space-y-4">' +
-        // All columns grid
-        '<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">' +
-        visCols.map(function(col){return'<div><p class="text-xs text-slate-500 mb-1">'+esc(col.label)+'</p><p class="text-sm text-white">'+esc(extra[col.key]||c[col.key]||'-')+'</p></div>';}).join('') +
-        (S.role==='admin'?'<div><p class="text-xs text-slate-500 mb-1">Assigned To</p><p class="text-sm text-white">'+esc((empById(c.assigned_employee_id)||{}).name||'Unassigned')+'</p></div>':'') +
-        '<div><p class="text-xs text-slate-500 mb-1">Status</p>' +
-        '<select class="input text-sm" onclick="event.stopPropagation()" onchange="updateClientStatus(\''+c.id+'\',this.value)">' +
-        ['New','Contacted','Interested','Closed'].map(function(s){return'<option value="'+s+'" '+(c.status===s?'selected':'')+'>'+s+'</option>';}).join('') +
-        '</select></div></div>' +
-        // History
-        '<div><p class="text-xs text-slate-500 mb-2 font-medium">History ('+hist.length+')</p>' +
-        (hist.length ?
-          '<div class="space-y-2 max-h-48 overflow-y-auto">'+hist.map(function(h){return'<div class="p-2 rounded-lg bg-white/[0.02] text-xs"><span class="text-slate-500">'+fmtDT(h.created_at)+'</span><p class="text-slate-300 mt-1">'+esc(h.note)+'</p></div>';}).join('')+'</div>' :
-          '<p class="text-slate-500 text-xs">No notes yet</p>') +
-        '</div>' +
-        // Add note
-        '<div class="flex gap-2" onclick="event.stopPropagation()">' +
-        '<textarea id="note-'+c.id+'" class="input flex-1" placeholder="Add a note..." rows="2"></textarea>' +
-        '<button class="btn btn-primary self-end" onclick="addNote(\''+c.id+'\')"><i data-lucide="plus" class="w-4 h-4"></i> Save</button>' +
-        '</div></div>' : '') +
-      '</div>';
-  }).join('') : '<div class="card text-center py-12"><p class="text-slate-500">No clients assigned</p></div>') +
-  '</div>';
+    return'<div class="card client-card '+(isExp?'border-blue-500/30':'')+'">'+
+    '<div class="flex items-center justify-between" onclick="expandedClientId='+(isExp?'null':'\''+c.id+'\'')+';renderMyClients()">'+
+    '<div class="flex items-center gap-3">'+
+    '<div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400"><i data-lucide="user" class="w-5 h-5"></i></div>'+
+    '<div><p class="font-semibold text-white">'+esc(displayName)+'</p><p class="text-xs text-slate-500">'+esc(subInfo)+'</p></div></div>'+
+    '<div class="flex items-center gap-3">'+sBadge(c.status)+'<i data-lucide="'+(isExp?'chevron-up':'chevron-down')+'" class="w-4 h-4 text-slate-400"></i></div></div>'+
+    (isExp?'<div class="mt-4 pt-4 border-t border-white/5 space-y-4">'+
+    // All columns grid
+    '<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">'+
+    visCols.map(function(col){return'<div><p class="text-xs text-slate-500 mb-1">'+esc(col.label)+'</p><p class="text-sm text-white">'+esc(extra[col.key]||c[col.key]||'-')+'</p></div>';}).join('')+
+    (S.role==='admin'?'<div><p class="text-xs text-slate-500 mb-1">Assigned To</p><p class="text-sm text-white">'+esc((empById(c.assigned_employee_id)||{}).name||'Unassigned')+'</p></div>':'')+
+    '<div><p class="text-xs text-slate-500 mb-1">Status</p>'+
+    '<select class="input text-sm" onclick="event.stopPropagation()" onchange="updateClientStatus(\''+c.id+'\',this.value)">'+
+    ['New','Contacted','Interested','Closed'].map(function(s){return'<option value="'+s+'" '+(c.status===s?'selected':'')+'>'+s+'</option>';}).join('')+
+    '</select></div></div>'+
+    // History
+    '<div><p class="text-xs text-slate-500 mb-2 font-medium">History ('+hist.length+')</p>'+
+    (hist.length?'<div class="space-y-2 max-h-48 overflow-y-auto">'+hist.map(function(h){return'<div class="p-2 rounded-lg bg-white/[0.02] text-xs"><span class="text-slate-500">'+fmtDT(h.created_at)+'</span><p class="text-slate-300 mt-1">'+esc(h.note)+'</p></div>';}).join('')+'</div>':'<p class="text-slate-500 text-xs">No notes yet</p>')+'</div>'+
+    // Add note
+    '<div class="flex gap-2" onclick="event.stopPropagation()">'+
+    '<textarea id="note-'+c.id+'" class="input flex-1" placeholder="Add a note..." rows="2"></textarea>'+
+    '<button class="btn btn-primary self-end" onclick="addNote(\''+c.id+'\')"><i data-lucide="plus" class="w-4 h-4"></i> Save</button></div></div>':'')+
+    '</div>';
+  }).join(''):'<div class="card text-center py-12"><p class="text-slate-500">No clients assigned</p></div>')+'</div>';
   lucide.createIcons();
 }
-
 function updateClientStatus(cid,st){
   sb.from('clients').update({status:st}).eq('id',cid)
     .then(function(){toast('Status updated');fetchAll().then(renderMyClients);})
     .catch(function(e){toast(e.message,'error');});
 }
-
 function addNote(cid){
-  var ta = document.getElementById('note-'+cid);
+  var ta=document.getElementById('note-'+cid);
   if(!ta||!ta.value.trim()){toast('Type a note first','error');return;}
   sb.from('contact_history').insert({client_id:cid,note:ta.value.trim()})
     .then(function(){toast('Note saved');fetchAll().then(renderMyClients);})
@@ -1422,36 +1171,27 @@ function addNote(cid){
 // ASK QUESTION
 // ============================================================
 function renderAskQuestion(){
-  var m = document.getElementById('main-content');
-  var cls = myClients();
-  var clientOpts = '<option value="">None</option>' + cls.map(function(c){return'<option value="'+c.id+'">'+esc(c.name||'Client')+'</option>';}).join('');
-  var campIds = [];
-  cls.forEach(function(c){if(c.campaign_id&&campIds.indexOf(c.campaign_id)===-1)campIds.push(c.campaign_id);});
-  var campOpts = '<option value="">None</option>' + campIds.map(function(cid){var cp=campById(cid);return cp?'<option value="'+cid+'">'+esc(cp.name)+'</option>':'';}).join('');
-
-  m.innerHTML = hdr('Ask a Question','Send a question to management') +
-  (qSent ?
-    '<div class="card border-emerald-500/20 fade-in text-center py-10"><div class="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-500/10 flex items-center justify-center text-3xl">✓</div><p class="text-white font-semibold mb-1">Question sent successfully.</p><p class="text-slate-400 text-sm mb-5">You\'ll be notified when it\'s answered.</p><button class="btn btn-primary" onclick="qSent=false;renderAskQuestion()">Ask Another</button></div>' :
-    '<div class="card fade-in" style="max-width:600px"><div class="space-y-4">' +
-    '<div><label class="text-xs text-slate-400 mb-1 block">Related Client</label><select id="qclient" class="input">'+clientOpts+'</select></div>' +
-    '<div><label class="text-xs text-slate-400 mb-1 block">Related Campaign</label><select id="qcamp" class="input">'+campOpts+'</select></div>' +
-    '<div><label class="text-xs text-slate-400 mb-1 block">Question *</label><textarea id="qtext" class="input" rows="4" placeholder="Type your question..."></textarea></div>' +
-    '<button class="btn btn-primary" onclick="submitQuestion()"><i data-lucide="send" class="w-4 h-4"></i> Submit</button>' +
+  var m=document.getElementById('main-content');
+  var cls=myClients();
+  var clientOpts='<option value="">None</option>'+cls.map(function(c){return'<option value="'+c.id+'">'+esc(c.name)+'</option>';}).join('');
+  var campIds=[];cls.forEach(function(c){if(c.campaign_id&&campIds.indexOf(c.campaign_id)===-1)campIds.push(c.campaign_id);});
+  var campOpts='<option value="">None</option>'+campIds.map(function(cid){var cp=campById(cid);return cp?'<option value="'+cid+'">'+esc(cp.name)+'</option>':'';}).join('');
+  m.innerHTML=hdr('Ask a Question','Send a question to management')+
+  (qSent?
+    '<div class="card border-emerald-500/20 fade-in text-center py-10"><div class="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-500/10 flex items-center justify-center text-3xl">✓</div><p class="text-white font-semibold mb-1">Question sent successfully.</p><p class="text-slate-400 text-sm mb-5">You\'ll be notified when it\'s answered.</p><button class="btn btn-primary" onclick="qSent=false;renderAskQuestion()">Ask Another</button></div>':
+    '<div class="card fade-in" style="max-width:600px"><div class="space-y-4">'+
+    '<div><label class="text-xs text-slate-400 mb-1 block">Related Client</label><select id="qclient" class="input">'+clientOpts+'</select></div>'+
+    '<div><label class="text-xs text-slate-400 mb-1 block">Related Campaign</label><select id="qcamp" class="input">'+campOpts+'</select></div>'+
+    '<div><label class="text-xs text-slate-400 mb-1 block">Question *</label><textarea id="qtext" class="input" rows="4" placeholder="Type your question..."></textarea></div>'+
+    '<button class="btn btn-primary" onclick="submitQuestion()"><i data-lucide="send" class="w-4 h-4"></i> Submit</button>'+
     '</div></div>');
   lucide.createIcons();
 }
-
 function submitQuestion(){
-  var text = document.getElementById('qtext').value.trim();
+  var text=document.getElementById('qtext').value.trim();
   if(!text){toast('Type a question','error');return;}
-  sb.from('questions').insert({
-    employee_id: S.employee.id,
-    employee_name: S.employee.name,
-    question_text: text,
-    related_client_id: document.getElementById('qclient').value||null,
-    related_campaign_id: document.getElementById('qcamp').value||null,
-    status: 'pending'
-  }).then(function(){qSent=true;toast('Question sent');renderAskQuestion();})
+  sb.from('questions').insert({employee_id:S.employee.id,employee_name:S.employee.name,question_text:text,related_client_id:document.getElementById('qclient').value||null,related_campaign_id:document.getElementById('qcamp').value||null,status:'pending'})
+    .then(function(){qSent=true;toast('Question sent');renderAskQuestion();})
     .catch(function(e){toast(e.message,'error');});
 }
 
@@ -1459,23 +1199,22 @@ function submitQuestion(){
 // MY QUESTIONS
 // ============================================================
 function renderMyQuestions(){
-  var m = document.getElementById('main-content');
-  var qs = S.questions.filter(function(q){return q.employee_id===S.employee.id;});
+  var m=document.getElementById('main-content');
+  var qs=S.questions.filter(function(q){return q.employee_id===S.employee.id;});
   qs.sort(function(a,b){
-    if(a.status==='pending'&&b.status!=='pending') return -1;
-    if(a.status!=='pending'&&b.status==='pending') return 1;
+    if(a.status==='pending'&&b.status!=='pending')return -1;
+    if(a.status!=='pending'&&b.status==='pending')return 1;
     return new Date(b.created_at)-new Date(a.created_at);
   });
-  m.innerHTML = hdr('My Questions',qs.length+' questions') +
-  '<div class="space-y-3 fade-in">' + (qs.length ? qs.map(function(q){
-    return '<div class="card">' + sBadge(q.status) +
-      '<span class="text-xs text-slate-500 ml-2">'+fmtDT(q.created_at)+'</span>' +
-      '<p class="text-sm text-slate-300 mt-2 mb-3">'+esc(q.question_text)+'</p>' +
-      (q.status==='answered' ?
-        '<div class="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10"><p class="text-xs text-emerald-400 font-medium mb-1">Reply</p><p class="text-sm text-slate-200">'+esc(q.admin_reply)+'</p></div>' :
-        '<p class="text-xs text-amber-400">Awaiting reply...</p>') +
-      '</div>';
-  }).join('') : '<div class="card text-center py-12"><p class="text-slate-500">No questions yet</p></div>') + '</div>';
+  m.innerHTML=hdr('My Questions',qs.length+' questions')+
+  '<div class="space-y-3 fade-in">'+(qs.length?qs.map(function(q){
+    return'<div class="card">'+sBadge(q.status)+'<span class="text-xs text-slate-500 ml-2">'+fmtDT(q.created_at)+'</span>'+
+    '<p class="text-sm text-slate-300 mt-2 mb-3">'+esc(q.question_text)+'</p>'+
+    (q.status==='answered'?
+      '<div class="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10"><p class="text-xs text-emerald-400 font-medium mb-1">Reply</p><p class="text-sm text-slate-200">'+esc(q.admin_reply)+'</p></div>':
+      '<p class="text-xs text-amber-400">Awaiting reply...</p>')+
+    '</div>';
+  }).join(''):'<div class="card text-center py-12"><p class="text-slate-500">No questions yet</p></div>')+'</div>';
   lucide.createIcons();
 }
 
@@ -1483,77 +1222,69 @@ function renderMyQuestions(){
 // NOTIFICATIONS
 // ============================================================
 function renderNotifPage(){
-  var m = document.getElementById('main-content');
-  var unread = S.notifications.filter(function(n){return !n.read;}).length;
-  m.innerHTML = hdr('Notifications', unread+' unread',
-    (unread ? '<button class="btn btn-ghost btn-sm" onclick="markAllRead()"><i data-lucide="check-check" class="w-4 h-4"></i> Mark all read</button>' : '')) +
-  '<div class="space-y-2 fade-in">' + (S.notifications.length ? S.notifications.map(function(n){
-    return '<div class="card '+(n.read?'':'border-blue-500/15 bg-blue-500/[0.03]')+' cursor-pointer" onclick="markNotifRead(\''+n.id+'\')">' +
-      '<div class="flex items-start gap-3">' +
-      '<div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 '+(n.type==='data_updated'?'bg-blue-500/10':'bg-emerald-500/10')+'">' +
-      '<span class="text-sm">'+(n.type==='data_updated'?'📊':'💬')+'</span></div>' +
-      '<div class="flex-1 min-w-0"><p class="text-sm '+(n.read?'text-slate-400':'text-white')+'">'+esc(n.message)+'</p><p class="text-xs text-slate-500 mt-1">'+fmtDT(n.created_at)+'</p></div>' +
-      (!n.read ? '<div class="w-2.5 h-2.5 rounded-full bg-blue-400 flex-shrink-0 mt-2"></div>' : '') +
-      '</div></div>';
-  }).join('') : '<div class="card text-center py-12"><p class="text-slate-500">No notifications</p></div>') + '</div>';
+  var m=document.getElementById('main-content');
+  var unread=S.notifications.filter(function(n){return!n.read;}).length;
+  m.innerHTML=hdr('Notifications',unread+' unread',(unread?'<button class="btn btn-ghost btn-sm" onclick="markAllRead()"><i data-lucide="check-check" class="w-4 h-4"></i> Mark all read</button>':''))+
+  '<div class="space-y-2 fade-in">'+(S.notifications.length?S.notifications.map(function(n){
+    return'<div class="card '+(n.read?'':'border-blue-500/15 bg-blue-500/[0.03]')+' cursor-pointer" onclick="markNotifRead(\''+n.id+'\')">'+
+    '<div class="flex items-start gap-3">'+
+    '<div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 '+(n.type==='data_updated'?'bg-blue-500/10':'bg-emerald-500/10')+'">'+
+    '<span class="text-sm">'+(n.type==='data_updated'?'📊':'💬')+'</span></div>'+
+    '<div class="flex-1 min-w-0"><p class="text-sm '+(n.read?'text-slate-400':'text-white')+'">'+esc(n.message)+'</p><p class="text-xs text-slate-500 mt-1">'+fmtDT(n.created_at)+'</p></div>'+
+    (!n.read?'<div class="w-2.5 h-2.5 rounded-full bg-blue-400 flex-shrink-0 mt-2"></div>':'')+
+    '</div></div>';
+  }).join(''):'<div class="card text-center py-12"><p class="text-slate-500">No notifications</p></div>')+'</div>';
   lucide.createIcons();
 }
-
 function markNotifRead(id){
   sb.from('notifications').update({read:true}).eq('id',id)
     .then(function(){fetchAll().then(function(){buildSidebar();if(S.currentPage==='notifications')renderNotifPage();});})
     .catch(function(){});
 }
-
 function markAllRead(){
-  var q = S.role==='admin' ?
-    sb.from('notifications').update({read:true}).eq('read',false) :
+  var q=S.role==='admin'?
+    sb.from('notifications').update({read:true}).eq('read',false):
     sb.from('notifications').update({read:true}).eq('employee_id',S.employee.id).eq('read',false);
-  q.then(function(){
-    toast('All marked as read');
-    fetchAll().then(function(){buildSidebar();if(S.currentPage==='notifications')renderNotifPage();});
-  }).catch(function(e){toast(e.message,'error');});
+  q.then(function(){toast('All marked as read');fetchAll().then(function(){buildSidebar();if(S.currentPage==='notifications')renderNotifPage();});}).catch(function(e){toast(e.message,'error');});
 }
 
 // ============================================================
 // LOGIN / LOGOUT
 // ============================================================
 function loginAsAdmin(){
-  var pass = document.getElementById('admin-pass-input').value;
+  var pass=document.getElementById('admin-pass-input').value;
   if(pass!==ADMIN_PASSWORD){toast('Wrong password','error');document.getElementById('admin-pass-input').value='';return;}
-  S.role='admin'; S.employee=null;
+  S.role='admin';S.employee=null;
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-shell').classList.remove('hidden');
   document.getElementById('mobile-menu-btn').style.display='';
   hideAdminPass();
   fetchAll().then(function(){buildSidebar();navigateTo('dashboard');});
 }
-
 function loginAsEmployee(){
-  var sel   = document.getElementById('employee-select');
-  var empId = sel.value;
+  var sel=document.getElementById('employee-select');
+  var empId=sel.value;
   if(!empId){toast('Select an employee','error');return;}
-  var emp = S.employees.find(function(e){return e.id===empId;});
+  var emp=S.employees.find(function(e){return e.id===empId;});
   if(!emp){toast('Employee not found','error');return;}
-  S.role='employee'; S.employee=emp;
+  S.role='employee';S.employee=emp;
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-shell').classList.remove('hidden');
   document.getElementById('mobile-menu-btn').style.display='';
   fetchAll().then(function(){buildSidebar();navigateTo('my-clients');});
 }
-
 function logout(){
-  // Set employee inactive on logout
-  if(S.role==='employee' && S.employee){
-    sb.from('employees').update({is_active:false}).eq('id',S.employee.id).then(function(){},function(){});
+  // If employee, set inactive on logout
+  if(S.role==='employee'&&S.employee){
+    sb.from('employees').update({is_active:false}).eq('id',S.employee.id).catch(function(){});
   }
-  S = {role:null,employee:null,currentPage:'',employees:[],campaigns:[],clients:[],questions:[],notifications:[],contactHistory:[]};
-  U = {campaignId:'',rows:[],preview:null,uploadTab:'paste'};
-  T = {showForm:false,editId:null,name:'',email:'',phone:''};
-  showCampForm=false; selectedCampId=null; expandedClientId=null; qSent=false;
-  qaFilter  = {employee:'',campaign:'',status:''};
-  rptFilter = {campaign:'',employee:'',status:'',dateFrom:'',dateTo:'',page:0};
-  empClientFilter = '';
+  S={role:null,employee:null,currentPage:'',employees:[],campaigns:[],clients:[],questions:[],notifications:[],contactHistory:[]};
+  U={campaignId:'',rows:[],preview:null,uploadTab:'paste',colConfig:null};
+  T={showForm:false,editId:null,name:'',email:'',phone:''};
+  showCampForm=false;selectedCampId=null;expandedClientId=null;qSent=false;
+  qaFilter={employee:'',campaign:'',status:''};
+  rptFilter={campaign:'',employee:'',status:'',dateFrom:'',dateTo:'',page:0};
+  empClientFilter='';
   document.getElementById('app-shell').classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('mobile-menu-btn').style.display='none';
@@ -1562,10 +1293,9 @@ function logout(){
     .then(function(res){S.employees=res.data||[];loadEmpDropdown();})
     .catch(function(){loadEmpDropdown();});
 }
-
 function loadEmpDropdown(){
-  document.getElementById('employee-select').innerHTML =
-    '<option value="">Select Employee...</option>' +
+  document.getElementById('employee-select').innerHTML=
+    '<option value="">Select Employee...</option>'+
     S.employees.map(function(e){return'<option value="'+e.id+'">'+esc(e.name)+'</option>';}).join('');
 }
 
@@ -1578,14 +1308,15 @@ sb.from('employees').select('id,name,is_active,color').order('name')
 
 // Auto-refresh every 30s when logged in
 setInterval(function(){
-  if(!S.role) return;
+  if(!S.role)return;
   fetchAll().then(function(){
     buildSidebar();
-    if(['dashboard','notifications','my-questions','schedule'].indexOf(S.currentPage)!==-1){
+    // Only re-render non-interactive pages to avoid disrupting user input
+    if(['dashboard','notifications','my-questions'].indexOf(S.currentPage)!==-1){
       renderPage();
     }
   });
-}, 30000);
+},30000);
 </script>
 </body>
 </html>
