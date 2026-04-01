@@ -1077,7 +1077,7 @@ function confirmDistribute(){
         });
       }
     });
-    if(notifs.length) sb.from('notifications').insert(notifs).catch(function(){});
+    if(notifs.length) sb.from('notifications').insert(notifs).then(function(){},function(){});
     toast(rows.length+' clients distributed successfully');
     U = {campaignId:'',rows:[],preview:null,uploadTab:'paste'};
     fetchAll().then(renderUpload);
@@ -1137,7 +1137,7 @@ function sendReply(qid){
     .then(function(){
       var q = S.questions.find(function(x){return x.id===qid;});
       if(q&&q.employee_id)
-        sb.from('notifications').insert({employee_id:q.employee_id,type:'question_answered',message:'Your question has been answered',read:false}).catch(function(){});
+        sb.from('notifications').insert({employee_id:q.employee_id,type:'question_answered',message:'Your question has been answered',read:false}).then(function(){},function(){});
       toast('Reply sent');
       fetchAll().then(renderQA);
     }).catch(function(e){toast(e.message,'error');});
@@ -1545,7 +1545,7 @@ function loginAsEmployee(){
 function logout(){
   // Set employee inactive on logout
   if(S.role==='employee' && S.employee){
-    sb.from('employees').update({is_active:false}).eq('id',S.employee.id).catch(function(){});
+    sb.from('employees').update({is_active:false}).eq('id',S.employee.id).then(function(){},function(){});
   }
   S = {role:null,employee:null,currentPage:'',employees:[],campaigns:[],clients:[],questions:[],notifications:[],contactHistory:[]};
   U = {campaignId:'',rows:[],preview:null,uploadTab:'paste'};
