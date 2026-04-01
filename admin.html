@@ -71,6 +71,9 @@ textarea.input{resize:vertical;min-height:70px}
 .client-card{cursor:pointer;transition:all .2s}
 .client-card:hover{border-color:rgba(59,130,246,0.25)}
 .expanded-detail{animation:fadeIn .25s ease}
+.sync-indicator{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#64748b}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:#10b981;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
 </style>
 </head>
 <body class="grid-bg">
@@ -97,7 +100,16 @@ textarea.input{resize:vertical;min-height:70px}
 </div>
 <div id="app-shell" class="hidden min-h-screen flex">
   <aside id="sidebar" class="w-64 min-h-screen border-r border-white/5 bg-[#080e1a] flex flex-col fixed left-0 top-0 bottom-0 z-50">
-    <div class="p-5 border-b border-white/5"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center"><i data-lucide="megaphone" class="w-4 h-4 text-white"></i></div><div><h2 class="text-sm font-bold text-white leading-tight" id="sidebar-title">Admin Portal</h2><p class="text-[11px] text-slate-500" id="sidebar-subtitle">Management</p></div></div></div>
+    <div class="p-5 border-b border-white/5">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center"><i data-lucide="megaphone" class="w-4 h-4 text-white"></i></div>
+        <div>
+          <h2 class="text-sm font-bold text-white leading-tight" id="sidebar-title">Admin Portal</h2>
+          <p class="text-[11px] text-slate-500" id="sidebar-subtitle">Management</p>
+        </div>
+      </div>
+      <div id="sync-status" class="mt-3 sync-indicator hidden"><span class="sync-dot"></span><span id="sync-status-text">Auto-sync active</span></div>
+    </div>
     <nav id="sidebar-nav" class="flex-1 p-3 space-y-1 overflow-y-auto"></nav>
     <div class="p-4 border-t border-white/5"><div id="sidebar-user" class="flex items-center gap-3 mb-3"></div><div onclick="logout()" class="flex items-center gap-2 text-slate-500 hover:text-red-400 cursor-pointer text-sm transition-colors"><i data-lucide="log-out" class="w-4 h-4"></i><span>Logout</span></div></div>
   </aside>
@@ -134,8 +146,12 @@ var expandedClientId = null;
 var qSent = false;
 var confirmCb = null;
 var lastActivity = Date.now();
-var refSheetUrl = '';
-var schedSheetUrl = '';
+var lastSyncTime = null;
+var autoSyncInterval = null;
+
+// ============ HARDCODED SHEET URLS ============
+var refSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXkxMN6FtO2UyesWpInTSj6ZqNMzVvXu0doZCZe0QqxEQNlv0rtEsQvvc7ixwSZaR9SpW9sR_MeRDw/pub?output=csv';
+var schedSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vScEdqcexZHX21VUk2R1_GvG7BCPh5FzHAqFkAJFbpVFBL5gaCRLaOMT8NaXbIiJg-MI-yGH8MZG5pR/pub?output=csv';
 var syncData = null;
 
 function initials(n){return n.split(' ').map(function(w){return w[0]}).join('').toUpperCase().slice(0,2);}
@@ -232,6 +248,19 @@ function buildSidebar(){
   }
   document.getElementById('sidebar-title').textContent=S.role==='admin'?'Admin Portal':'Employee Portal';
   document.getElementById('sidebar-subtitle').textContent=S.role==='admin'?'Management':'Dashboard';
+
+  // Show sync indicator for admin
+  var syncEl=document.getElementById('sync-status');
+  if(S.role==='admin'&&lastSyncTime){
+    syncEl.classList.remove('hidden');
+    document.getElementById('sync-status-text').textContent='Synced '+timeAgo(lastSyncTime);
+  } else if(S.role==='admin'){
+    syncEl.classList.remove('hidden');
+    document.getElementById('sync-status-text').textContent='Auto-sync active';
+  } else {
+    syncEl.classList.add('hidden');
+  }
+
   lucide.createIcons();
 }
 
@@ -262,6 +291,84 @@ function hdr(title,desc,actions){
   return '<div class="flex items-start justify-between mb-6 fade-in"><div><h1 class="text-2xl font-bold text-white">'+title+'</h1>'+(desc?'<p class="text-slate-400 text-sm mt-1">'+desc+'</p>':'')+'</div>'+(actions?'<div class="flex gap-2">'+actions+'</div>':'')+'</div>';
 }
 
+// ============ AUTO SYNC FROM SHEETS ============
+function startAutoSync(){
+  if(autoSyncInterval)clearInterval(autoSyncInterval);
+  // Run immediately on login
+  runAutoSync();
+  // Then every 5 minutes
+  autoSyncInterval = setInterval(function(){
+    runAutoSync();
+  }, 5 * 60 * 1000);
+}
+
+function stopAutoSync(){
+  if(autoSyncInterval){clearInterval(autoSyncInterval);autoSyncInterval=null;}
+}
+
+function runAutoSync(){
+  if(!refSheetUrl||!schedSheetUrl)return;
+  var schedGid='';var gm=schedSheetUrl.match(/gid=(\d+)/);if(gm)schedGid=gm[1];
+  var schedId='';var im=schedSheetUrl.match(/\/d\/e\/([^/]+)/);if(im)schedId=im[1];
+  var schedRange='https://docs.google.com/spreadsheets/d/e/'+schedId+'/pub?output=csv'+(schedGid?'&gid='+schedGid:'')+'&range=A1:GZ30';
+
+  Promise.all([
+    fetch(refSheetUrl+'&t='+Date.now()).then(function(r){return r.text()}),
+    fetch(schedRange+'&t='+Date.now()).then(function(r){return r.text()})
+  ]).then(function(results){
+    var refData=parseCSV(results[0]);
+    var schedData=parseCSV(results[1]);
+    var headerRow=-1;
+    for(var i=0;i<refData.length;i++){if(refData[i][0]&&refData[i][0].trim()==='Formal Name'){headerRow=i;break;}}
+    if(headerRow===-1){console.warn('Auto-sync: headers not found');return;}
+
+    var employees=[];
+    for(var i=headerRow+1;i<refData.length;i++){
+      var row=refData[i];if(!row[0]||!row[0].trim())continue;
+      var active=(row[3]||'').toString().trim().toLowerCase();if(active==='inactive')continue;
+      employees.push({name:row[0].trim(),email:(row[1]||'').trim(),xcally_name:(row[2]||'').trim(),xcally_id:(row[4]||'').trim(),phone:(row[5]||'').trim(),agent_code:(row[7]||'').trim(),shift:(row[6]||'Morning').trim()});
+    }
+
+    var todayD=new Date();
+    var todayStr=('0'+todayD.getDate()).slice(-2)+'/'+('0'+(todayD.getMonth()+1)).slice(-2)+'/'+todayD.getFullYear();
+    var todayCol=-1;
+    for(var r=0;r<schedData.length;r++){for(var c=1;c<schedData[r].length;c++){if(schedData[r][c]&&schedData[r][c].trim()===todayStr){todayCol=c;break;}}if(todayCol!==-1)break;}
+    if(todayCol!==-1){
+      for(var r=2;r<schedData.length;r++){
+        var eName=(schedData[r][0]||'').trim();if(!eName)continue;
+        var shiftVal=schedData[r][todayCol];var mapped=mapShift(shiftVal);
+        for(var e=0;e<employees.length;e++){if(employees[e].name===eName){employees[e].shift=mapped;break;}}
+      }
+    }
+
+    if(!employees.length){console.warn('Auto-sync: no employees parsed');return;}
+
+    // Push to Supabase silently
+    var promises=[];var syncedEmails=[];
+    for(var i=0;i<employees.length;i++){
+      var emp=employees[i];syncedEmails.push(emp.email);
+      var existing=S.employees.find(function(e){return e.email===emp.email&&emp.email!==''});
+      if(existing){
+        promises.push(sb.from('employees').update({name:emp.name,phone:emp.phone||existing.phone,email:emp.email||existing.email,shift:emp.shift,xcally_name:emp.xcally_name,xcally_id:emp.xcally_id,agent_code:emp.agent_code}).eq('id',existing.id));
+      } else {
+        promises.push(sb.from('employees').insert({name:emp.name,email:emp.email,phone:emp.phone,shift:emp.shift,color:COLORS[i%COLORS.length],xcally_name:emp.xcally_name,xcally_id:emp.xcally_id,agent_code:emp.agent_code}));
+      }
+    }
+    var toDelete=S.employees.filter(function(e){return e.email&&syncedEmails.indexOf(e.email)===-1});
+    for(var d=0;d<toDelete.length;d++){promises.push(sb.from('employees').delete().eq('id',toDelete[d].id));}
+
+    Promise.all(promises).then(function(){
+      lastSyncTime=new Date();
+      fetchAll().then(function(){
+        loadEmpDropdown();
+        buildSidebar();
+        if(S.currentPage==='team')renderTeam();
+        console.log('Auto-sync complete: '+employees.length+' employees at '+lastSyncTime.toLocaleTimeString());
+      });
+    }).catch(function(e){console.error('Auto-sync DB error:',e);});
+  }).catch(function(e){console.error('Auto-sync fetch error:',e);});
+}
+
 // ============ DASHBOARD ============
 function renderDashboard(){
   var m=document.getElementById('main-content');
@@ -270,7 +377,8 @@ function renderDashboard(){
   var onn=S.presence.filter(function(p){return getPresenceStatus(p.employee_id)==='online'}).length;
   var dist=S.employees.map(function(e){return {name:e.name,color:e.color,count:S.clients.filter(function(c){return c.assigned_employee_id===e.id}).length}}).sort(function(a,b){return b.count-a.count});
   var mx=Math.max.apply(null,dist.map(function(d){return d.count}).concat([1]));
-  m.innerHTML=hdr('Dashboard','Overview of your campaign operations')+
+  var syncInfo=lastSyncTime?'Last synced: '+lastSyncTime.toLocaleTimeString():'Syncing...';
+  m.innerHTML=hdr('Dashboard','Overview of your campaign operations &bull; <span class="text-emerald-400 text-xs">'+syncInfo+'</span>')+
   '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 fade-in">'+
   '<div class="card stat-card blue"><p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Total Campaigns</p><p class="text-3xl font-bold text-white">'+S.campaigns.length+'</p><p class="text-xs text-blue-400 mt-1">'+ac.length+' active</p></div>'+
   '<div class="card stat-card green"><p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Total Clients</p><p class="text-3xl font-bold text-white">'+S.clients.length+'</p><p class="text-xs text-emerald-400 mt-1">'+S.clients.filter(function(c){return c.status==='Closed'}).length+' closed</p></div>'+
@@ -457,7 +565,8 @@ function exportAttendanceCSV(){var h=['Employee','Email','Phone','Shift','Status
 function renderTeam(){
   var m=document.getElementById('main-content');
   var isEdit=T.editId!==null;
-  m.innerHTML=hdr('Team Management','Manage employees','<button class="btn btn-primary" onclick="T={showForm:true,editId:null,name:\'\',email:\'\',phone:\'\',shift:\'Morning\'};renderTeam()"><i data-lucide="plus" class="w-4 h-4"></i> Add Employee</button><button class="btn btn-ghost" onclick="showSyncModal()"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Sync Sheets</button>')+
+  var syncInfo=lastSyncTime?'Last auto-sync: '+lastSyncTime.toLocaleTimeString()+' &bull; Next in ~5min':'Syncing from sheets...';
+  m.innerHTML=hdr('Team Management','<span class="text-emerald-400">'+syncInfo+'</span>','<button class="btn btn-primary" onclick="T={showForm:true,editId:null,name:\'\',email:\'\',phone:\'\',shift:\'Morning\'};renderTeam()"><i data-lucide="plus" class="w-4 h-4"></i> Add Employee</button><button class="btn btn-ghost" onclick="runAutoSync();toast(\'Syncing...\',\'info\')"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Sync Now</button>')+
   (T.showForm?'<div class="card mb-6 fade-in border-blue-500/20"><h3 class="text-sm font-bold text-white mb-4">'+(isEdit?'Edit':'Add')+' Employee</h3><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="text-xs text-slate-400 mb-1 block">Full Name *</label><input id="tn" class="input" value="'+esc(T.name)+'" placeholder="Name"></div><div><label class="text-xs text-slate-400 mb-1 block">Email *</label><input id="te" class="input" value="'+esc(T.email)+'" placeholder="Email"></div><div><label class="text-xs text-slate-400 mb-1 block">Phone *</label><input id="tp" class="input" value="'+esc(T.phone)+'" placeholder="Phone"></div><div><label class="text-xs text-slate-400 mb-1 block">Shift</label><select id="ts" class="input"><option '+(T.shift==='Morning'?'selected':'')+'>Morning</option><option '+(T.shift==='Afternoon'?'selected':'')+'>Afternoon</option><option '+(T.shift==='Night'?'selected':'')+'>Night</option></select></div></div><div class="flex gap-2 mt-4"><button class="btn btn-primary" onclick="saveEmployee()">'+(isEdit?'Update':'Add')+'</button><button class="btn btn-ghost" onclick="T={showForm:false,editId:null,name:\'\',email:\'\',phone:\'\',shift:\'Morning\'};renderTeam()">Cancel</button></div></div>':'')+
   '<div class="card fade-in"><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5"><th class="pb-3 pr-4">Employee</th><th class="pb-3 pr-4">Email</th><th class="pb-3 pr-4">Phone</th><th class="pb-3 pr-4">Shift</th><th class="pb-3 pr-4">Status</th><th class="pb-3 pr-4">Clients</th><th class="pb-3">Actions</th></tr></thead><tbody>'+
   S.employees.map(function(e){
@@ -584,6 +693,7 @@ function loginAs(){
   fetchAll().then(function(){
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('app-shell').classList.remove('hidden');
+    startAutoSync(); // Start auto-sync on admin login
     navigateTo('dashboard');
   });
 }
@@ -605,13 +715,14 @@ function loginAsEmployee(){
 
 function logout(){
   if(S.employee)sb.from('presence').delete().eq('employee_id',S.employee.id).then(function(){});
+  stopAutoSync();
   S={role:null,employee:null,currentPage:'',employees:[],campaigns:[],clients:[],questions:[],notifications:[],presence:[],contactHistory:[]};
   U={campaignId:'',cf1Label:'',cf2Label:'',rows:[{name:'',phone:'',offer:'',cf1:'',cf2:''}],preview:null};
   T={showForm:false,editId:null,name:'',email:'',phone:'',shift:'Morning'};
   showCampForm=false;selectedCampId=null;
   qaFilter={employee:'',campaign:'',status:''};
   rptFilter={campaign:'',employee:'',status:'',dateFrom:'',dateTo:''};
-  empClientFilter='';expandedClientId=null;qSent=false;
+  empClientFilter='';expandedClientId=null;qSent=false;lastSyncTime=null;
   document.getElementById('app-shell').classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('notif-panel').classList.add('hidden');
@@ -623,21 +734,7 @@ function loadEmpDropdown(){
   sel.innerHTML='<option value="">Select Employee...</option>'+S.employees.map(function(e){return '<option value="'+e.id+'">'+esc(e.name)+' - '+e.shift+' Shift</option>'}).join('');
 }
 
-// ============ SYNC FROM GOOGLE SHEETS ============
-function showSyncModal(){
-  var m=document.getElementById('main-content');
-  var previewHtml='';
-  if(syncData){
-    previewHtml='<div class="card border-emerald-500/20 mb-6 fade-in"><h3 class="text-sm font-bold text-white mb-2">Preview: '+syncData.length+' employees</h3><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5"><th class="pb-2 pr-3">Name</th><th class="pb-2 pr-3">Email</th><th class="pb-2 pr-3">Phone</th><th class="pb-2 pr-3">Shift</th></tr></thead><tbody>'+
-    syncData.map(function(r){return '<tr class="table-row border-b border-white/[0.03]"><td class="py-2 pr-3 text-white">'+esc(r.name)+'</td><td class="py-2 pr-3 text-slate-400 text-xs">'+esc(r.email)+'</td><td class="py-2 pr-3 text-slate-400 text-xs">'+esc(r.phone)+'</td><td class="py-2 pr-3"><span class="badge '+(r.shift==='Off'?'badge-ended':'badge-active')+'">'+esc(r.shift)+'</span></td></tr>'}).join('')+
-    '</tbody></table></div><div class="flex gap-2 mt-4"><button class="btn btn-success" onclick="confirmSync()"><i data-lucide="check" class="w-4 h-4"></i> Confirm</button><button class="btn btn-ghost" onclick="syncData=null;showSyncModal()">Cancel</button></div></div>';
-  }
-  m.innerHTML=hdr('Sync from Google Sheets','Import employees and shifts')+
-  (previewHtml?previewHtml+'<hr class="border-white/5 my-6">':'')+
-  '<div class="card fade-in" style="max-width:800px"><div class="space-y-4"><div><label class="text-xs text-slate-400 mb-1 block">Reference Area (Agents List) CSV URL</label><input id="ref-url" class="input" placeholder="https://docs.google.com/.../pub?output=csv" value="'+esc(refSheetUrl)+'"></div><div><label class="text-xs text-slate-400 mb-1 block">Schedule CSV URL</label><input id="sched-url" class="input" placeholder="https://docs.google.com/.../pub?output=csv" value="'+esc(schedSheetUrl)+'"></div><div class="flex gap-2"><button class="btn btn-primary" onclick="fetchSync()"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Fetch & Preview</button><button class="btn btn-ghost" onclick="renderTeam()"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back</button></div></div></div>';
-  lucide.createIcons();
-}
-
+// ============ CSV PARSER ============
 function parseCSV(text){
   var lines=text.split('\n');var result=[];
   for(var i=0;i<lines.length;i++){
@@ -658,64 +755,10 @@ function mapShift(val){
   if(h>=5&&h<14)return 'Morning';if(h>=14&&h<21)return 'Afternoon';return 'Night';
 }
 
-function fetchSync(){
-  var refUrl=document.getElementById('ref-url').value.trim();
-  var schedUrl=document.getElementById('sched-url').value.trim();
-  if(!refUrl||!schedUrl){toast('Paste both URLs','error');return;}
-  refSheetUrl=refUrl;schedSheetUrl=schedUrl;toast('Fetching...');
-  var schedGid='';var gm=schedUrl.match(/gid=(\d+)/);if(gm)schedGid=gm[1];
-  var schedId='';var im=schedUrl.match(/\/d\/e\/([^-]+)/);if(im)schedId=im[1];
-  var schedRange='https://docs.google.com/spreadsheets/d/e/'+schedId+'/pub?output=csv&gid='+schedGid+'&range=A1:GZ30';
-  Promise.all([fetch(refUrl).then(function(r){return r.text()}),fetch(schedRange).then(function(r){return r.text()})]).then(function(results){
-    var refData=parseCSV(results[0]);var schedData=parseCSV(results[1]);
-    var headerRow=-1;
-    for(var i=0;i<refData.length;i++){if(refData[i][0]&&refData[i][0].trim()==='Formal Name'){headerRow=i;break;}}
-    if(headerRow===-1){toast('Could not find headers','error');return;}
-    var employees=[];
-    for(var i=headerRow+1;i<refData.length;i++){
-      var row=refData[i];if(!row[0]||!row[0].trim())continue;
-      var active=(row[3]||'').toString().trim().toLowerCase();if(active==='inactive')continue;
-      employees.push({name:row[0].trim(),email:(row[1]||'').trim(),xcally_name:(row[2]||'').trim(),xcally_id:(row[4]||'').trim(),phone:(row[5]||'').trim(),agent_code:(row[7]||'').trim(),shift:(row[6]||'Morning').trim()});
-    }
-    var todayD=new Date();
-    var todayStr=('0'+todayD.getDate()).slice(-2)+'/'+('0'+(todayD.getMonth()+1)).slice(-2)+'/'+todayD.getFullYear();
-    var todayCol=-1;
-    for(var r=0;r<schedData.length;r++){for(var c=1;c<schedData[r].length;c++){if(schedData[r][c]&&schedData[r][c].trim()===todayStr){todayCol=c;break;}}if(todayCol!==-1)break;}
-    if(todayCol!==-1){
-      for(var r=2;r<schedData.length;r++){
-        var eName=(schedData[r][0]||'').trim();if(!eName)continue;
-        var shiftVal=schedData[r][todayCol];var mapped=mapShift(shiftVal);
-        for(var e=0;e<employees.length;e++){if(employees[e].name===eName){employees[e].shift=mapped;break;}}
-      }
-    }
-    syncData=employees;showSyncModal();
-  }).catch(function(e){toast('Fetch failed','error');});
-}
-
-function confirmSync(){
-  if(!syncData||!syncData.length)return;
-  toast('Syncing...');
-  var promises=[];var syncedEmails=[];
-  for(var i=0;i<syncData.length;i++){
-    var emp=syncData[i];syncedEmails.push(emp.email);
-    var existing=S.employees.find(function(e){return e.email===emp.email&&emp.email!==''});
-    if(existing){
-      promises.push(sb.from('employees').update({name:emp.name,phone:emp.phone||existing.phone,email:emp.email||existing.email,shift:emp.shift,xcally_name:emp.xcally_name,xcally_id:emp.xcally_id,agent_code:emp.agent_code}).eq('id',existing.id));
-    } else {
-      promises.push(sb.from('employees').insert({name:emp.name,email:emp.email,phone:emp.phone,shift:emp.shift,color:COLORS[i%COLORS.length],xcally_name:emp.xcally_name,xcally_id:emp.xcally_id,agent_code:emp.agent_code}));
-    }
-  }
-  var toDelete=S.employees.filter(function(e){return e.email&&syncedEmails.indexOf(e.email)===-1});
-  for(var d=0;d<toDelete.length;d++){promises.push(sb.from('employees').delete().eq('id',toDelete[d].id));}
-  Promise.all(promises).then(function(){
-    var msg=syncData.length+' synced';if(toDelete.length)msg+=', '+toDelete.length+' removed';
-    toast(msg);syncData=null;fetchAll().then(function(){renderTeam()});
-  }).catch(function(e){toast(e.message,'error');});
-}
-
 // ============ INIT ============
 fetchAll().then(function(){loadEmpDropdown();lucide.createIcons();});
 
+// Data refresh every 5 seconds (UI only, not sheets sync)
 setInterval(function(){
   if(!S.role)return;
   fetchAll().then(function(){
