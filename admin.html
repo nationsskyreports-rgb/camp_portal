@@ -308,46 +308,86 @@ function stopAutoSync(){
 
 function runAutoSync(){
   if(!refSheetUrl||!schedSheetUrl)return;
-  var schedGid='';var gm=schedSheetUrl.match(/gid=(\d+)/);if(gm)schedGid=gm[1];
-  var schedId='';var im=schedSheetUrl.match(/\/d\/e\/([^/]+)/);if(im)schedId=im[1];
-  var schedRange='https://docs.google.com/spreadsheets/d/e/'+schedId+'/pub?output=csv'+(schedGid?'&gid='+schedGid:'')+'&range=A1:GZ30';
+
+  // Extract schedule sheet ID from pub URL
+  var schedId='';
+  var im=schedSheetUrl.match(/\/d\/e\/([^/]+)/);
+  if(im)schedId=im[1];
+
+  // Get gid if present
+  var schedGid='';
+  var gm=schedSheetUrl.match(/[?&]gid=(\d+)/);
+  if(gm)schedGid=gm[1];
+
+  var schedRange='https://docs.google.com/spreadsheets/d/e/'+schedId+'/pub?output=csv'+(schedGid?'&gid='+schedGid:'')+'&range=A1:BZ50';
+  var cb='&_cb='+Date.now();
 
   Promise.all([
-    fetch(refSheetUrl+'&t='+Date.now()).then(function(r){return r.text()}),
-    fetch(schedRange+'&t='+Date.now()).then(function(r){return r.text()})
+    fetch(refSheetUrl+cb).then(function(r){return r.text()}),
+    fetch(schedRange+cb).then(function(r){return r.text()})
   ]).then(function(results){
     var refData=parseCSV(results[0]);
     var schedData=parseCSV(results[1]);
+
+    // Find header row - search all cells in first 10 rows
     var headerRow=-1;
-    for(var i=0;i<refData.length;i++){if(refData[i][0]&&refData[i][0].trim()==='Formal Name'){headerRow=i;break;}}
-    if(headerRow===-1){console.warn('Auto-sync: headers not found');return;}
+    for(var i=0;i<Math.min(refData.length,10);i++){
+      for(var j=0;j<refData[i].length;j++){
+        if(refData[i][j]&&refData[i][j].toString().trim()==='Formal Name'){headerRow=i;break;}
+      }
+      if(headerRow!==-1)break;
+    }
+
+    if(headerRow===-1){
+      console.warn('Sync: Formal Name header not found. Row 0:', refData[0]);
+      toast('Sync failed: لم يتم العثور على Formal Name في الشيت','error');
+      return;
+    }
 
     var employees=[];
     for(var i=headerRow+1;i<refData.length;i++){
-      var row=refData[i];if(!row[0]||!row[0].trim())continue;
-      var active=(row[3]||'').toString().trim().toLowerCase();if(active==='inactive')continue;
+      var row=refData[i];
+      if(!row[0]||!row[0].trim())continue;
+      var active=(row[3]||'').toString().trim().toLowerCase();
+      if(active==='inactive')continue;
       employees.push({name:row[0].trim(),email:(row[1]||'').trim(),xcally_name:(row[2]||'').trim(),xcally_id:(row[4]||'').trim(),phone:(row[5]||'').trim(),agent_code:(row[7]||'').trim(),shift:(row[6]||'Morning').trim()});
     }
 
+    if(!employees.length){
+      toast('Sync: لم يتم قراءة أي موظفين','error');
+      return;
+    }
+
+    // Try multiple date formats to find today in schedule
     var todayD=new Date();
-    var todayStr=('0'+todayD.getDate()).slice(-2)+'/'+('0'+(todayD.getMonth()+1)).slice(-2)+'/'+todayD.getFullYear();
+    var dd=('0'+todayD.getDate()).slice(-2);
+    var mm=('0'+(todayD.getMonth()+1)).slice(-2);
+    var yyyy=todayD.getFullYear();
+    var dateFormats=[dd+'/'+mm+'/'+yyyy, todayD.getDate()+'/'+mm+'/'+yyyy, dd+'/'+(todayD.getMonth()+1)+'/'+yyyy, todayD.getDate()+'/'+(todayD.getMonth()+1)+'/'+yyyy];
+
     var todayCol=-1;
-    for(var r=0;r<schedData.length;r++){for(var c=1;c<schedData[r].length;c++){if(schedData[r][c]&&schedData[r][c].trim()===todayStr){todayCol=c;break;}}if(todayCol!==-1)break;}
+    outerLoop:for(var r=0;r<schedData.length;r++){
+      for(var c=1;c<schedData[r].length;c++){
+        var cell=(schedData[r][c]||'').toString().trim();
+        for(var f=0;f<dateFormats.length;f++){
+          if(cell===dateFormats[f]){todayCol=c;break outerLoop;}
+        }
+      }
+    }
+
     if(todayCol!==-1){
       for(var r=2;r<schedData.length;r++){
         var eName=(schedData[r][0]||'').trim();if(!eName)continue;
-        var shiftVal=schedData[r][todayCol];var mapped=mapShift(shiftVal);
+        var mapped=mapShift(schedData[r][todayCol]);
         for(var e=0;e<employees.length;e++){if(employees[e].name===eName){employees[e].shift=mapped;break;}}
       }
     }
 
-    if(!employees.length){console.warn('Auto-sync: no employees parsed');return;}
-
-    // Push to Supabase silently
+    // Push to Supabase
     var promises=[];var syncedEmails=[];
     for(var i=0;i<employees.length;i++){
       var emp=employees[i];syncedEmails.push(emp.email);
-      var existing=S.employees.find(function(e){return e.email===emp.email&&emp.email!==''});
+      var existing=S.employees.find(function(ex){return ex.email===emp.email&&emp.email!==''});
       if(existing){
         promises.push(sb.from('employees').update({name:emp.name,phone:emp.phone||existing.phone,email:emp.email||existing.email,shift:emp.shift,xcally_name:emp.xcally_name,xcally_id:emp.xcally_id,agent_code:emp.agent_code}).eq('id',existing.id));
       } else {
@@ -359,14 +399,15 @@ function runAutoSync(){
 
     Promise.all(promises).then(function(){
       lastSyncTime=new Date();
+      toast(employees.length+' موظف تم sync'+(todayCol===-1?' (schedule not matched)':''),'success');
       fetchAll().then(function(){
         loadEmpDropdown();
         buildSidebar();
         if(S.currentPage==='team')renderTeam();
-        console.log('Auto-sync complete: '+employees.length+' employees at '+lastSyncTime.toLocaleTimeString());
+        if(S.currentPage==='dashboard')renderDashboard();
       });
-    }).catch(function(e){console.error('Auto-sync DB error:',e);});
-  }).catch(function(e){console.error('Auto-sync fetch error:',e);});
+    }).catch(function(e){toast('Sync DB error: '+e.message,'error');});
+  }).catch(function(e){toast('Sync failed - تأكد إن الشيت منشور','error');});
 }
 
 // ============ DASHBOARD ============
@@ -758,15 +799,15 @@ function mapShift(val){
 // ============ INIT ============
 fetchAll().then(function(){loadEmpDropdown();lucide.createIcons();});
 
-// Data refresh every 5 seconds (UI only, not sheets sync)
+// Data refresh every 30 seconds - ONLY updates data silently, no page re-render
 setInterval(function(){
   if(!S.role)return;
   fetchAll().then(function(){
-    if(S.currentPage)renderPage();
+    // Only rebuild sidebar (for notif count etc), never re-render full page
     buildSidebar();
     if(S.employee&&Date.now()-lastActivity<600000)updatePresence();
   });
-},5000);
+},30000);
 </script>
 </body>
 </html>
