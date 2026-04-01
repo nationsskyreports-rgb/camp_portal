@@ -254,19 +254,25 @@ function renderPage(){
 function hdr(title,desc,actions){return '<div class="flex items-start justify-between mb-6 fade-in flex-wrap gap-3"><div><h1 class="text-2xl font-bold text-white">'+title+'</h1>'+(desc?'<p class="text-slate-400 text-sm mt-1">'+desc+'</p>':'')+'</div>'+(actions?'<div class="flex gap-2 flex-wrap">'+actions+'</div>':'')+'</div>';}
 
 // ============ AUTO SYNC ============
+// FIX: Sync only updates shift from sheet if today's date is found.
+// If sheet fetch fails OR date not found → shift stays as-is in Supabase (no override).
 function startAutoSync(){if(autoSyncInterval)clearInterval(autoSyncInterval);runAutoSync();autoSyncInterval=setInterval(runAutoSync,5*60*1000);}
 function stopAutoSync(){if(autoSyncInterval){clearInterval(autoSyncInterval);autoSyncInterval=null;}}
+
 function runAutoSync(){
   if(!refSheetUrl||!schedSheetUrl)return;
   var schedId='';var im=schedSheetUrl.match(/\/d\/e\/([^/]+)/);if(im)schedId=im[1];
   var schedGid='';var gm=schedSheetUrl.match(/[?&]gid=(\d+)/);if(gm)schedGid=gm[1];
   var schedRange='https://docs.google.com/spreadsheets/d/e/'+schedId+'/pub?output=csv'+(schedGid?'&gid='+schedGid:'')+'&range=A1:BZ60&_cb='+Date.now();
+
   Promise.all([
-    fetch(refSheetUrl+'&_cb='+Date.now()).then(function(r){return r.text()}),
-    fetch(schedRange).then(function(r){return r.text()})
+    fetch(refSheetUrl+'&_cb='+Date.now()).then(function(r){if(!r.ok)throw new Error('ref:'+r.status);return r.text();}),
+    fetch(schedRange).then(function(r){if(!r.ok)throw new Error('sched:'+r.status);return r.text();})
   ]).then(function(results){
     var refData=parseCSV(results[0]);
     var schedData=parseCSV(results[1]);
+
+    // Find header row
     var headerRow=-1;
     for(var i=0;i<Math.min(refData.length,5);i++){
       for(var j=0;j<refData[i].length;j++){
@@ -274,17 +280,35 @@ function runAutoSync(){
       }
       if(headerRow!==-1)break;
     }
-    if(headerRow===-1){toast('Sync: Formal Name not found','error');return;}
+    if(headerRow===-1){toast('Sync: Formal Name column not found','error');return;}
+
+    // Build employee list from ref sheet
+    // FIX: default shift = keep existing Supabase value, NOT 'Morning'
     var employees=[];
     for(var i=headerRow+1;i<refData.length;i++){
       var row=refData[i];
       if(!row[0]||!row[0].trim())continue;
       if((row[3]||'').toString().trim().toLowerCase()==='inactive')continue;
-      employees.push({name:row[0].trim(),email:(row[1]||'').trim(),xcally_name:(row[2]||'').trim(),xcally_id:(row[4]||'').trim(),phone:(row[5]||'').trim(),agent_code:(row[7]||'').trim(),shift:'Morning'});
+      var existingEmp=S.employees.find(function(ex){return ex.email&&ex.email.toLowerCase()===(row[1]||'').trim().toLowerCase();});
+      employees.push({
+        name:row[0].trim(),
+        email:(row[1]||'').trim(),
+        xcally_name:(row[2]||'').trim(),
+        xcally_id:(row[4]||'').trim(),
+        phone:(row[5]||'').trim(),
+        agent_code:(row[7]||'').trim(),
+        // FIX: keep existing shift from Supabase as default — don't override with Morning
+        shift: existingEmp ? existingEmp.shift : 'Off',
+        shiftFromSheet: false // will be set to true only if we find today's date in schedule
+      });
     }
-    if(!employees.length){toast('Sync: Sheet empty','error');return;}
+
+    if(!employees.length){toast('Sync: Sheet empty or no valid employees','error');return;}
+
+    // Find today's column in schedule sheet
     var todayD=new Date();
     var todayNorm=todayD.getDate()+'/'+(todayD.getMonth()+1)+'/'+todayD.getFullYear();
+
     function normDate(val){
       if(!val)return '';
       val=val.toString().trim();
@@ -296,38 +320,83 @@ function runAutoSync(){
       if(!isNaN(d.getTime())&&d.getFullYear()>2000)return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();
       return '';
     }
+
     var todayCol=-1;
     var dateRow=schedData[1]||[];
     for(var c=1;c<dateRow.length;c++){if(normDate(dateRow[c])===todayNorm){todayCol=c;break;}}
-    if(todayCol===-1){var dateRow0=schedData[0]||[];for(var c=1;c<dateRow0.length;c++){if(normDate(dateRow0[c])===todayNorm){todayCol=c;break;}}}
+    if(todayCol===-1){
+      var dateRow0=schedData[0]||[];
+      for(var c=1;c<dateRow0.length;c++){if(normDate(dateRow0[c])===todayNorm){todayCol=c;break;}}
+    }
+
+    // FIX: Only update shift from schedule if we actually found today's date column
     if(todayCol!==-1){
       for(var r=2;r<schedData.length;r++){
         var eName=(schedData[r][0]||'').trim();
         if(!eName||eName==='Agent Name')continue;
         var shiftVal=(schedData[r][todayCol]||'').toString().trim();
+        if(!shiftVal)continue; // empty cell = don't override
         var mapped=mapShift(shiftVal);
         for(var e=0;e<employees.length;e++){
-          if(employees[e].name.trim().toLowerCase()===eName.trim().toLowerCase()){employees[e].shift=mapped;break;}
+          if(employees[e].name.trim().toLowerCase()===eName.trim().toLowerCase()){
+            employees[e].shift=mapped;
+            employees[e].shiftFromSheet=true;
+            break;
+          }
         }
       }
     }
+
+    // Push to Supabase
     var promises=[],syncedEmails=[];
     for(var i=0;i<employees.length;i++){
-      var emp=employees[i];syncedEmails.push(emp.email);
-      var existing=S.employees.find(function(ex){return ex.email===emp.email&&emp.email!==''});
+      var emp=employees[i];
+      syncedEmails.push(emp.email);
+      var existing=S.employees.find(function(ex){return ex.email&&emp.email&&ex.email.toLowerCase()===emp.email.toLowerCase();});
       if(existing){
-        promises.push(sb.from('employees').update({name:emp.name,phone:emp.phone||existing.phone,email:emp.email||existing.email,shift:emp.shift,xcally_name:emp.xcally_name,xcally_id:emp.xcally_id,agent_code:emp.agent_code}).eq('id',existing.id));
+        // FIX: Only include shift in update if it came from the schedule sheet
+        // Otherwise keep whatever is already in Supabase
+        var updateData={
+          name:emp.name,
+          phone:emp.phone||existing.phone,
+          email:emp.email||existing.email,
+          xcally_name:emp.xcally_name,
+          xcally_id:emp.xcally_id,
+          agent_code:emp.agent_code
+        };
+        if(emp.shiftFromSheet){
+          updateData.shift=emp.shift;
+        }
+        promises.push(sb.from('employees').update(updateData).eq('id',existing.id));
       } else {
-        promises.push(sb.from('employees').insert({name:emp.name,email:emp.email,phone:emp.phone,shift:emp.shift,color:COLORS[i%COLORS.length],xcally_name:emp.xcally_name,xcally_id:emp.xcally_id,agent_code:emp.agent_code}));
+        promises.push(sb.from('employees').insert({
+          name:emp.name,email:emp.email,phone:emp.phone,
+          shift:emp.shift,
+          color:COLORS[i%COLORS.length],
+          xcally_name:emp.xcally_name,xcally_id:emp.xcally_id,agent_code:emp.agent_code
+        }));
       }
     }
-    if(employees.length>=3){var toDelete=S.employees.filter(function(e){return e.email&&syncedEmails.indexOf(e.email)===-1});for(var d=0;d<toDelete.length;d++){promises.push(sb.from('employees').delete().eq('id',toDelete[d].id));}}
+
+    // Delete removed employees
+    if(employees.length>=3){
+      var toDelete=S.employees.filter(function(e){return e.email&&syncedEmails.indexOf(e.email)===-1;});
+      for(var d=0;d<toDelete.length;d++){promises.push(sb.from('employees').delete().eq('id',toDelete[d].id));}
+    }
+
     Promise.all(promises).then(function(){
       lastSyncTime=new Date();
-      toast(employees.length+' employees synced','success');
+      var msg=employees.length+' employees synced';
+      if(todayCol===-1)msg+=' (shifts unchanged - date not in schedule)';
+      toast(msg,'success');
       fetchAll().then(function(){loadEmpDropdown();buildSidebar();if(S.currentPage==='team')renderTeam();if(S.currentPage==='dashboard')renderDashboard();});
     }).catch(function(e){toast('Sync DB error: '+e.message,'error');});
-  }).catch(function(e){toast('Sync failed - check if sheets are published','error');});
+
+  }).catch(function(e){
+    // FIX: If sheets unreachable, do nothing - don't touch any shifts
+    console.warn('Sync skipped (sheets unreachable):', e.message);
+    toast('Sync skipped - sheets not reachable (shifts unchanged)','info');
+  });
 }
 
 // ============ DASHBOARD ============
@@ -482,8 +551,22 @@ function saveEmployee(){var n=document.getElementById('tn').value.trim(),em=docu
 function deleteEmployee(id,name){showConfirm('Delete Employee','Delete "'+name+'"?',function(){sb.from('employees').delete().eq('id',id).then(function(){toast('Deleted');fetchAll().then(renderTeam)}).catch(function(e){toast(e.message,'error');});});}
 
 // ============ QUICK SHIFT ============
-function quickShift(eid,shift){sb.from('employees').update({shift:shift}).eq('id',eid).then(function(){toast(esc((empById(eid)||{}).name||'Employee')+' -> '+shift);fetchAll().then(function(){renderTeam();if(S.currentPage==='dashboard')renderDashboard();});}).catch(function(e){toast(e.message,'error');});}
-function setAllShifts(shift){showConfirm('Set All Shifts','Change ALL employees to "'+shift+'"?',function(){sb.from('employees').update({shift:shift}).then(function(){toast('All -> '+shift);fetchAll().then(function(){renderTeam();if(S.currentPage==='dashboard')renderDashboard();});}).catch(function(e){toast(e.message,'error');});});}
+function quickShift(eid,shift){
+  // Optimistic update in memory immediately
+  var emp=empById(eid);if(emp)emp.shift=shift;
+  renderTeam();
+  sb.from('employees').update({shift:shift}).eq('id',eid).then(function(){
+    fetchAll().then(function(){renderTeam();if(S.currentPage==='dashboard')renderDashboard();});
+  }).catch(function(e){toast(e.message,'error');fetchAll().then(renderTeam);});
+}
+function setAllShifts(shift){showConfirm('Set All Shifts','Change ALL employees to "'+shift+'"?',function(){
+  // Optimistic update
+  S.employees.forEach(function(e){e.shift=shift;});
+  renderTeam();
+  sb.from('employees').update({shift:shift}).then(function(){
+    fetchAll().then(function(){renderTeam();if(S.currentPage==='dashboard')renderDashboard();});
+  }).catch(function(e){toast(e.message,'error');fetchAll().then(renderTeam);});
+});}
 
 // ============ MY CLIENTS ============
 function renderMyClients(){
@@ -591,7 +674,6 @@ function logout(){
     S.employees=res.data||[];loadEmpDropdown();
   }).catch(function(){loadEmpDropdown();});
 }
-
 function loadEmpDropdown(){document.getElementById('employee-select').innerHTML='<option value="">Select Employee...</option>'+S.employees.map(function(e){return '<option value="'+e.id+'">'+esc(e.name)+'</option>'}).join('');}
 
 // ============ CSV + SHIFT ============
@@ -600,7 +682,9 @@ function mapShift(val){
   if(!val||!val.toString().trim())return 'Off';
   val=val.toString().trim();
   var lower=val.toLowerCase();
-  if(lower==='morning'||lower==='afternoon'||lower==='night')return val.charAt(0).toUpperCase()+val.slice(1);
+  if(lower==='morning')return 'Morning';
+  if(lower==='afternoon')return 'Afternoon';
+  if(lower==='night')return 'Night';
   if(val.match(/\d{1,2}:\d{2}/))return val;
   return 'Off';
 }
