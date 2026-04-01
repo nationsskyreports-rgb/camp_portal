@@ -7,6 +7,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{font-family:'DM Sans',sans-serif;margin:0;padding:0;box-sizing:border-box}
@@ -146,12 +147,12 @@ textarea.input{resize:vertical;min-height:70px}
 
 <script>
 // ============ CONFIG ============
-var ADMIN_PASSWORD = 'zomra2026'; // Change this!
+var ADMIN_PASSWORD = 'Camp2026'; // Change this!
 var SUPABASE_URL = 'https://biwrdwxgfyhnltzddlwu.supabase.co';
 var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpd3Jkd3hnZnlobmx0emRkbHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTczMTYsImV4cCI6MjA4OTc5MzMxNn0.EMOV5v3cGaDEqQJusnyrWTWdSPPwKeyuguPzxJvtKdQ';
 var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 var COLORS = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
-var SHIFT_COLORS = {Morning:'#f59e0b',Afternoon:'#3b82f6',Night:'#8b5cf6',Off:'#475569'};
+var SHIFT_COLORS = {Off:'#475569'}; function shiftColor(s){return isWorking(s)?'#10b981':'#475569';}
 var ADMIN_PAGES = [{id:'dashboard',label:'Dashboard',icon:'layout-dashboard'},{id:'campaigns',label:'Campaigns',icon:'target'},{id:'upload',label:'Upload & Distribute',icon:'upload'},{id:'qa',label:'Q&A Inbox',icon:'message-circle-question'},{id:'reports',label:'Reports & Export',icon:'file-bar-chart'},{id:'team',label:'Team Management',icon:'users'},{id:'my-clients',label:'All Clients',icon:'contact'}];
 var EMP_PAGES = [{id:'my-clients',label:'My Clients',icon:'contact'},{id:'ask-question',label:'Ask a Question',icon:'send'},{id:'my-questions',label:'My Questions',icon:'messages-square'},{id:'notifications',label:'Notifications',icon:'bell'}];
 var S={role:null,employee:null,currentPage:'',employees:[],campaigns:[],clients:[],questions:[],notifications:[],presence:[],contactHistory:[]};
@@ -257,37 +258,148 @@ function startAutoSync(){if(autoSyncInterval)clearInterval(autoSyncInterval);run
 function stopAutoSync(){if(autoSyncInterval){clearInterval(autoSyncInterval);autoSyncInterval=null;}}
 function runAutoSync(){
   if(!refSheetUrl||!schedSheetUrl)return;
+
   var schedId='';var im=schedSheetUrl.match(/\/d\/e\/([^/]+)/);if(im)schedId=im[1];
   var schedGid='';var gm=schedSheetUrl.match(/[?&]gid=(\d+)/);if(gm)schedGid=gm[1];
-  var schedRange='https://docs.google.com/spreadsheets/d/e/'+schedId+'/pub?output=csv'+(schedGid?'&gid='+schedGid:'')+'&range=A1:BZ50&_cb='+Date.now();
-  Promise.all([fetch(refSheetUrl+'&_cb='+Date.now()).then(function(r){return r.text()}),fetch(schedRange).then(function(r){return r.text()})]).then(function(results){
-    var refData=parseCSV(results[0]),schedData=parseCSV(results[1]);
+  var schedRange='https://docs.google.com/spreadsheets/d/e/'+schedId+'/pub?output=csv'+(schedGid?'&gid='+schedGid:'')+'&range=A1:BZ60&_cb='+Date.now();
+
+  Promise.all([
+    fetch(refSheetUrl+'&_cb='+Date.now()).then(function(r){return r.text()}),
+    fetch(schedRange).then(function(r){return r.text()})
+  ]).then(function(results){
+    var refData=parseCSV(results[0]);
+    var schedData=parseCSV(results[1]);
+
+    // ---- REFERENCE AREA ----
+    // Structure: Row1=title, Row2=headers (Formal Name, Email...), Row3+=data
     var headerRow=-1;
-    for(var i=0;i<Math.min(refData.length,10);i++){for(var j=0;j<refData[i].length;j++){if(refData[i][j]&&refData[i][j].toString().trim()==='Formal Name'){headerRow=i;break;}}if(headerRow!==-1)break;}
+    for(var i=0;i<Math.min(refData.length,5);i++){
+      for(var j=0;j<refData[i].length;j++){
+        if(refData[i][j]&&refData[i][j].toString().trim()==='Formal Name'){headerRow=i;break;}
+      }
+      if(headerRow!==-1)break;
+    }
     if(headerRow===-1){toast('Sync: لم يتم العثور على Formal Name','error');return;}
+
     var employees=[];
     for(var i=headerRow+1;i<refData.length;i++){
-      var row=refData[i];if(!row[0]||!row[0].trim())continue;
+      var row=refData[i];
+      if(!row[0]||!row[0].trim())continue;
       if((row[3]||'').toString().trim().toLowerCase()==='inactive')continue;
-      employees.push({name:row[0].trim(),email:(row[1]||'').trim(),xcally_name:(row[2]||'').trim(),xcally_id:(row[4]||'').trim(),phone:(row[5]||'').trim(),agent_code:(row[7]||'').trim(),shift:(row[6]||'Morning').trim()});
+      employees.push({
+        name:row[0].trim(),
+        email:(row[1]||'').trim(),
+        xcally_name:(row[2]||'').trim(),
+        xcally_id:(row[4]||'').trim(),
+        phone:(row[5]||'').trim(),
+        agent_code:(row[7]||'').trim(),
+        shift:'Morning' // default, will be overridden by schedule
+      });
     }
+
     if(!employees.length){toast('Sync: الشيت فاضي أو فيه مشكلة — لم يتم التعديل','error');return;}
-    var todayD=new Date(),todayNorm=todayD.getDate()+'/'+(todayD.getMonth()+1)+'/'+todayD.getFullYear();
-    function normDate(val){if(!val)return '';val=val.toString().trim();var m1=val.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/);if(m1){var yr=parseInt(m1[3]);if(yr<100)yr+=2000;return parseInt(m1[1])+'/'+parseInt(m1[2])+'/'+yr;}var m2=val.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);if(m2)return parseInt(m2[3])+'/'+parseInt(m2[2])+'/'+parseInt(m2[1]);var d=new Date(val);if(!isNaN(d.getTime())&&d.getFullYear()>2000)return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();return '';}
+
+    // ---- SCHEDULE SHEET ----
+    // Structure:
+    //   Row 0 (index 0): "Agent Name" | Sun | Mon | Tue... (merged with row 1)
+    //   Row 1 (index 1): empty col A | 02/03/2025 | 03/03/2025... (DATES HERE)
+    //   Row 2+ (index 2+): Agent Name | shift | shift...
+
+    // Find today's date ONLY in row index 1 (the date row)
+    var todayD=new Date();
+    var todayNorm=todayD.getDate()+'/'+(todayD.getMonth()+1)+'/'+todayD.getFullYear();
+
+    function normDate(val){
+      if(!val)return '';
+      val=val.toString().trim();
+      // dd/mm/yyyy or d/m/yyyy
+      var m1=val.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/);
+      if(m1){var yr=parseInt(m1[3]);if(yr<100)yr+=2000;return parseInt(m1[1])+'/'+parseInt(m1[2])+'/'+yr;}
+      // yyyy-mm-dd
+      var m2=val.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
+      if(m2)return parseInt(m2[3])+'/'+parseInt(m2[2])+'/'+parseInt(m2[1]);
+      // JS Date fallback
+      var d=new Date(val);
+      if(!isNaN(d.getTime())&&d.getFullYear()>2000)return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();
+      return '';
+    }
+
+    // Search ONLY row index 1 for today's date (that's where dates live)
     var todayCol=-1;
-    outerLoop:for(var r=0;r<schedData.length;r++){for(var c=1;c<schedData[r].length;c++){if(normDate(schedData[r][c])===todayNorm){todayCol=c;break outerLoop;}}}
-    if(todayCol!==-1){for(var r=2;r<schedData.length;r++){var eName=(schedData[r][0]||'').trim();if(!eName)continue;var mapped=mapShift(schedData[r][todayCol]);for(var e=0;e<employees.length;e++){if(employees[e].name===eName){employees[e].shift=mapped;break;}}}}
+    var dateRow=schedData[1]||[]; // Row index 1 = date row
+    for(var c=1;c<dateRow.length;c++){
+      if(normDate(dateRow[c])===todayNorm){todayCol=c;break;}
+    }
+
+    // If not found in row 1, try row 0 as fallback (some sheets differ)
+    if(todayCol===-1){
+      var dateRow0=schedData[0]||[];
+      for(var c=1;c<dateRow0.length;c++){
+        if(normDate(dateRow0[c])===todayNorm){todayCol=c;break;}
+      }
+    }
+
+    var scheduleMatched=todayCol!==-1;
+
+    // Apply shifts from schedule - agents start at row index 2
+    if(scheduleMatched){
+      for(var r=2;r<schedData.length;r++){
+        var eName=(schedData[r][0]||'').trim();
+        if(!eName||eName==='Agent Name')continue;
+        var shiftVal=(schedData[r][todayCol]||'').toString().trim();
+        var mapped=mapShift(shiftVal);
+        for(var e=0;e<employees.length;e++){
+          if(employees[e].name===eName){employees[e].shift=mapped;break;}
+        }
+      }
+    }
+
+    // Push to Supabase
     var promises=[],syncedEmails=[];
     for(var i=0;i<employees.length;i++){
-      var emp=employees[i];syncedEmails.push(emp.email);
+      var emp=employees[i];
+      syncedEmails.push(emp.email);
       var existing=S.employees.find(function(ex){return ex.email===emp.email&&emp.email!==''});
-      if(existing){promises.push(sb.from('employees').update({name:emp.name,phone:emp.phone||existing.phone,email:emp.email||existing.email,shift:emp.shift,xcally_name:emp.xcally_name,xcally_id:emp.xcally_id,agent_code:emp.agent_code}).eq('id',existing.id));}
-      else{promises.push(sb.from('employees').insert({name:emp.name,email:emp.email,phone:emp.phone,shift:emp.shift,color:COLORS[i%COLORS.length],xcally_name:emp.xcally_name,xcally_id:emp.xcally_id,agent_code:emp.agent_code}));}
+      if(existing){
+        promises.push(sb.from('employees').update({
+          name:emp.name,
+          phone:emp.phone||existing.phone,
+          email:emp.email||existing.email,
+          shift:emp.shift,
+          xcally_name:emp.xcally_name,
+          xcally_id:emp.xcally_id,
+          agent_code:emp.agent_code
+        }).eq('id',existing.id));
+      } else {
+        promises.push(sb.from('employees').insert({
+          name:emp.name,email:emp.email,phone:emp.phone,
+          shift:emp.shift,color:COLORS[i%COLORS.length],
+          xcally_name:emp.xcally_name,xcally_id:emp.xcally_id,agent_code:emp.agent_code
+        }));
+      }
     }
-    if(employees.length>=3){var toDelete=S.employees.filter(function(e){return e.email&&syncedEmails.indexOf(e.email)===-1});for(var d=0;d<toDelete.length;d++)promises.push(sb.from('employees').delete().eq('id',toDelete[d].id));}
-    Promise.all(promises).then(function(){lastSyncTime=new Date();toast(employees.length+' موظف تم sync'+(todayCol===-1?' (schedule not matched)':''),'success');fetchAll().then(function(){loadEmpDropdown();buildSidebar();if(S.currentPage==='team')renderTeam();if(S.currentPage==='dashboard')renderDashboard();});}).catch(function(e){toast('Sync DB error: '+e.message,'error');});
-  }).catch(function(){toast('Sync failed - تأكد إن الشيت منشور','error');});
+
+    // Safety: only delete removed employees if sheet returned reasonable data
+    if(employees.length>=3){
+      var toDelete=S.employees.filter(function(e){return e.email&&syncedEmails.indexOf(e.email)===-1});
+      for(var d=0;d<toDelete.length;d++){promises.push(sb.from('employees').delete().eq('id',toDelete[d].id));}
+    }
+
+    Promise.all(promises).then(function(){
+      lastSyncTime=new Date();
+      var msg=employees.length+' موظف تم sync';
+      if(!scheduleMatched)msg+=' ⚠️ التاريخ مش موجود في الجدول';
+      toast(msg,'success');
+      fetchAll().then(function(){
+        loadEmpDropdown();
+        buildSidebar();
+        if(S.currentPage==='team')renderTeam();
+        if(S.currentPage==='dashboard')renderDashboard();
+      });
+    }).catch(function(e){toast('Sync DB error: '+e.message,'error');});
+  }).catch(function(e){toast('Sync failed - تأكد إن الشيت منشور','error');});
 }
+
 
 // ============ DASHBOARD ============
 function renderDashboard(){
@@ -306,9 +418,16 @@ function renderDashboard(){
   '</div><div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">'+
   '<div class="card lg:col-span-2"><h3 class="text-sm font-bold text-white mb-4">Active Campaigns</h3>'+(ac.length?'<div class="space-y-2">'+ac.map(function(c){var cc=S.clients.filter(function(cl){return cl.campaign_id===c.id}).length;return '<div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] table-row"><div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-blue-500"></div><div><p class="text-sm font-medium text-white">'+esc(c.name)+'</p><p class="text-xs text-slate-500">'+esc(c.type)+'</p></div></div><div class="flex items-center gap-3"><span class="text-xs text-slate-400">'+cc+' clients</span>'+sBadge(c.status)+'</div></div>';}).join('')+'</div>':'<p class="text-slate-500 text-sm">No active campaigns</p>')+'</div>'+
   '<div class="card"><h3 class="text-sm font-bold text-white mb-4">Distribution</h3><div class="space-y-3">'+dist.map(function(d){return '<div><div class="flex items-center justify-between mb-1"><div class="flex items-center gap-2">'+av(d.name,d.color,20)+'<span class="text-xs text-slate-300">'+esc(d.name)+'</span></div><span class="text-xs font-semibold text-white">'+d.count+'</span></div><div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:'+(d.count/mx)*100+'%;background:'+d.color+'"></div></div></div>';}).join('')+(dist.length?'':'<p class="text-slate-500 text-sm">No employees</p>')+'</div></div></div>'+
-  '<div class="card mt-6 fade-in"><h3 class="text-sm font-bold text-white mb-4">Team Status</h3><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5"><th class="pb-3 pr-4">Employee</th><th class="pb-3 pr-4">Online</th><th class="pb-3 pr-4">Shift</th><th class="pb-3">Contact</th></tr></thead><tbody>'+
-  S.employees.map(function(e){var st=getPresenceStatus(e.id);var c=sc(e.shift);return '<tr class="table-row border-b border-white/[0.03]"><td class="py-3 pr-4"><div class="flex items-center gap-2">'+av(e.name,e.color,28)+'<span class="font-medium text-white">'+esc(e.name)+'</span></div></td><td class="py-3 pr-4"><div class="flex items-center gap-2">'+pDot(st)+'<span class="text-xs capitalize '+(st==='online'?'text-emerald-400':st==='away'?'text-amber-400':'text-slate-500')+'">'+st+'</span></div></td><td class="py-3 pr-4"><span class="badge" style="background:'+c+'22;color:'+c+'">'+esc(e.shift)+'</span></td><td class="py-3"><div class="flex gap-2"><a href="tel:'+esc(e.phone)+'" class="text-slate-400 hover:text-blue-400"><i data-lucide="phone" class="w-3.5 h-3.5"></i></a><a href="mailto:'+esc(e.email)+'" class="text-slate-400 hover:text-blue-400"><i data-lucide="mail" class="w-3.5 h-3.5"></i></a></div></td></tr>';}).join('')+
-  '</tbody></table></div></div>';lucide.createIcons();
+  '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 fade-in">'+
+  '<div class="card"><div class="flex items-center justify-between mb-4"><h3 class="text-sm font-bold text-white">✅ Working Today</h3><span class="badge badge-active">'+S.employees.filter(function(e){return isWorking(e.shift)}).length+'</span></div><div class="space-y-2">'+
+  S.employees.filter(function(e){return isWorking(e.shift)}).map(function(e){var st=getPresenceStatus(e.id);return '<div class="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02]"><div class="flex items-center gap-2">'+av(e.name,e.color,30)+'<div><p class="text-sm font-medium text-white">'+esc(e.name)+'</p><p class="text-xs text-emerald-400 font-medium">'+esc(e.shift)+'</p></div></div><div class="flex items-center gap-2">'+pDot(st)+'<a href="tel:'+esc(e.phone)+'" class="text-slate-400 hover:text-blue-400"><i data-lucide="phone" class="w-3.5 h-3.5"></i></a><a href="mailto:'+esc(e.email)+'" class="text-slate-400 hover:text-blue-400"><i data-lucide="mail" class="w-3.5 h-3.5"></i></a></div></div>';}).join('')+
+  (S.employees.filter(function(e){return isWorking(e.shift)}).length?'':'<p class="text-slate-500 text-sm text-center py-4">No one scheduled today</p>')+
+  '</div></div>'+
+  '<div class="card"><div class="flex items-center justify-between mb-4"><h3 class="text-sm font-bold text-white">🔴 Off Today</h3><span class="badge badge-ended">'+S.employees.filter(function(e){return !isWorking(e.shift)}).length+'</span></div><div class="space-y-2">'+
+  S.employees.filter(function(e){return !isWorking(e.shift)}).map(function(e){return '<div class="flex items-center gap-2 p-2.5 rounded-lg bg-white/[0.02]">'+av(e.name,e.color,28)+'<p class="text-sm text-slate-400">'+esc(e.name)+'</p></div>';}).join('')+
+  (S.employees.filter(function(e){return !isWorking(e.shift)}).length?'':'<p class="text-slate-500 text-sm text-center py-4">Everyone is working!</p>')+
+  '</div></div>'+
+  '</div>';lucide.createIcons();
 }
 
 // ============ CAMPAIGNS ============
@@ -337,17 +456,130 @@ function changeCampStatus(id,st){sb.from('campaigns').update({status:st}).eq('id
 function renderUpload(){
   var m=document.getElementById('main-content');
   var campOpts='<option value="">Select campaign...</option>'+S.campaigns.map(function(c){return '<option value="'+c.id+'" '+(U.campaignId===c.id?'selected':'')+'>'+esc(c.name)+'</option>'}).join('');
-  var rowsHtml='';
-  for(var i=0;i<U.rows.length;i++){var r=U.rows[i];rowsHtml+='<div class="upload-row py-2"><input class="input" placeholder="Name" value="'+esc(r.name)+'" onchange="U.rows['+i+'].name=this.value"><input class="input" placeholder="Phone" value="'+esc(r.phone)+'" onchange="U.rows['+i+'].phone=this.value"><input class="input" placeholder="Offer" value="'+esc(r.offer)+'" onchange="U.rows['+i+'].offer=this.value"><input class="input" placeholder="'+esc(U.cf1Label||'Custom 1')+'" value="'+esc(r.cf1)+'" onchange="U.rows['+i+'].cf1=this.value"><input class="input" placeholder="'+esc(U.cf2Label||'Custom 2')+'" value="'+esc(r.cf2)+'" onchange="U.rows['+i+'].cf2=this.value"><button class="btn btn-danger btn-sm" onclick="U.rows.splice('+i+',1);renderUpload()" style="padding:6px"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>';}
   var previewHtml='';
-  if(U.preview){var mx=Math.max.apply(null,Object.values(U.preview).map(function(a){return a.length}).concat([1]));previewHtml='<div class="card border-emerald-500/20 mb-6 fade-in"><h3 class="text-sm font-bold text-white mb-1">Preview — active employees only</h3><p class="text-xs text-slate-500 mb-4">Off-shift employees excluded</p><div class="space-y-3">'+Object.keys(U.preview).map(function(eid){var e=empById(eid);if(!e)return '';var cls=U.preview[eid];var c=sc(e.shift);return '<div><div class="flex items-center justify-between mb-1"><div class="flex items-center gap-2">'+av(e.name,e.color,22)+'<span class="text-xs text-slate-300">'+esc(e.name)+'</span><span class="badge" style="font-size:10px;padding:2px 8px;background:'+c+'22;color:'+c+'">'+esc(e.shift)+'</span></div><span class="text-xs font-bold text-white">'+cls.length+'</span></div><div class="w-full h-2 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full bg-emerald-500/70" style="width:'+(cls.length/mx)*100+'%"></div></div></div>';}).join('')+'</div><div class="flex gap-2 mt-5"><button class="btn btn-success" onclick="confirmDistribute()"><i data-lucide="check" class="w-4 h-4"></i> Confirm</button><button class="btn btn-ghost" onclick="U.preview=null;renderUpload()">Cancel</button></div></div>';}
-  m.innerHTML=hdr('Upload & Distribute','Distribute to active (non-Off) employees only')+previewHtml+
-  '<div class="card fade-in"><div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5"><div><label class="text-xs text-slate-400 mb-1 block">Campaign *</label><select class="input" onchange="U.campaignId=this.value;U.preview=null">'+campOpts+'</select></div><div><label class="text-xs text-slate-400 mb-1 block">Field 1 Label</label><input class="input" placeholder="e.g. Package" value="'+esc(U.cf1Label)+'" onchange="U.cf1Label=this.value;renderUpload()"></div><div><label class="text-xs text-slate-400 mb-1 block">Field 2 Label</label><input class="input" placeholder="e.g. Region" value="'+esc(U.cf2Label)+'" onchange="U.cf2Label=this.value;renderUpload()"></div></div>'+
-  '<div class="flex items-center justify-between mb-3"><h3 class="text-sm font-bold text-white">Entries ('+U.rows.length+')</h3><div class="flex gap-2"><button class="btn btn-ghost btn-sm" onclick="addUploadRows(5)"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Add 5</button><button class="btn btn-primary btn-sm" onclick="previewDistribute()"><i data-lucide="shuffle" class="w-3.5 h-3.5"></i> Distribute</button></div></div>'+
-  '<div class="space-y-1 max-h-[400px] overflow-y-auto pr-1">'+rowsHtml+(U.rows.length?'':'<p class="text-slate-500 text-sm text-center py-6">No entries. Click Add 5.</p>')+'</div></div>';
+  if(U.preview){
+    var mx=Math.max.apply(null,Object.values(U.preview).map(function(a){return a.length}).concat([1]));
+    previewHtml='<div class="card border-emerald-500/20 mb-6 fade-in"><h3 class="text-sm font-bold text-white mb-1">Preview — '+U.rows.length+' clients → active employees only</h3><p class="text-xs text-slate-500 mb-4">Off-shift employees excluded</p><div class="space-y-3">'+
+    Object.keys(U.preview).map(function(eid){var e=empById(eid);if(!e)return '';var cls=U.preview[eid];return '<div><div class="flex items-center justify-between mb-1"><div class="flex items-center gap-2">'+av(e.name,e.color,22)+'<span class="text-xs text-slate-300">'+esc(e.name)+'</span><span class="text-xs text-emerald-400 ml-1">'+esc(e.shift)+'</span></div><span class="text-xs font-bold text-white">'+cls.length+'</span></div><div class="w-full h-2 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full bg-emerald-500/70" style="width:'+(cls.length/mx)*100+'%"></div></div></div>';}).join('')+
+    '</div><div class="flex gap-2 mt-5"><button class="btn btn-success" onclick="confirmDistribute()"><i data-lucide="check" class="w-4 h-4"></i> Confirm & Distribute</button><button class="btn btn-ghost" onclick="U.preview=null;renderUpload()">Cancel</button></div></div>';
+  }
+  m.innerHTML=hdr('Upload & Distribute','Upload from Excel or paste data, then distribute')+previewHtml+
+  '<div class="card fade-in mb-4"><div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">'+
+  '<div><label class="text-xs text-slate-400 mb-1 block">Campaign *</label><select class="input" onchange="U.campaignId=this.value;U.preview=null">'+campOpts+'</select></div>'+
+  '<div><label class="text-xs text-slate-400 mb-1 block">Field 1 Label</label><input class="input" placeholder="e.g. Package" value="'+esc(U.cf1Label)+'" onchange="U.cf1Label=this.value"></div>'+
+  '<div><label class="text-xs text-slate-400 mb-1 block">Field 2 Label</label><input class="input" placeholder="e.g. Region" value="'+esc(U.cf2Label)+'" onchange="U.cf2Label=this.value"></div>'+
+  '</div>'+
+  // Tabs
+  '<div class="flex gap-2 mb-4 border-b border-white/10 pb-2">'+
+  '<button class="btn btn-sm '+(U.uploadTab==='paste'?'btn-primary':'btn-ghost')+'" onclick="U.uploadTab='paste';renderUpload()"><i data-lucide="clipboard" class="w-3.5 h-3.5"></i> Paste from Excel</button>'+
+  '<button class="btn btn-sm '+(U.uploadTab==='excel'?'btn-primary':'btn-ghost')+'" onclick="U.uploadTab='excel';renderUpload()"><i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Upload Excel File</button>'+
+  '<button class="btn btn-sm '+(U.uploadTab==='manual'?'btn-primary':'btn-ghost')+'" onclick="U.uploadTab='manual';renderUpload()"><i data-lucide="table" class="w-3.5 h-3.5"></i> Manual Entry</button>'+
+  '</div>'+
+  // Paste Tab
+  (U.uploadTab==='paste'?
+  '<div class="space-y-3"><p class="text-xs text-slate-400">Copy cells from Excel/Google Sheets (columns: <span class="text-white font-medium">Name, Phone, Offer, '+esc(U.cf1Label||'Field1')+', '+esc(U.cf2Label||'Field2')+'</span>) and paste below:</p>'+
+  '<textarea id="paste-area" class="input font-mono text-xs" rows="10" placeholder="Paste Excel data here (Tab-separated)...&#10;Ahmed Ali&#9;01012345678&#9;Package A&#9;Cairo&#9;..."></textarea>'+
+  '<button class="btn btn-primary" onclick="parsePaste()"><i data-lucide="clipboard-check" class="w-4 h-4"></i> Parse & Preview</button></div>'
+  :'')+''+
+  // Excel Tab
+  (U.uploadTab==='excel'?
+  '<div class="space-y-3"><p class="text-xs text-slate-400">Upload .xlsx or .xls file. First row = headers. Columns expected: <span class="text-white font-medium">Name, Phone, Offer/Financial, '+esc(U.cf1Label||'Field1')+', '+esc(U.cf2Label||'Field2')+'</span></p>'+
+  '<div class="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:border-blue-500/40 transition-colors" ondrop="handleExcelDrop(event)" ondragover="event.preventDefault()">'+
+  '<i data-lucide="file-spreadsheet" class="w-10 h-10 text-slate-600 mx-auto mb-3"></i>'+
+  '<p class="text-slate-400 text-sm mb-3">Drag & drop Excel file here</p>'+
+  '<label class="btn btn-ghost cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i> Browse File<input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleExcelFile(this)"></label>'+
+  '</div>'+
+  (U.rows.length?'<p class="text-emerald-400 text-sm font-medium">✓ '+U.rows.length+' rows loaded — <button class="underline" onclick="previewDistribute()">Preview distribution</button></p>':'')+'</div>'
+  :'')+''+
+  // Manual Tab
+  (U.uploadTab==='manual'||!U.uploadTab?
+  (function(){
+    var rowsHtml='';
+    for(var i=0;i<U.rows.length;i++){var r=U.rows[i];rowsHtml+='<div class="upload-row py-2"><input class="input" placeholder="Name" value="'+esc(r.name)+'" onchange="U.rows['+i+'].name=this.value"><input class="input" placeholder="Phone" value="'+esc(r.phone)+'" onchange="U.rows['+i+'].phone=this.value"><input class="input" placeholder="Offer" value="'+esc(r.offer)+'" onchange="U.rows['+i+'].offer=this.value"><input class="input" placeholder="'+esc(U.cf1Label||'Field 1')+'" value="'+esc(r.cf1)+'" onchange="U.rows['+i+'].cf1=this.value"><input class="input" placeholder="'+esc(U.cf2Label||'Field 2')+'" value="'+esc(r.cf2)+'" onchange="U.rows['+i+'].cf2=this.value"><button class="btn btn-danger btn-sm" onclick="U.rows.splice('+i+',1);renderUpload()" style="padding:6px"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>';}
+    return '<div class="flex items-center justify-between mb-3"><h3 class="text-sm font-bold text-white">Entries ('+U.rows.length+')</h3><div class="flex gap-2"><button class="btn btn-ghost btn-sm" onclick="addUploadRows(5)"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Add 5</button></div></div>'+
+    '<div class="space-y-1 max-h-[350px] overflow-y-auto pr-1">'+rowsHtml+(U.rows.length?'':'<p class="text-slate-500 text-sm text-center py-6">No entries. Click Add 5.</p>')+'</div>';
+  })()
+  :'')+
+  (U.rows.length&&U.uploadTab!=='manual'?'':'')+''+
+  (U.rows.length?'<div class="mt-4 pt-4 border-t border-white/10"><button class="btn btn-primary" onclick="previewDistribute()"><i data-lucide="shuffle" class="w-4 h-4"></i> Preview Distribution ('+U.rows.length+' entries)</button></div>':'')+'</div>';
   lucide.createIcons();
 }
+
 function addUploadRows(n){for(var i=0;i<n;i++)U.rows.push({name:'',phone:'',offer:'',cf1:'',cf2:''});renderUpload();}
+
+function parsePaste(){
+  var raw=document.getElementById('paste-area').value.trim();
+  if(!raw){toast('Paste some data first','error');return;}
+  var lines=raw.split('\n');
+  var rows=[];
+  for(var i=0;i<lines.length;i++){
+    var line=lines[i].replace(/\r/g,'').trim();
+    if(!line)continue;
+    var cols=line.split('\t');
+    var name=(cols[0]||'').trim();
+    if(!name)continue;
+    rows.push({name:name,phone:(cols[1]||'').trim(),offer:(cols[2]||'').trim(),cf1:(cols[3]||'').trim(),cf2:(cols[4]||'').trim()});
+  }
+  if(!rows.length){toast('No valid rows found','error');return;}
+  U.rows=rows;
+  toast(rows.length+' rows parsed','success');
+  renderUpload();
+}
+
+function handleExcelDrop(e){
+  e.preventDefault();
+  var file=e.dataTransfer.files[0];
+  if(file)readExcelFile(file);
+}
+
+function handleExcelFile(input){
+  var file=input.files[0];
+  if(file)readExcelFile(file);
+}
+
+function readExcelFile(file){
+  var name=file.name.toLowerCase();
+  if(name.endsWith('.csv')){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var lines=e.target.result.split('\n');
+      var rows=[];var start=0;
+      // Skip header if first col looks like "name"
+      if(lines[0]&&lines[0].toLowerCase().indexOf('name')!==-1)start=1;
+      for(var i=start;i<lines.length;i++){
+        var cols=lines[i].replace(/\r/g,'').split(',');
+        var n=(cols[0]||'').replace(/^"|"$/g,'').trim();
+        if(!n)continue;
+        rows.push({name:n,phone:(cols[1]||'').replace(/^"|"$/g,'').trim(),offer:(cols[2]||'').replace(/^"|"$/g,'').trim(),cf1:(cols[3]||'').replace(/^"|"$/g,'').trim(),cf2:(cols[4]||'').replace(/^"|"$/g,'').trim()});
+      }
+      U.rows=rows;toast(rows.length+' rows loaded from CSV');renderUpload();
+    };
+    reader.readAsText(file);
+  } else {
+    // For xlsx: instruct user to save as CSV or use paste method
+    toast('Please save as CSV first, or use the Paste method','error');
+    // Try SheetJS if available
+    if(window.XLSX){
+      var reader=new FileReader();
+      reader.onload=function(e){
+        try{
+          var wb=XLSX.read(e.target.result,{type:'array'});
+          var ws=wb.Sheets[wb.SheetNames[0]];
+          var data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+          var rows=[];var start=0;
+          if(data[0]&&data[0][0]&&data[0][0].toString().toLowerCase().indexOf('name')!==-1)start=1;
+          for(var i=start;i<data.length;i++){
+            var row=data[i];var n=(row[0]||'').toString().trim();
+            if(!n)continue;
+            rows.push({name:n,phone:(row[1]||'').toString().trim(),offer:(row[2]||'').toString().trim(),cf1:(row[3]||'').toString().trim(),cf2:(row[4]||'').toString().trim()});
+          }
+          U.rows=rows;toast(rows.length+' rows loaded from Excel');renderUpload();
+        }catch(err){toast('Could not read Excel file','error');}
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  }
+}
 function previewDistribute(){
   var valid=U.rows.filter(function(r){return r.name.trim()});
   if(!valid.length){toast('Add at least one client','error');return;}
@@ -539,7 +771,13 @@ function loadEmpDropdown(){document.getElementById('employee-select').innerHTML=
 
 // ============ CSV + SHIFT ============
 function parseCSV(text){var lines=text.split('\n'),result=[];for(var i=0;i<lines.length;i++){var line=lines[i].replace(/\r/g,'');if(!line)continue;var row=[],current='',inQ=false;for(var j=0;j<line.length;j++){var ch=line[j];if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){row.push(current.trim());current='';}else{current+=ch;}}row.push(current.trim());result.push(row);}return result;}
-function mapShift(val){if(!val||!val.toString().trim())return 'Off';val=val.toString().trim();if(val.toUpperCase()==='OFF'||val==='Task'||val==='PH')return 'Off';var m=val.match(/(\d{1,2})\s*:/);if(!m)return 'Morning';var h=parseInt(m[1]);if(h>=5&&h<14)return 'Morning';if(h>=14&&h<21)return 'Afternoon';return 'Night';}
+function mapShift(val){
+  if(!val||!val.toString().trim())return 'Off';
+  val=val.toString().trim();
+  if(val.match(/\d{1,2}:\d{2}/))return val; // store actual time e.g. "10:00 - 16:00"
+  return 'Off'; // OFF, Task, PH, Training, anything else
+}
+function isWorking(shift){return !!(shift&&shift!=='Off'&&shift.match&&shift.match(/\d{1,2}:\d{2}/));}
 
 // ============ INIT ============
 // Only load employee list for dropdown - no sensitive data before login
