@@ -2,7 +2,10 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Campaign Portal</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -104,16 +107,54 @@ textarea.input{resize:vertical;min-height:70px}
   #sidebar{transform:translateX(-100%);z-index:50}
   #sidebar.open{transform:translateX(0)}
   .sidebar-overlay.open{display:block}
-  #main-content{margin-left:0!important;padding-top:60px}
+  #main-content{margin-left:0!important;padding:70px 12px 24px!important}
   .mobile-menu-btn{display:flex!important}
+  /* Cards tighter on mobile */
+  .card{padding:14px}
+  /* Stat grid 2 cols */
+  .stat-grid-mobile{grid-template-columns:repeat(2,1fr)!important}
+  /* Tables scroll */
+  .overflow-x-auto{-webkit-overflow-scrolling:touch}
+  /* Buttons smaller */
+  .btn{padding:7px 12px;font-size:13px}
+  .btn-sm{padding:4px 10px;font-size:11px}
+  /* Input full width */
+  .input{font-size:16px!important} /* prevents iOS zoom */
+  /* Headers */
+  h1.text-2xl{font-size:1.25rem!important}
+  /* Modal full screen on mobile */
+  .modal{max-width:100%;margin:0;border-radius:12px 12px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:90vh}
+  .modal-overlay{align-items:flex-end;padding:0}
+  /* Upload table scroll */
+  .upload-tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  /* Cleanup table */
+  #cleanup-table-area .overflow-x-auto{max-height:60vh}
+  /* Flex wrap on mobile */
+  .mob-wrap{flex-wrap:wrap}
+  /* Hide non-essential columns on mobile */
+  .hide-mobile{display:none!important}
+  /* Bottom safe area */
+  #app-shell{padding-bottom:env(safe-area-inset-bottom)}
+}
+@media(max-width:480px){
+  #main-content{padding:65px 10px 20px!important}
+  .card{padding:12px;border-radius:10px}
+  h1.text-2xl{font-size:1.1rem!important}
 }
 .mobile-menu-btn{display:none;position:fixed;top:14px;left:14px;z-index:45;background:#0d1628;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px;cursor:pointer;align-items:center;justify-content:center}
+/* Mobile top bar background */
+@media(max-width:768px){
+  body::before{content:'';position:fixed;top:0;left:0;right:0;height:52px;background:#080e1a;border-bottom:1px solid rgba(255,255,255,0.05);z-index:44}
+}
 </style>
 </head>
 <body class="grid-bg">
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
 <div class="mobile-menu-btn" id="mobile-menu-btn" onclick="openMobileSidebar()">
   <i data-lucide="menu" class="w-5 h-5 text-slate-300"></i>
+</div>
+<div id="mobile-topbar-title" class="hidden fixed top-0 left-12 right-4 h-[52px] z-44 items-center justify-center pointer-events-none" style="z-index:44;display:none">
+  <span class="text-sm font-bold text-white" style="font-family:'Syne',sans-serif" id="mobile-page-title">Campaign Portal</span>
 </div>
 <div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-2"></div>
 
@@ -129,7 +170,12 @@ textarea.input{resize:vertical;min-height:70px}
       <div class="space-y-3">
         <div id="admin-btn" onclick="showAdminPass()" class="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold cursor-pointer hover:from-blue-500 hover:to-blue-600 transition-all hover:scale-[1.02] active:scale-[0.98]"><i data-lucide="shield-check" class="w-5 h-5"></i>Login as Admin</div>
         <div id="admin-pass-area" class="hidden space-y-2">
-          <input id="admin-pass-input" type="password" class="input" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')loginAsAdmin()">
+          <div class="relative">
+            <input id="admin-pass-input" type="password" class="input pr-11" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')loginAsAdmin()">
+            <button type="button" onclick="togglePassVis()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors">
+              <i data-lucide="eye" class="w-4 h-4" id="pass-eye-icon"></i>
+            </button>
+          </div>
           <div class="flex gap-2"><button class="btn btn-primary flex-1" onclick="loginAsAdmin()"><i data-lucide="log-in" class="w-4 h-4"></i>Login</button><button class="btn btn-ghost" onclick="hideAdminPass()">Cancel</button></div>
         </div>
         <div class="flex items-center gap-3 my-2"><div class="flex-1 h-px bg-white/10"></div><span class="text-xs text-slate-500">OR</span><div class="flex-1 h-px bg-white/10"></div></div>
@@ -231,7 +277,8 @@ var ADMIN_PAGES = [
   {id:'qa',          label:'Q&A Inbox',          icon:'message-circle-question'},
   {id:'reports',     label:'Reports & Export',   icon:'file-bar-chart'},
   {id:'team',        label:'Team Management',    icon:'users'},
-  {id:'my-clients',  label:'All Clients',        icon:'contact'}
+  {id:'my-clients',  label:'All Clients',        icon:'contact'},
+  {id:'cleanup',     label:'Data Cleanup',       icon:'trash-2'}
 ];
 var EMP_PAGES = [
   {id:'my-clients',    label:'My Clients',    icon:'contact'},
@@ -320,7 +367,25 @@ function csvExport(filename,headers,rows){
 }
 function openMobileSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebar-overlay').classList.add('open');}
 function closeMobileSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('open');}
-function showAdminPass(){document.getElementById('admin-btn').classList.add('hidden');document.getElementById('admin-pass-area').classList.remove('hidden');document.getElementById('admin-pass-input').focus();}
+function showAdminPass(){
+  document.getElementById('admin-btn').classList.add('hidden');
+  document.getElementById('admin-pass-area').classList.remove('hidden');
+  document.getElementById('admin-pass-input').focus();
+  lucide.createIcons();
+}
+function togglePassVis(){
+  var inp=document.getElementById('admin-pass-input');
+  var icon=document.getElementById('pass-eye-icon');
+  if(!inp)return;
+  if(inp.type==='password'){
+    inp.type='text';
+    icon.setAttribute('data-lucide','eye-off');
+  } else {
+    inp.type='password';
+    icon.setAttribute('data-lucide','eye');
+  }
+  lucide.createIcons();
+}
 function hideAdminPass(){document.getElementById('admin-btn').classList.remove('hidden');document.getElementById('admin-pass-area').classList.add('hidden');document.getElementById('admin-pass-input').value='';}
 
 // ============================================================
@@ -565,12 +630,23 @@ function buildSidebar(){
   document.getElementById('sidebar-subtitle').textContent=S.role==='admin'?'Management':'Dashboard';
   lucide.createIcons();
 }
-function navigateTo(page){S.currentPage=page;buildSidebar();renderPage();}
+function navigateTo(page){
+  S.currentPage=page;
+  buildSidebar();
+  renderPage();
+  // Update mobile top bar title
+  var allPages=ADMIN_PAGES.concat(EMP_PAGES);
+  var pg=allPages.find(function(p){return p.id===page;});
+  var titleEl=document.getElementById('mobile-page-title');
+  if(titleEl&&pg)titleEl.textContent=pg.label;
+  var tb=document.getElementById('mobile-topbar-title');
+  if(tb){tb.style.display='flex';}
+}
 function renderPage(){
   var m=document.getElementById('main-content');
   m.innerHTML='<div class="flex items-center justify-center py-20"><div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>';
   setTimeout(function(){
-    var fn={dashboard:renderDashboard,campaigns:renderCampaigns,upload:renderUpload,qa:renderQA,reports:renderReports,team:renderTeam,'my-clients':renderMyClients,'ask-question':renderAskQuestion,'my-questions':renderMyQuestions,notifications:renderNotifPage};
+    var fn={dashboard:renderDashboard,campaigns:renderCampaigns,upload:renderUpload,qa:renderQA,reports:renderReports,team:renderTeam,'my-clients':renderMyClients,'ask-question':renderAskQuestion,'my-questions':renderMyQuestions,notifications:renderNotifPage,cleanup:renderCleanup};
     if(fn[S.currentPage])fn[S.currentPage]();else renderDashboard();
   },80);
 }
@@ -1274,10 +1350,10 @@ function loginAsEmployee(){
   fetchAll().then(function(){buildSidebar();navigateTo('my-clients');});
 }
 function logout(){
-  // If employee, set inactive on logout
-  if(S.role==='employee'&&S.employee){
-    sb.from('employees').update({is_active:false}).eq('id',S.employee.id).catch(function(){});
-  }
+  // Save employee id BEFORE resetting state
+  var empIdToDeactivate = (S.role==='employee' && S.employee) ? S.employee.id : null;
+
+  // Reset all state immediately
   S={role:null,employee:null,currentPage:'',employees:[],campaigns:[],clients:[],questions:[],notifications:[],contactHistory:[]};
   U={campaignId:'',rows:[],preview:null,uploadTab:'paste',colConfig:null};
   T={showForm:false,editId:null,name:'',email:'',phone:''};
@@ -1285,13 +1361,23 @@ function logout(){
   qaFilter={employee:'',campaign:'',status:''};
   rptFilter={campaign:'',employee:'',status:'',dateFrom:'',dateTo:'',page:0};
   empClientFilter='';
+
+  // Show login screen
   document.getElementById('app-shell').classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('mobile-menu-btn').style.display='none';
   closeMobileSidebar();
-  sb.from('employees').select('id,name,is_active,color').order('name')
-    .then(function(res){S.employees=res.data||[];loadEmpDropdown();})
-    .catch(function(){loadEmpDropdown();});
+  function reloadDropdown(){
+    sb.from('employees').select('id,name,is_active,color').order('name')
+      .then(function(res){S.employees=res.data||[];loadEmpDropdown();})
+      .catch(function(){loadEmpDropdown();});
+  }
+  if(empIdToDeactivate){
+    sb.from('employees').update({is_active:false}).eq('id',empIdToDeactivate)
+      .then(reloadDropdown).catch(reloadDropdown);
+  } else {
+    reloadDropdown();
+  }
 }
 function loadEmpDropdown(){
   document.getElementById('employee-select').innerHTML=
@@ -1300,6 +1386,268 @@ function loadEmpDropdown(){
 }
 
 // ============================================================
+
+// ============================================================
+// DATA CLEANUP
+// ============================================================
+var cleanupState = {
+  campaignId: '',
+  clients: [],
+  selected: {},        // id -> true for checked rows
+  loading: false,
+  searchText: '',
+  importBatch: '',     // filter by import batch (created_at rounded to minute)
+  batches: []
+};
+
+function renderCleanup(){
+  var m = document.getElementById('main-content');
+  var campOpts = '<option value="">-- Select Campaign --</option>' +
+    S.campaigns.map(function(c){
+      return '<option value="'+c.id+'" '+(cleanupState.campaignId===c.id?'selected':'')+'>'+esc(c.name)+'</option>';
+    }).join('');
+
+  var selectedCount = Object.keys(cleanupState.selected).filter(function(k){return cleanupState.selected[k];}).length;
+
+  var html = hdr('Data Cleanup',
+    'Delete duplicate imports or incorrect records',
+    selectedCount > 0
+      ? '<button class="btn btn-danger" onclick="deleteSelected()"><i data-lucide="trash-2" class="w-4 h-4"></i> Delete Selected ('+selectedCount+')</button>'
+      : ''
+  );
+
+  // Campaign picker
+  html += '<div class="card mb-5 fade-in"><div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">' +
+    '<div><label class="text-xs text-slate-400 mb-1 block">Campaign</label>' +
+    '<select class="input" onchange="cleanupSelectCampaign(this.value)">'+campOpts+'</select></div>';
+
+  if(cleanupState.campaignId && cleanupState.batches.length > 1){
+    var batchOpts = '<option value="">All imports</option>' +
+      cleanupState.batches.map(function(b){
+        return '<option value="'+b.key+'" '+(cleanupState.importBatch===b.key?'selected':'')+'>'+b.label+' ('+b.count+' records)</option>';
+      }).join('');
+    html += '<div><label class="text-xs text-slate-400 mb-1 block">Filter by Import Batch</label>' +
+      '<select class="input" onchange="cleanupState.importBatch=this.value;renderCleanupTable()">'+batchOpts+'</select></div>';
+  }
+
+  if(cleanupState.campaignId){
+    html += '<div><label class="text-xs text-slate-400 mb-1 block">Search</label>' +
+      '<input class="input" placeholder="Search name or any field..." value="'+esc(cleanupState.searchText)+'" oninput="cleanupState.searchText=this.value;renderCleanupTable()"></div>';
+  }
+
+  html += '</div>';
+
+  // Quick actions
+  if(cleanupState.campaignId && cleanupState.clients.length > 0){
+    html += '<div class="flex gap-2 mt-4 flex-wrap">' +
+      '<button class="btn btn-ghost btn-sm" onclick="cleanupSelectAll()"><i data-lucide="check-square" class="w-3.5 h-3.5"></i> Select All Visible</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="cleanupClearSelection()"><i data-lucide="square" class="w-3.5 h-3.5"></i> Clear Selection</button>' +
+      (cleanupState.batches.length > 1
+        ? '<button class="btn btn-ghost btn-sm" onclick="cleanupSelectBatch()"><i data-lucide="layers" class="w-3.5 h-3.5"></i> Select This Batch</button>'
+        : '') +
+      '<span class="text-xs text-slate-500 self-center ml-2">'+cleanupState.clients.length+' total records</span>' +
+      '</div>';
+  }
+
+  html += '</div>';
+
+  // Table
+  html += '<div id="cleanup-table-area" class="fade-in">';
+  if(cleanupState.loading){
+    html += '<div class="flex items-center justify-center py-16"><div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>';
+  } else if(!cleanupState.campaignId){
+    html += '<div class="card text-center py-12"><p class="text-slate-500">Select a campaign to view its data</p></div>';
+  } else {
+    html += buildCleanupTable();
+  }
+  html += '</div>';
+
+  m.innerHTML = html;
+  lucide.createIcons();
+}
+
+function buildCleanupTable(){
+  var rows = cleanupState.clients;
+
+  // Apply batch filter
+  if(cleanupState.importBatch){
+    rows = rows.filter(function(c){ return getBatchKey(c.created_at) === cleanupState.importBatch; });
+  }
+
+  // Apply search
+  if(cleanupState.searchText){
+    var q = cleanupState.searchText.toLowerCase();
+    rows = rows.filter(function(c){
+      var extra = JSON.stringify(c.extra_data||{}).toLowerCase();
+      return (c.name||'').toLowerCase().indexOf(q)!==-1 ||
+             (c.phone||'').toLowerCase().indexOf(q)!==-1 ||
+             extra.indexOf(q)!==-1;
+    });
+  }
+
+  if(!rows.length){
+    return '<div class="card text-center py-10"><p class="text-slate-500">No records match your filter</p></div>';
+  }
+
+  // Get visible columns for this campaign
+  var camp = campById(cleanupState.campaignId);
+  var cols = camp && camp.column_config && camp.column_config.length
+    ? camp.column_config.filter(function(c){return c.visible;}).sort(function(a,b){return a.order-b.order;}).slice(0,5)
+    : DEFAULT_COLUMNS.slice(0,5);
+
+  var selectedCount = Object.keys(cleanupState.selected).filter(function(k){return cleanupState.selected[k];}).length;
+
+  var html = '<div class="card">' +
+    '<div class="flex items-center justify-between mb-3">' +
+    '<p class="text-sm text-slate-400">Showing <span class="text-white font-semibold">'+rows.length+'</span> records' +
+    (selectedCount > 0 ? ' &nbsp;·&nbsp; <span class="text-red-400 font-semibold">'+selectedCount+' selected</span>' : '') + '</p>' +
+    (selectedCount > 0
+      ? '<button class="btn btn-danger btn-sm" onclick="deleteSelected()"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete '+selectedCount+' records</button>'
+      : '') +
+    '</div>' +
+    '<div class="overflow-x-auto"><table class="w-full text-sm">' +
+    '<thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5">' +
+    '<th class="pb-3 pr-3 w-8"><input type="checkbox" class="cursor-pointer" onchange="cleanupToggleAll(this.checked,'+JSON.stringify(rows.map(function(r){return r.id;}))+')"></th>' +
+    cols.map(function(c){return '<th class="pb-3 pr-4">'+esc(c.label)+'</th>';}).join('') +
+    '<th class="pb-3 pr-4">Assigned To</th>' +
+    '<th class="pb-3 pr-4">Imported</th>' +
+    '<th class="pb-3">Status</th>' +
+    '</tr></thead><tbody>' +
+    rows.map(function(c){
+      var extra = c.extra_data || {};
+      var emp = empById(c.assigned_employee_id);
+      var isChecked = !!cleanupState.selected[c.id];
+      return '<tr class="table-row border-b border-white/[0.03] '+(isChecked?'bg-red-500/5':'')+'">' +
+        '<td class="py-2.5 pr-3"><input type="checkbox" class="cursor-pointer" '+(isChecked?'checked':'')+' onchange="cleanupToggleOne(\''+c.id+'\',this.checked)"></td>' +
+        cols.map(function(col){
+          return '<td class="py-2.5 pr-4 text-slate-300 text-xs max-w-[140px] truncate">'+esc(extra[col.key]||c[col.key]||'-')+'</td>';
+        }).join('') +
+        '<td class="py-2.5 pr-4 text-xs text-slate-400">'+esc(emp?emp.name:'—')+'</td>' +
+        '<td class="py-2.5 pr-4 text-xs text-slate-500">'+formatBatchLabel(c.created_at)+'</td>' +
+        '<td class="py-2.5">'+sBadge(c.status)+'</td>' +
+        '</tr>';
+    }).join('') +
+    '</tbody></table></div></div>';
+  return html;
+}
+
+function renderCleanupTable(){
+  document.getElementById('cleanup-table-area').innerHTML = buildCleanupTable();
+  lucide.createIcons();
+}
+
+// Group records into "import batches" — records uploaded within same minute = same batch
+function getBatchKey(ts){
+  if(!ts) return 'unknown';
+  var d = new Date(ts);
+  return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'_'+d.getHours()+':'+d.getMinutes();
+}
+function formatBatchLabel(ts){
+  if(!ts) return '-';
+  var d = new Date(ts);
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+' '+
+         d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+
+function cleanupSelectCampaign(campId){
+  cleanupState.campaignId = campId;
+  cleanupState.selected = {};
+  cleanupState.searchText = '';
+  cleanupState.importBatch = '';
+  cleanupState.clients = [];
+  cleanupState.batches = [];
+  if(!campId){ renderCleanup(); return; }
+  cleanupState.loading = true;
+  renderCleanup();
+  sb.from('clients').select('*').eq('campaign_id', campId).order('created_at', {ascending:false})
+    .then(function(res){
+      cleanupState.clients = res.data || [];
+      cleanupState.loading = false;
+      // Build batch list
+      var batchMap = {};
+      cleanupState.clients.forEach(function(c){
+        var k = getBatchKey(c.created_at);
+        if(!batchMap[k]) batchMap[k] = {key:k, label:formatBatchLabel(c.created_at), count:0};
+        batchMap[k].count++;
+      });
+      cleanupState.batches = Object.values(batchMap).sort(function(a,b){return b.key.localeCompare(a.key);});
+      renderCleanup();
+    })
+    .catch(function(e){ cleanupState.loading=false; toast(e.message,'error'); renderCleanup(); });
+}
+
+function cleanupToggleOne(id, checked){
+  cleanupState.selected[id] = checked;
+  // Just update header count without full re-render
+  var selectedCount = Object.keys(cleanupState.selected).filter(function(k){return cleanupState.selected[k];}).length;
+  // Lightweight re-render of table area only
+  document.getElementById('cleanup-table-area').innerHTML = buildCleanupTable();
+  lucide.createIcons();
+}
+
+function cleanupToggleAll(checked, ids){
+  ids.forEach(function(id){ cleanupState.selected[id] = checked; });
+  document.getElementById('cleanup-table-area').innerHTML = buildCleanupTable();
+  lucide.createIcons();
+}
+
+function cleanupSelectAll(){
+  // Select all currently visible rows
+  var rows = cleanupState.clients;
+  if(cleanupState.importBatch) rows = rows.filter(function(c){return getBatchKey(c.created_at)===cleanupState.importBatch;});
+  if(cleanupState.searchText){
+    var q=cleanupState.searchText.toLowerCase();
+    rows=rows.filter(function(c){return(c.name||'').toLowerCase().indexOf(q)!==-1||(c.phone||'').toLowerCase().indexOf(q)!==-1||JSON.stringify(c.extra_data||{}).toLowerCase().indexOf(q)!==-1;});
+  }
+  rows.forEach(function(c){ cleanupState.selected[c.id] = true; });
+  document.getElementById('cleanup-table-area').innerHTML = buildCleanupTable();
+  lucide.createIcons();
+}
+
+function cleanupClearSelection(){
+  cleanupState.selected = {};
+  document.getElementById('cleanup-table-area').innerHTML = buildCleanupTable();
+  lucide.createIcons();
+}
+
+function cleanupSelectBatch(){
+  if(!cleanupState.importBatch) return;
+  cleanupState.clients.filter(function(c){return getBatchKey(c.created_at)===cleanupState.importBatch;})
+    .forEach(function(c){ cleanupState.selected[c.id] = true; });
+  document.getElementById('cleanup-table-area').innerHTML = buildCleanupTable();
+  lucide.createIcons();
+}
+
+function deleteSelected(){
+  var ids = Object.keys(cleanupState.selected).filter(function(k){return cleanupState.selected[k];});
+  if(!ids.length){ toast('No records selected','error'); return; }
+  showConfirm(
+    'Delete '+ids.length+' Records',
+    'This will permanently delete '+ids.length+' client record(s). This cannot be undone.',
+    function(){
+      sb.from('clients').delete().in('id', ids)
+        .then(function(){
+          toast(ids.length+' records deleted');
+          cleanupState.selected = {};
+          // Remove deleted from local list
+          cleanupState.clients = cleanupState.clients.filter(function(c){ return !ids.includes(c.id); });
+          // Rebuild batches
+          var batchMap={};
+          cleanupState.clients.forEach(function(c){
+            var k=getBatchKey(c.created_at);
+            if(!batchMap[k])batchMap[k]={key:k,label:formatBatchLabel(c.created_at),count:0};
+            batchMap[k].count++;
+          });
+          cleanupState.batches=Object.values(batchMap).sort(function(a,b){return b.key.localeCompare(a.key);});
+          if(cleanupState.importBatch && !batchMap[cleanupState.importBatch]) cleanupState.importBatch='';
+          fetchAll().then(renderCleanup);
+        })
+        .catch(function(e){ toast(e.message,'error'); });
+    },
+    'Delete '+ids.length+' Records',
+    'btn-danger'
+  );
+}
 // INIT
 // ============================================================
 sb.from('employees').select('id,name,is_active,color').order('name')
