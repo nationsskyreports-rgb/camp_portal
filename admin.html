@@ -1361,7 +1361,10 @@ function loginAsAdmin(){
   document.getElementById('app-shell').classList.remove('hidden');
   document.getElementById('mobile-menu-btn').style.display='';
   hideAdminPass();
-  fetchAll().then(function(){buildSidebar();navigateTo('dashboard');});
+  fetchAll().then(function(){buildSidebar();navigateTo('dashboard');}).catch(function(e){
+    toast('Error loading data: '+e.message,'error');
+    logout();
+  });
 }
 function loginAsEmployee(){
   var sel=document.getElementById('employee-select');
@@ -1373,7 +1376,10 @@ function loginAsEmployee(){
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-shell').classList.remove('hidden');
   document.getElementById('mobile-menu-btn').style.display='';
-  fetchAll().then(function(){buildSidebar();navigateTo('my-clients');});
+  fetchAll().then(function(){buildSidebar();navigateTo('my-clients');}).catch(function(e){
+    toast('Error loading data: '+e.message,'error');
+    logout();
+  });
 }
 function logout(){
   // Save employee id BEFORE resetting state
@@ -1395,8 +1401,16 @@ function logout(){
   closeMobileSidebar();
   function reloadDropdown(){
     sb.from('employees').select('id,name,is_active,color').order('name')
-      .then(function(res){S.employees=res.data||[];loadEmpDropdown();})
-      .catch(function(){loadEmpDropdown();});
+      .then(function(res){
+        S.employees=res.data||[];
+        loadEmpDropdown();
+        lucide.createIcons();
+      })
+      .catch(function(e){
+        console.error('Error loading employees:',e);
+        loadEmpDropdown();
+        lucide.createIcons();
+      });
   }
   if(empIdToDeactivate){
     sb.from('employees').update({is_active:false}).eq('id',empIdToDeactivate)
@@ -1406,9 +1420,17 @@ function logout(){
   }
 }
 function loadEmpDropdown(){
-  document.getElementById('employee-select').innerHTML=
-    '<option value="">Select Employee...</option>'+
-    S.employees.map(function(e){return'<option value="'+e.id+'">'+esc(e.name)+'</option>';}).join('');
+  var select=document.getElementById('employee-select');
+  if(!select)return;
+  
+  // Only update if we have employees
+  if(S.employees && S.employees.length > 0){
+    select.innerHTML=
+      '<option value="">Select Employee...</option>'+
+      S.employees.map(function(e){return'<option value="'+e.id+'">'+esc(e.name)+'</option>';}).join('');
+  } else {
+    select.innerHTML='<option value="">Loading employees...</option>';
+  }
 }
 
 // ============================================================
@@ -1681,9 +1703,24 @@ document.getElementById('mobile-menu-btn').style.display='none';
 var _mtt=document.getElementById('mobile-topbar-title');
 if(_mtt)_mtt.style.display='none';
 
-sb.from('employees').select('id,name,is_active,color').order('name')
-  .then(function(res){S.employees=res.data||[];loadEmpDropdown();lucide.createIcons();})
-  .catch(function(){lucide.createIcons();});
+// FIXED: Load employees on page load with proper error handling and retry
+function initializeEmployeeList(){
+  sb.from('employees').select('id,name,is_active,color').order('name')
+    .then(function(res){
+      S.employees=res.data||[];
+      loadEmpDropdown();
+      lucide.createIcons();
+    })
+    .catch(function(e){
+      console.error('Error loading employees on init:',e);
+      toast('Error loading employees. Please refresh the page.','error');
+      // Retry after 3 seconds
+      setTimeout(initializeEmployeeList, 3000);
+    });
+}
+
+// Call initialization
+initializeEmployeeList();
 
 // Auto-refresh every 30s when logged in
 setInterval(function(){
