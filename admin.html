@@ -7,9 +7,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Campaign Portal</title>
-<link rel="icon" type="image/png" sizes="192x192" href="https://raw.githubusercontent.com/nationsskyreports-rgb/camp_portal/main/icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="https://raw.githubusercontent.com/nationsskyreports-rgb/camp_portal/main/icon-512.png">
-<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/nationsskyreports-rgb/camp_portal/main/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-512.png">
+<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-192.png">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -145,6 +145,22 @@ textarea.input{resize:vertical;min-height:70px}
   h1.text-2xl{font-size:1.1rem!important}
 }
 .mobile-menu-btn{display:none;position:fixed;top:14px;left:14px;z-index:45;background:#0d1628;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px;cursor:pointer;align-items:center;justify-content:center}
+/* Responsive mid-size */
+@media(min-width:769px) and (max-width:1200px){
+  #main-content{padding:24px 20px}
+  .dash-mid-grid{grid-template-columns:1fr!important}
+}
+@media(min-width:1200px){
+  .dash-mid-grid{grid-template-columns:2fr 1fr!important}
+}
+/* Table responsive */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px}
+.tbl-wrap table{min-width:500px}
+/* Spacing utilities */
+.section-gap{margin-bottom:20px}
+/* Card content overflow fix */
+.card *{max-width:100%;word-break:break-word}
+.card table *{word-break:normal}
 /* Mobile top bar background */
 @media(max-width:768px){
   body::before{content:'';position:fixed;top:0;left:0;right:0;height:52px;background:#080e1a;border-bottom:1px solid rgba(255,255,255,0.05);z-index:44}
@@ -165,7 +181,7 @@ textarea.input{resize:vertical;min-height:70px}
 <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
   <div class="w-full max-w-md fade-in">
     <div class="text-center mb-10">
-      <img src="https://raw.githubusercontent.com/nationsskyreports-rgb/camp_portal/main/icon-512.png" alt="Logo" class="w-16 h-16 rounded-2xl mb-5 object-cover" style="box-shadow:0 0 0 1px rgba(59,130,246,0.2)">
+      <img src="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-512.png" alt="Logo" class="w-16 h-16 rounded-2xl mb-5 object-cover" style="box-shadow:0 0 0 1px rgba(59,130,246,0.2)">
       <h1 class="text-3xl font-bold text-white mb-2">Campaign Portal</h1>
       <p class="text-slate-400 text-sm">Management & Employee Dashboard</p>
     </div>
@@ -194,7 +210,7 @@ textarea.input{resize:vertical;min-height:70px}
   <aside id="sidebar" class="w-64 min-h-screen border-r border-white/5 bg-[#080e1a] flex flex-col fixed left-0 top-0 bottom-0 z-50">
     <div class="p-5 border-b border-white/5">
       <div class="flex items-center gap-3">
-        <img src="https://raw.githubusercontent.com/nationsskyreports-rgb/camp_portal/main/icon-192.png" alt="Logo" class="w-9 h-9 rounded-lg object-cover" style="box-shadow:0 0 0 1px rgba(59,130,246,0.15)">
+        <img src="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-192.png" alt="Logo" class="w-9 h-9 rounded-lg object-cover" style="box-shadow:0 0 0 1px rgba(59,130,246,0.15)">
         <div><h2 class="text-sm font-bold text-white leading-tight" id="sidebar-title">Admin Portal</h2><p class="text-[11px] text-slate-500" id="sidebar-subtitle">Management</p></div>
       </div>
     </div>
@@ -654,7 +670,13 @@ function renderPage(){
   },80);
 }
 function hdr(title,desc,actions){
-  return '<div class="flex items-start justify-between mb-6 fade-in flex-wrap gap-3"><div><h1 class="text-2xl font-bold text-white">'+title+'</h1>'+(desc?'<p class="text-slate-400 text-sm mt-1">'+desc+'</p>':'')+'</div>'+(actions?'<div class="flex gap-2 flex-wrap">'+actions+'</div>':'')+'</div>';
+  return '<div class="flex items-start justify-between mb-6 fade-in gap-3" style="flex-wrap:wrap">'+
+    '<div style="min-width:0;flex:1">'+
+      '<h1 class="text-2xl font-bold text-white" style="line-height:1.2">'+title+'</h1>'+
+      (desc?'<p class="text-slate-400 text-sm mt-1">'+desc+'</p>':'')+
+    '</div>'+
+    (actions?'<div class="flex gap-2" style="flex-wrap:wrap;align-items:center;flex-shrink:0">'+actions+'</div>':'')+
+  '</div>';
 }
 
 // ============================================================
@@ -670,15 +692,15 @@ function renderDashboard(){
   var offList=S.employees.filter(function(e){return!e.is_active;});
 
   m.innerHTML=hdr('Dashboard','Overview')+
-  '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 fade-in">'+
+  '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px" class="fade-in">'+
   '<div class="card stat-card blue"><p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Campaigns</p><p class="text-3xl font-bold text-white">'+S.campaigns.length+'</p><p class="text-xs text-blue-400 mt-1">'+ac.length+' active</p></div>'+
   '<div class="card stat-card green"><p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Clients</p><p class="text-3xl font-bold text-white">'+S.clients.length+'</p><p class="text-xs text-emerald-400 mt-1">'+S.clients.filter(function(c){return c.status==='Closed';}).length+' closed</p></div>'+
   '<div class="card stat-card amber"><p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Pending Q&A</p><p class="text-3xl font-bold text-white">'+pq.length+'</p><p class="text-xs text-amber-400 mt-1">needs attention</p></div>'+
   '<div class="card stat-card red"><p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Active Agents</p><p class="text-3xl font-bold text-white">'+onlineEmps.length+'/'+S.employees.length+'</p><p class="text-xs text-slate-400 mt-1">online now</p></div></div>'+
-  '<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">'+
-  '<div class="card lg:col-span-2"><h3 class="text-sm font-bold text-white mb-4">Active Campaigns</h3>'+(ac.length?'<div class="space-y-2">'+ac.map(function(c){var cc=S.clients.filter(function(cl){return cl.campaign_id===c.id;}).length;return'<div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] table-row"><div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-blue-500"></div><div><p class="text-sm font-medium text-white">'+esc(c.name)+'</p><p class="text-xs text-slate-500">'+esc(c.type)+'</p></div></div><div class="flex items-center gap-3"><span class="text-xs text-slate-400">'+cc+' clients</span>'+sBadge(c.status)+'</div></div>';}).join('')+'</div>':'<p class="text-slate-500 text-sm">No active campaigns</p>')+'</div>'+
+  '<div style="display:grid;grid-template-columns:1fr;gap:20px" class="fade-in dash-mid-grid">'+
+  '<div class="card" style="min-width:0"><h3 class="text-sm font-bold text-white mb-4">Active Campaigns</h3>'+(ac.length?'<div class="space-y-2">'+ac.map(function(c){var cc=S.clients.filter(function(cl){return cl.campaign_id===c.id;}).length;return'<div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] table-row"><div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-blue-500"></div><div><p class="text-sm font-medium text-white">'+esc(c.name)+'</p><p class="text-xs text-slate-500">'+esc(c.type)+'</p></div></div><div class="flex items-center gap-3"><span class="text-xs text-slate-400">'+cc+' clients</span>'+sBadge(c.status)+'</div></div>';}).join('')+'</div>':'<p class="text-slate-500 text-sm">No active campaigns</p>')+'</div>'+
   '<div class="card"><h3 class="text-sm font-bold text-white mb-4">Client Distribution</h3><div class="space-y-3">'+dist.map(function(d){return'<div><div class="flex items-center justify-between mb-1"><div class="flex items-center gap-2">'+av(d.name,d.color,20)+'<span class="text-xs text-slate-300">'+esc(d.name)+'</span></div><span class="text-xs font-semibold text-white">'+d.count+'</span></div><div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:'+(d.count/mx)*100+'%;background:'+d.color+'"></div></div></div>';}).join('')+(dist.length?'':'<p class="text-slate-500 text-sm">No active employees</p>')+'</div></div></div>'+
-  '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 fade-in">'+
+  '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:20px" class="fade-in">'+
   '<div class="card"><div class="flex items-center justify-between mb-4"><h3 class="text-sm font-bold text-white">Active Now</h3><span class="badge badge-active">'+onlineEmps.length+'</span></div><div class="space-y-2">'+
   onlineEmps.map(function(e){var cc=S.clients.filter(function(c){return c.assigned_employee_id===e.id;}).length;return'<div class="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02]"><div class="flex items-center gap-2">'+av(e.name,e.color||'#3b82f6',30)+'<div><p class="text-sm font-medium text-white">'+esc(e.name)+'</p><p class="text-xs text-emerald-400 font-medium">Active</p></div></div><div class="flex items-center gap-2"><span class="text-xs text-slate-400">'+cc+' clients</span>'+pDot(true)+'</div></div>';}).join('')+
   (onlineEmps.length?'':'<p class="text-slate-500 text-sm text-center py-4">No agents active</p>')+'</div></div>'+
@@ -710,7 +732,7 @@ function renderCampaigns(){
     '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Closed</p><p class="text-2xl font-bold text-emerald-400">'+cc.filter(function(c){return c.status==='Closed';}).length+'</p></div></div>'+
     '<div class="card mb-6 fade-in"><div class="flex items-center gap-3"><span class="text-sm text-slate-400">Status:</span>'+sBtns+'</div></div>'+
     '<div class="card fade-in"><h3 class="text-sm font-bold text-white mb-4">Clients ('+cc.length+')</h3>'+
-    (cc.length?'<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5">'+
+    (cc.length?'<div class="tbl-wrap"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5">'+
     visCols.map(function(c){return'<th class="pb-3 pr-4">'+esc(c.label)+'</th>';}).join('')+
     '<th class="pb-3 pr-4">Assigned To</th><th class="pb-3">Status</th></tr></thead><tbody>'+
     cc.map(function(c){
@@ -793,8 +815,8 @@ function renderUpload(){
 
   m.innerHTML=hdr('Upload & Distribute','Upload data and distribute to active employees')+previewHtml+
   '<div class="card fade-in mb-4">'+
-  '<div class="flex items-center justify-between mb-5">'+
-  '<div class="flex items-center gap-3"><select class="input max-w-xs" onchange="U.campaignId=this.value;U.preview=null;U.rows=[];renderUpload()">'+campOpts+'</select></div>'+
+  '<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px">'+
+  '<select class="input" style="max-width:280px;flex:1;min-width:180px" onchange="U.campaignId=this.value;U.preview=null;U.rows=[];renderUpload()">'+campOpts+'</select>'+
   '<button class="btn btn-ghost btn-sm" onclick="openColConfig(null)"><i data-lucide="settings-2" class="w-4 h-4"></i> Configure Columns</button>'+
   '</div>'+
   // Column preview chips
@@ -991,7 +1013,7 @@ function renderQA(){
   var campOpts='<option value="">All Campaigns</option>'+S.campaigns.map(function(c){return'<option value="'+c.id+'" '+(qaFilter.campaign===c.id?'selected':'')+'>'+esc(c.name)+'</option>';}).join('');
   var pc=S.questions.filter(function(q){return q.status==='pending';}).length;
   m.innerHTML=hdr('Q&A Inbox',pc+' pending')+
-  '<div class="card mb-6 fade-in"><div class="grid grid-cols-1 sm:grid-cols-3 gap-3">'+
+  '<div class="card mb-6 fade-in"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">'+
   '<select class="input" onchange="qaFilter.employee=this.value;renderQA()">'+empOpts+'</select>'+
   '<select class="input" onchange="qaFilter.campaign=this.value;renderQA()">'+campOpts+'</select>'+
   '<select class="input" onchange="qaFilter.status=this.value;renderQA()"><option value="">All Status</option><option value="pending" '+(qaFilter.status==='pending'?'selected':'')+'>Pending</option><option value="answered" '+(qaFilter.status==='answered'?'selected':'')+'>Answered</option></select>'+
@@ -1046,7 +1068,7 @@ function renderReports(){
   var visCols=rptFilter.campaign?getVisibleCols(rptFilter.campaign):DEFAULT_COLUMNS.filter(function(c){return c.visible;});
 
   m.innerHTML=hdr('Reports & Export','Filter and export client data')+
-  '<div class="card mb-6 fade-in"><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">'+
+  '<div class="card mb-6 fade-in"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">'+
   '<select class="input" onchange="rptFilter.campaign=this.value;rptFilter.page=0;renderReports()"><option value="">All Campaigns</option>'+S.campaigns.map(function(c){return'<option value="'+c.id+'" '+(rptFilter.campaign===c.id?'selected':'')+'>'+esc(c.name)+'</option>';}).join('')+'</select>'+
   '<select class="input" onchange="rptFilter.employee=this.value;rptFilter.page=0;renderReports()"><option value="">All Employees</option>'+S.employees.map(function(e){return'<option value="'+e.id+'" '+(rptFilter.employee===e.id?'selected':'')+'>'+esc(e.name)+'</option>';}).join('')+'</select>'+
   '<select class="input" onchange="rptFilter.status=this.value;rptFilter.page=0;renderReports()"><option value="">All Status</option>'+['New','Contacted','Interested','Closed'].map(function(s){return'<option value="'+s+'" '+(rptFilter.status===s?'selected':'')+'>'+s+'</option>';}).join('')+'</select>'+
@@ -1067,7 +1089,7 @@ function renderReports(){
   '<button class="btn btn-ghost btn-sm" '+(rptFilter.page>=totalPages-1?'disabled style="opacity:0.4"':'')+' onclick="rptFilter.page++;renderReports()"><i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></button>'+
   '</div></div></div>'+
   (pageData.length?
-    '<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5">'+
+    '<div class="tbl-wrap"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5">'+
     visCols.map(function(c){return'<th class="pb-3 pr-4">'+esc(c.label)+'</th>';}).join('')+
     '<th class="pb-3 pr-4">Employee</th><th class="pb-3">Status</th></tr></thead><tbody>'+
     pageData.map(function(c){
@@ -1508,7 +1530,7 @@ function buildCleanupTable(){
       ? '<button class="btn btn-danger btn-sm" onclick="deleteSelected()"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete '+selectedCount+' records</button>'
       : '') +
     '</div>' +
-    '<div class="overflow-x-auto"><table class="w-full text-sm">' +
+    '<div class="tbl-wrap"><table class="w-full text-sm">' +
     '<thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5">' +
     '<th class="pb-3 pr-3 w-8"><input type="checkbox" class="cursor-pointer" onchange="cleanupToggleAll(this.checked,'+JSON.stringify(rows.map(function(r){return r.id;}))+')"></th>' +
     cols.map(function(c){return '<th class="pb-3 pr-4">'+esc(c.label)+'</th>';}).join('') +
