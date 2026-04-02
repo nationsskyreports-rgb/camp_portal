@@ -1142,11 +1142,11 @@ function renderTeam(){
     '<div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">'+av(e.name,e.color||'#3b82f6',36)+
     '<div style="min-width:0"><p style="font-size:14px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(e.name)+'</p>'+
     '<p style="font-size:11px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(e.email)+'</p>'+
-    '<p style="font-size:11px;color:#94a3b8;margin-top:1px">'+cc+' clients &nbsp;'+pDot(true)+'</p></div></div>'+
+    '<p style="font-size:11px;color:#94a3b8;margin-top:1px">'+cc+' clients</p></div></div>'+
     '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">'+
-    '<button class="btn btn-sm" style="background:rgba(100,116,139,0.12);color:#64748b;border:1px solid rgba(100,116,139,0.2);padding:5px 10px;font-size:12px" onclick="adminSetActive(''+e.id+'',false)"><i data-lucide="power" class="w-3 h-3"></i> Off</button>'+
-    '<button class="btn btn-ghost btn-sm" style="padding:5px 8px" onclick="editEmployee(''+e.id+'')"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>'+
-    '<button class="btn btn-danger btn-sm" style="padding:5px 8px" onclick="deleteEmployee(''+e.id+'',''+esc(e.name).replace(/'/g,'')+'')"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>'+
+    '<button class="btn btn-sm" style="background:rgba(100,116,139,0.12);color:#64748b;border:1px solid rgba(100,116,139,0.2);padding:5px 10px;font-size:12px" onclick="adminSetActive(\''+e.id+'\',false)"><i data-lucide="power" class="w-3 h-3"></i> Off</button>'+
+    '<button class="btn btn-ghost btn-sm" style="padding:5px 8px" onclick="editEmployee(\''+e.id+'\')"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>'+
+    '<button class="btn btn-danger btn-sm" style="padding:5px 8px" onclick="deleteEmployee(\''+e.id+'\',\''+esc(e.name).replace(/'/g,'')+'\')"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>'+
     '</div></div>';
   }).join('')+'</div>':'<p class="text-slate-500 text-sm text-center py-4">No active agents</p>')+'</div>'+
 
@@ -1159,9 +1159,9 @@ function renderTeam(){
     '<div style="min-width:0"><p style="font-size:14px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(e.name)+'</p>'+
     '<p style="font-size:11px;color:#475569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(e.email)+'</p></div></div>'+
     '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">'+
-    '<button class="btn btn-success btn-sm" style="padding:5px 10px;font-size:12px" onclick="adminSetActive(''+e.id+'',true)"><i data-lucide="power" class="w-3 h-3"></i> On</button>'+
-    '<button class="btn btn-ghost btn-sm" style="padding:5px 8px" onclick="editEmployee(''+e.id+'')"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>'+
-    '<button class="btn btn-danger btn-sm" style="padding:5px 8px" onclick="deleteEmployee(''+e.id+'',''+esc(e.name).replace(/'/g,'')+'')"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>'+
+    '<button class="btn btn-success btn-sm" style="padding:5px 10px;font-size:12px" onclick="adminSetActive(\''+e.id+'\',true)"><i data-lucide="power" class="w-3 h-3"></i> On</button>'+
+    '<button class="btn btn-ghost btn-sm" style="padding:5px 8px" onclick="editEmployee(\''+e.id+'\')"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>'+
+    '<button class="btn btn-danger btn-sm" style="padding:5px 8px" onclick="deleteEmployee(\''+e.id+'\',\''+esc(e.name).replace(/'/g,'')+'\')"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>'+
     '</div></div>';
   }).join('')+'</div>':'<p class="text-slate-500 text-sm text-center py-4">Everyone is active!</p>')+'</div>';
   lucide.createIcons();
