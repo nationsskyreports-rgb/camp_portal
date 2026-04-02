@@ -181,7 +181,7 @@ textarea.input{resize:vertical;min-height:70px}
 <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
   <div class="w-full max-w-md fade-in">
     <div class="text-center mb-10">
-      <img src="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-512.png" alt="Logo" class="w-16 h-16 rounded-2xl mb-5 object-cover" style="box-shadow:0 0 0 1px rgba(59,130,246,0.2)">
+      <img src="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-512.png" alt="Logo" class="w-16 h-16 mb-5 object-contain" style="mix-blend-mode:lighten;filter:drop-shadow(0 0 8px rgba(59,130,246,0.4))">
       <h1 class="text-3xl font-bold text-white mb-2">Campaign Portal</h1>
       <p class="text-slate-400 text-sm">Management & Employee Dashboard</p>
     </div>
@@ -210,7 +210,7 @@ textarea.input{resize:vertical;min-height:70px}
   <aside id="sidebar" class="w-64 min-h-screen border-r border-white/5 bg-[#080e1a] flex flex-col fixed left-0 top-0 bottom-0 z-50">
     <div class="p-5 border-b border-white/5">
       <div class="flex items-center gap-3">
-        <img src="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-192.png" alt="Logo" class="w-9 h-9 rounded-lg object-cover" style="box-shadow:0 0 0 1px rgba(59,130,246,0.15)">
+        <img src="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-192.png" alt="Logo" class="w-9 h-9 object-contain" style="mix-blend-mode:lighten;filter:drop-shadow(0 0 4px rgba(59,130,246,0.3))">
         <div><h2 class="text-sm font-bold text-white leading-tight" id="sidebar-title">Admin Portal</h2><p class="text-[11px] text-slate-500" id="sidebar-subtitle">Management</p></div>
       </div>
     </div>
@@ -1138,15 +1138,15 @@ function renderTeam(){
   '<div class="flex items-center justify-between mb-4"><h3 class="text-sm font-bold text-white">Active Agents</h3><span class="badge badge-active">'+activeList.length+'</span></div>'+
   (activeList.length?'<div class="space-y-2">'+activeList.map(function(e){
     var cc=S.clients.filter(function(c){return c.assigned_employee_id===e.id;}).length;
-    return'<div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] table-row">'+
-    '<div class="flex items-center gap-3">'+av(e.name,e.color||'#3b82f6',34)+
-    '<div><p class="text-sm font-semibold text-white">'+esc(e.name)+'</p><p class="text-xs text-slate-500">'+esc(e.email)+'</p></div></div>'+
-    '<div class="flex items-center gap-3">'+
-    '<span class="badge badge-active text-xs">Active</span>'+pDot(true)+
-    '<span class="text-xs text-white font-semibold">'+cc+'</span><span class="text-xs text-slate-500">clients</span>'+
-    '<button class="btn btn-sm" style="background:rgba(100,116,139,0.1);color:#64748b;border:1px solid rgba(100,116,139,0.2)" onclick="adminSetActive(\''+e.id+'\',false)"><i data-lucide="power" class="w-3.5 h-3.5"></i> Deactivate</button>'+
-    '<button class="btn btn-ghost btn-sm" onclick="editEmployee(\''+e.id+'\')"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>'+
-    '<button class="btn btn-danger btn-sm" onclick="deleteEmployee(\''+e.id+'\',\''+esc(e.name).replace(/'/g,'')+'\')"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>'+
+    return'<div style="display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02);margin-bottom:4px;gap:8px">'+
+    '<div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">'+av(e.name,e.color||'#3b82f6',36)+
+    '<div style="min-width:0"><p style="font-size:14px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(e.name)+'</p>'+
+    '<p style="font-size:11px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(e.email)+'</p>'+
+    '<p style="font-size:11px;color:#94a3b8;margin-top:1px">'+cc+' clients &nbsp;'+pDot(true)+'</p></div></div>'+
+    '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">'+
+    '<button class="btn btn-sm" style="background:rgba(100,116,139,0.12);color:#64748b;border:1px solid rgba(100,116,139,0.2);padding:5px 10px;font-size:12px" onclick="adminSetActive(''+e.id+'',false)"><i data-lucide="power" class="w-3 h-3"></i> Off</button>'+
+    '<button class="btn btn-ghost btn-sm" style="padding:5px 8px" onclick="editEmployee(''+e.id+'')"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>'+
+    '<button class="btn btn-danger btn-sm" style="padding:5px 8px" onclick="deleteEmployee(''+e.id+'',''+esc(e.name).replace(/'/g,'')+'')"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>'+
     '</div></div>';
   }).join('')+'</div>':'<p class="text-slate-500 text-sm text-center py-4">No active agents</p>')+'</div>'+
 
@@ -1154,13 +1154,14 @@ function renderTeam(){
   '<div class="card fade-in">'+
   '<div class="flex items-center justify-between mb-4"><h3 class="text-sm font-bold text-white">Inactive Agents</h3><span class="badge badge-ended">'+inactiveList.length+'</span></div>'+
   (inactiveList.length?'<div class="space-y-2">'+inactiveList.map(function(e){
-    return'<div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] table-row">'+
-    '<div class="flex items-center gap-3">'+av(e.name,e.color||'#475569',34)+
-    '<div><p class="text-sm text-slate-400">'+esc(e.name)+'</p><p class="text-xs text-slate-600">'+esc(e.email)+'</p></div></div>'+
-    '<div class="flex items-center gap-2">'+pDot(false)+
-    '<button class="btn btn-success btn-sm" onclick="adminSetActive(\''+e.id+'\',true)"><i data-lucide="power" class="w-3.5 h-3.5"></i> Activate</button>'+
-    '<button class="btn btn-ghost btn-sm" onclick="editEmployee(\''+e.id+'\')"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>'+
-    '<button class="btn btn-danger btn-sm" onclick="deleteEmployee(\''+e.id+'\',\''+esc(e.name).replace(/'/g,'')+'\')"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>'+
+    return'<div style="display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:10px;background:rgba(255,255,255,0.015);margin-bottom:4px;gap:8px">'+
+    '<div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">'+av(e.name,e.color||'#475569',36)+
+    '<div style="min-width:0"><p style="font-size:14px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(e.name)+'</p>'+
+    '<p style="font-size:11px;color:#475569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(e.email)+'</p></div></div>'+
+    '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">'+
+    '<button class="btn btn-success btn-sm" style="padding:5px 10px;font-size:12px" onclick="adminSetActive(''+e.id+'',true)"><i data-lucide="power" class="w-3 h-3"></i> On</button>'+
+    '<button class="btn btn-ghost btn-sm" style="padding:5px 8px" onclick="editEmployee(''+e.id+'')"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>'+
+    '<button class="btn btn-danger btn-sm" style="padding:5px 8px" onclick="deleteEmployee(''+e.id+'',''+esc(e.name).replace(/'/g,'')+'')"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>'+
     '</div></div>';
   }).join('')+'</div>':'<p class="text-slate-500 text-sm text-center py-4">Everyone is active!</p>')+'</div>';
   lucide.createIcons();
@@ -1675,6 +1676,11 @@ function deleteSelected(){
 }
 // INIT
 // ============================================================
+// Hide mobile UI on load — only show inside app
+document.getElementById('mobile-menu-btn').style.display='none';
+var _mtt=document.getElementById('mobile-topbar-title');
+if(_mtt)_mtt.style.display='none';
+
 sb.from('employees').select('id,name,is_active,color').order('name')
   .then(function(res){S.employees=res.data||[];loadEmpDropdown();lucide.createIcons();})
   .catch(function(){lucide.createIcons();});
