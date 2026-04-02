@@ -178,22 +178,27 @@ textarea.input{resize:vertical;min-height:70px}
 <div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-2"></div>
 
 <!-- LOGIN -->
-<div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
-  <div class="w-full max-w-md fade-in">
+<div id="login-screen" class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+  <!-- Watermark Logo Background (The Star) -->
+  <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.07] scale-[1.8] rotate-12">
+    <img src="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-512.png" alt="Watermark" class="w-full max-w-2xl object-contain" style="mix-blend-mode:lighten;">
+  </div>
+
+  <div class="w-full max-w-md fade-in relative z-10">
     <div class="text-center mb-10 flex flex-col items-center">
       <div class="relative mb-6">
-        <!-- Glow effect behind logo -->
-        <div class="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full scale-150 animate-pulse"></div>
+        <div class="absolute inset-0 bg-blue-500/10 blur-2xl rounded-full scale-125"></div>
         <img src="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-512.png" 
              alt="Logo" 
-             class="relative w-32 h-32 object-contain hover:scale-110 transition-transform duration-500" 
-             style="mix-blend-mode:lighten; filter: drop-shadow(0 0 15px rgba(59,130,246,0.6));">
+             class="relative w-24 h-24 object-contain" 
+             style="mix-blend-mode:lighten; filter: drop-shadow(0 0 10px rgba(59,130,246,0.4));">
       </div>
       <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight" style="font-family:'Syne',sans-serif">Campaign Portal</h1>
       <div class="h-1 w-12 bg-blue-500 rounded-full mb-3"></div>
-      <p class="text-slate-400 text-sm font-medium uppercase tracking-[0.2em]">Management & Employee Dashboard</p>
+      <p class="text-slate-400 text-xs font-medium uppercase tracking-[0.2em]">Management & Employee Dashboard</p>
     </div>
-    <div class="card">
+    <!-- Glassmorphism Card -->
+    <div class="card" style="background: rgba(13, 22, 40, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05);">
       <div class="space-y-3">
         <div id="admin-btn" onclick="showAdminPass()" class="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold cursor-pointer hover:from-blue-500 hover:to-blue-600 transition-all hover:scale-[1.02] active:scale-[0.98]"><i data-lucide="shield-check" class="w-5 h-5"></i>Login as Admin</div>
         <div id="admin-pass-area" class="hidden space-y-2">
