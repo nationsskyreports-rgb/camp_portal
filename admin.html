@@ -180,10 +180,18 @@ textarea.input{resize:vertical;min-height:70px}
 <!-- LOGIN -->
 <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
   <div class="w-full max-w-md fade-in">
-    <div class="text-center mb-10">
-      <img src="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-512.png" alt="Logo" class="w-16 h-16 mb-5 object-contain" style="mix-blend-mode:lighten;filter:drop-shadow(0 0 8px rgba(59,130,246,0.4))">
-      <h1 class="text-3xl font-bold text-white mb-2">Campaign Portal</h1>
-      <p class="text-slate-400 text-sm">Management & Employee Dashboard</p>
+    <div class="text-center mb-10 flex flex-col items-center">
+      <div class="relative mb-6">
+        <!-- Glow effect behind logo -->
+        <div class="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full scale-150 animate-pulse"></div>
+        <img src="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-512.png" 
+             alt="Logo" 
+             class="relative w-32 h-32 object-contain hover:scale-110 transition-transform duration-500" 
+             style="mix-blend-mode:lighten; filter: drop-shadow(0 0 15px rgba(59,130,246,0.6));">
+      </div>
+      <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight" style="font-family:'Syne',sans-serif">Campaign Portal</h1>
+      <div class="h-1 w-12 bg-blue-500 rounded-full mb-3"></div>
+      <p class="text-slate-400 text-sm font-medium uppercase tracking-[0.2em]">Management & Employee Dashboard</p>
     </div>
     <div class="card">
       <div class="space-y-3">
