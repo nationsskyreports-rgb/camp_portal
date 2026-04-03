@@ -1443,6 +1443,22 @@ function markAllRead(){
 // ============================================================
 
 // Dark/Light Mode Toggle
+
+function openGenModal(title,html){
+  var ex=document.getElementById('gen-modal-overlay');
+  if(ex)ex.remove();
+  var o=document.createElement('div');
+  o.id='gen-modal-overlay';
+  o.className='modal-overlay';
+  o.style.zIndex='200';
+  o.innerHTML='<div class="modal fade-in"><div class="modal-header"><h3 class="font-bold text-white">'+title+'</h3><button onclick="closeGenModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button></div><div class="modal-body">'+html+'</div></div>';
+  document.body.appendChild(o);
+  lucide.createIcons();
+}
+function closeGenModal(){
+  var el=document.getElementById('gen-modal-overlay');
+  if(el)el.remove();
+}
 function toggleDarkMode(){
   S.darkMode = !S.darkMode;
   if(S.darkMode){
@@ -1560,7 +1576,7 @@ function openBulkReassign(){
   html += '<div class="flex gap-2"><button class="btn btn-primary flex-1" onclick="executeBulkReassign()"><i data-lucide="check" class="w-4 h-4"></i> Reassign</button><button class="btn btn-ghost" onclick="closeBulkReassign()">Cancel</button></div>';
   html += '</div>';
   
-  showModal('Bulk Reassign Clients', html);
+  openGenModal('Bulk Reassign Clients', html);
 }
 
 function executeBulkReassign(){
@@ -1579,7 +1595,7 @@ function executeBulkReassign(){
     .then(function(){
       toast('Reassigned ' + selected.length + ' client(s)', 'success');
       bulkReassignState.selectedClients = {};
-      closeModal();
+      closeGenModal();
       fetchAll().then(function(){
         if(S.currentPage==='my-clients') renderMyClients();
       });
@@ -1591,7 +1607,7 @@ function executeBulkReassign(){
 
 function closeBulkReassign(){
   bulkReassignState.selectedClients = {};
-  closeModal();
+  closeGenModal();
 }
 
 // Performance Stats
