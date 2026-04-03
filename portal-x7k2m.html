@@ -166,15 +166,32 @@ textarea.input{resize:vertical;min-height:70px}
   body::before{content:'';position:fixed;top:0;left:0;right:0;height:52px;background:#080e1a;border-bottom:1px solid rgba(255,255,255,0.05);z-index:44}
 }
 /* Dark/Light Mode */
-body.light-mode{background:#f5f7fa;color:#1e293b}
-body.light-mode .card{background:rgba(255,255,255,0.95);border-color:rgba(59,130,246,0.2)}
-body.light-mode .input{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.1);color:#1e293b}
-body.light-mode .sidebar-item{color:#64748b}
-body.light-mode .sidebar-item.active{background:rgba(59,130,246,0.15)}
-body.light-mode .modal{background:#fff}
-body.light-mode .modal-header{border-color:rgba(0,0,0,0.1)}
-body.light-mode .btn-ghost{background:rgba(0,0,0,0.05);color:#475569;border-color:rgba(0,0,0,0.1)}
-/* Progress Bar */
+body.light-mode{background:#f0f4f8;color:#1e293b}
+body.light-mode .card{background:#fff;border-color:rgba(59,130,246,0.15);box-shadow:0 1px 6px rgba(0,0,0,0.06)}
+body.light-mode .input{background:#f8fafc;border-color:rgba(0,0,0,0.12);color:#1e293b}
+body.light-mode .input::placeholder{color:#94a3b8}
+body.light-mode select.input option{background:#fff;color:#1e293b}
+body.light-mode .btn-ghost{background:rgba(0,0,0,0.04);color:#475569;border-color:rgba(0,0,0,0.1)}
+body.light-mode .btn-ghost:hover{background:rgba(59,130,246,0.08);color:#3b82f6}
+body.light-mode #sidebar{background:#1e293b;border-color:rgba(255,255,255,0.08)}
+body.light-mode .sidebar-item{color:rgba(255,255,255,0.55)}
+body.light-mode .sidebar-item:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85)}
+body.light-mode .sidebar-item.active{background:rgba(59,130,246,0.25);color:#93c5fd}
+body.light-mode #sidebar-title{color:#fff}
+body.light-mode #sidebar-subtitle{color:rgba(255,255,255,0.4)}
+body.light-mode .modal{background:#fff;border-color:rgba(59,130,246,0.2)}
+body.light-mode .modal-header{border-color:rgba(0,0,0,0.08)}
+body.light-mode .text-white{color:#0f172a!important}
+body.light-mode #sidebar .text-white{color:#fff!important}
+body.light-mode .text-slate-300{color:#334155!important}
+body.light-mode .text-slate-400{color:#64748b!important}
+body.light-mode .text-slate-500{color:#94a3b8!important}
+body.light-mode .bg-white\/\[0\.02\]{background:rgba(59,130,246,0.04)!important}
+body.light-mode .border-white\/5{border-color:rgba(0,0,0,0.07)!important}
+body.light-mode .border-white\/10{border-color:rgba(0,0,0,0.1)!important}
+body.light-mode .bg-white\/5{background:rgba(59,130,246,0.06)!important}
+body.light-mode .table-row:hover{background:rgba(59,130,246,0.05)!important}
+body.light-mode.grid-bg{background-image:linear-gradient(rgba(59,130,246,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.05) 1px,transparent 1px)}/* Progress Bar */
 .progress-bar{width:100%;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;margin-top:8px}
 .progress-fill{height:100%;background:linear-gradient(90deg,#3b82f6,#10b981);border-radius:4px;transition:width .3s ease}
 /* Call Timer */
