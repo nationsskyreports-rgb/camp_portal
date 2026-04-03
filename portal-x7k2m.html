@@ -1069,18 +1069,19 @@ function confirmDistribute(){
       });
     });
   });
-  sb.from('clients').insert(rows).then(function(){
+sb.from('clients').insert(rows).then(function(result){
+    if(result.error){toast(result.error.message,'error');return;}
     var notifs=[];
     Object.keys(U.preview).forEach(function(eid){
       if(U.preview[eid].length){
         notifs.push({employee_id:eid,type:'data_updated',message:'New data - '+U.preview[eid].length+' client(s) in '+campName,read:false});
       }
     });
-    if(notifs.length)sb.from('notifications').insert(notifs).catch(function(){});
+    if(notifs.length) sb.from('notifications').insert(notifs);
     toast(rows.length+' clients distributed successfully');
     U={campaignId:'',rows:[],preview:null,uploadTab:'paste',colConfig:null};
     fetchAll().then(renderUpload);
-  }).catch(function(e){toast(e.message,'error');});
+  });
 }
 
 // ============================================================
