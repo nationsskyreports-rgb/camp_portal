@@ -328,7 +328,6 @@ function simpleHash(str){
   }
   return Math.abs(hash).toString(16);
 }
-var ADMIN_PASSWORD = 'zomra2025';
 var ADMIN_PASSWORD_HASH = simpleHash('zomra2025'); // Use this for verification
 var SUPABASE_URL = 'https://biwrdwxgfyhnltzddlwu.supabase.co';
 var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpd3Jkd3hnZnlobmx0emRkbHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTczMTYsImV4cCI6MjA4OTc5MzMxNn0.EMOV5v3cGaDEqQJusnyrWTWdSPPwKeyuguPzxJvtKdQ';
@@ -1618,20 +1617,33 @@ function getDailySummary(){
 // ============================================================
 // LOGIN / LOGOUT
 // ============================================================
-function loginAsAdmin(){
+async function loginAsAdmin(){
   var pass=document.getElementById('admin-pass-input').value;
-  if(pass!==ADMIN_PASSWORD){toast('Wrong password','error');document.getElementById('admin-pass-input').value='';return;}
-  S.role='admin';S.employee=null;
-  document.getElementById('login-screen').classList.add('hidden');
-  document.getElementById('app-shell').classList.remove('hidden');
-  document.getElementById('mobile-menu-btn').style.display='';
-  hideAdminPass();
-  fetchAll().then(function(){buildSidebar();navigateTo('dashboard');}).catch(function(e){
-    toast('Error loading data: '+e.message,'error');
-    logout();
-  });
-}
-function loginAsEmployee(){
+  if(!pass){toast('Enter password','error');return;}
+  
+  try {
+    var res = await sb.from('app_settings').select('value').eq('key','admin_password').single();
+    if(!res.data || pass !== res.data.value){
+      toast('Wrong password','error');
+      document.getElementById('admin-pass-input').value='';
+      return;
+    }
+    S.role='admin'; S.employee=null;
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app-shell').classList.remove('hidden');
+    document.getElementById('mobile-menu-btn').style.display='';
+    hideAdminPass();
+    fetchAll().then(function(){
+      buildSidebar();
+      navigateTo('dashboard');
+    }).catch(function(e){
+      toast('Error loading data: '+e.message,'error');
+      logout();
+    });
+  } catch(e) {
+    toast('Error checking password','error');
+  }
+}function loginAsEmployee(){
   var sel=document.getElementById('employee-select');
   var empId=sel.value;
   if(!empId){toast('Select an employee','error');return;}
