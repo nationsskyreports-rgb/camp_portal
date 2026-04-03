@@ -609,22 +609,20 @@ function addCustomColumn(){
   renderColConfigList();
 }
 function saveColConfig(){
-  // Renumber orders
   colConfigWorking.sort(function(a,b){return a.order-b.order;});
   colConfigWorking.forEach(function(c,i){c.order=i;});
-
   var campId=colConfigCampaignId||(U.campaignId||null);
   if(campId){
-    sb.from('campaigns').update({column_config:colConfigWorking}).eq('id',campId).then(function(){
+    sb.from('campaigns').update({column_config:colConfigWorking}).eq('id',campId).then(function(r){
+      if(r.error){toast(r.error.message,'error');return;}
       toast('Column config saved');
       fetchAll().then(function(){
         closeColConfig();
         if(S.currentPage==='upload')renderUpload();
         if(S.currentPage==='my-clients')renderMyClients();
       });
-    }).catch(function(e){toast(e.message,'error');});
+    });
   } else {
-    // Save as upload default (no campaign selected)
     U.colConfig=colConfigWorking.slice();
     toast('Column config applied');
     closeColConfig();
