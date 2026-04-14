@@ -34,7 +34,30 @@ function renderTeam(){
     '</div></div>';}).join('')+'</div>':'<p class="text-slate-500 text-sm text-center py-4">Everyone is active!</p>')+'</div>';
   lucide.createIcons();
 }
-function adminSetActive(eid,val){sb.from('employees').update({is_active:val}).eq('id',eid).then(function(){toast(val?'Activated':'Deactivated');fetchAll().then(function(){renderTeam();if(S.currentPage==='dashboard')renderDashboard();});}).catch(function(e){toast(e.message,'error');});}
+async function adminSetActive(eid,val){
+  try{
+    var res=await sb.from('employees').update({is_active:val}).eq('id',eid);
+    if(res.error)throw res.error;
+
+    var emp=empById(eid);
+    var empName=emp?emp.name:'Employee';
+
+    // Notify the employee
+    await notifyEmployee(
+      eid,
+      'employee_active',
+      val ? 'You have been set as Active by admin' : 'You have been set as Inactive by admin'
+    );
+
+    toast(val?'Activated':'Deactivated','success');
+    fetchAll().then(function(){
+      renderTeam();
+      if(S.currentPage==='dashboard')renderDashboard();
+    });
+  }catch(e){
+    toast(e.message,'error');
+  }
+}
 function editEmployee(id){var e=empById(id);if(!e)return;T={showForm:true,editId:id,name:e.name,email:e.email,phone:e.phone||''};renderTeam();}
 function saveEmployee(){
   var n=document.getElementById('tn').value.trim();var em=document.getElementById('te').value.trim();var ph=document.getElementById('tp').value.trim();
