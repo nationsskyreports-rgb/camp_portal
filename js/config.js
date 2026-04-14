@@ -1,17 +1,7 @@
 // ============================================================
 // CONFIG — Supabase + Constants
 // ============================================================
-function simpleHash(str){
-  var hash=0;
-  for(var i=0;i<str.length;i++){
-    var char=str.charCodeAt(i);
-    hash=((hash<<5)-hash)+char;
-    hash=hash&hash;
-  }
-  return Math.abs(hash).toString(16);
-}
-
-var ADMIN_PASSWORD_HASH = simpleHash('zomra2025');
+// Admin password is stored securely in Supabase app_settings table
 var SUPABASE_URL  = 'https://biwrdwxgfyhnltzddlwu.supabase.co';
 var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpd3Jkd3hnZnlobmx0emRkbHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTczMTYsImV4cCI6MjA4OTc5MzMxNn0.EMOV5v3cGaDEqQJusnyrWTWdSPPwKeyuguPzxJvtKdQ';
 var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
