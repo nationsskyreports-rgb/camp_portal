@@ -73,6 +73,9 @@ function logout(){
   document.getElementById('app-shell').classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('mobile-menu-btn').style.display='none';
+  // Hide mobile topbar title
+  var tb=document.getElementById('mobile-topbar-title');
+  if(tb)tb.style.display='none';
   closeMobileSidebar();
 
   function reloadDropdown(){
