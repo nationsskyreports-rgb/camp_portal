@@ -81,9 +81,6 @@ textarea.input{resize:vertical;min-height:70px}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:40}
 .progress-bar{width:100%;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;margin-top:8px}
 .progress-fill{height:100%;background:linear-gradient(90deg,#3b82f6,#10b981);border-radius:4px;transition:width .3s ease}
-.call-timer{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);border-radius:8px;color:#10b981;font-weight:600;font-size:13px;cursor:pointer}
-.call-timer.active{animation:pulse 1s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
 .mode-toggle{position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:50%;background:#3b82f6;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;z-index:40;transition:all .2s;box-shadow:0 4px 12px rgba(59,130,246,0.3)}
 .mode-toggle:hover{transform:scale(1.1);box-shadow:0 6px 16px rgba(59,130,246,0.4)}
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px}
