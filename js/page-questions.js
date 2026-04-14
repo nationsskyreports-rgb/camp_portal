@@ -1,38 +1,218 @@
 // ============================================================
-// PAGE QUESTIONS
+// PAGE QUESTIONS — Ask a Question + My Questions
 // ============================================================
-// ── ASK QUESTION ──
-function renderAskQuestion(){
-  var m=document.getElementById('main-content');var cls=myClients();
-  var clientOpts='<option value="">None</option>'+cls.map(function(c){return'<option value="'+c.id+'">'+esc(c.name)+'</option>';}).join('');
-  var campIds=[];cls.forEach(function(c){if(c.campaign_id&&campIds.indexOf(c.campaign_id)===-1)campIds.push(c.campaign_id);});
-  var campOpts='<option value="">None</option>'+campIds.map(function(cid){var cp=campById(cid);return cp?'<option value="'+cid+'">'+esc(cp.name)+'</option>':'';}).join('');
-  m.innerHTML=hdr('Ask a Question','Send a question to management')+
-  (qSent?'<div class="card border-emerald-500/20 fade-in text-center py-10"><div class="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-500/10 flex items-center justify-center text-3xl">✓</div><p class="text-white font-semibold mb-1">Question sent successfully.</p><p class="text-slate-400 text-sm mb-5">You\'ll be notified when it\'s answered.</p><button class="btn btn-primary" onclick="qSent=false;renderAskQuestion()">Ask Another</button></div>':
-  '<div class="card fade-in" style="max-width:600px"><div class="space-y-4">'+
-  '<div><label class="text-xs text-slate-400 mb-1 block">Related Client</label><select id="qclient" class="input">'+clientOpts+'</select></div>'+
-  '<div><label class="text-xs text-slate-400 mb-1 block">Related Campaign</label><select id="qcamp" class="input">'+campOpts+'</select></div>'+
-  '<div><label class="text-xs text-slate-400 mb-1 block">Question *</label><textarea id="qtext" class="input" rows="4" placeholder="Type your question..."></textarea></div>'+
-  '<button class="btn btn-primary" onclick="submitQuestion()"><i data-lucide="send" class="w-4 h-4"></i> Submit</button></div></div>');
-  lucide.createIcons();
+
+// ── Helper: get best display name from client ──
+function getClientDisplayName(c){
+  if(!c) return 'Unknown';
+  // Try c.name first
+  if(c.name && c.name.trim() && c.name.trim() !== '"') return c.name.trim();
+  // Try extra_data fields that look like names
+  var extra = c.extra_data || {};
+  var nameKeys = ['customer','client_name','name','full_name','الاسم','اسم العميل'];
+  for(var i=0;i<nameKeys.length;i++){
+    var val = extra[nameKeys[i]];
+    if(val && val.toString().trim() && val.toString().trim() !== '"') return val.toString().trim();
+  }
+  // Fallback: first non-empty string value in extra_data
+  var vals = Object.values(extra);
+  for(var j=0;j<vals.length;j++){
+    var v = (vals[j]||'').toString().trim();
+    if(v && v !== '"' && isNaN(v) && v.length > 2) return v;
+  }
+  return 'Client #'+(c.id||'').toString().slice(-4);
 }
+
+// ── ASK A QUESTION ──
+var qClientSearch = '';
+var qSelectedClient = null;
+var qSelectedCampaign = '';
+
+function renderAskQuestion(){
+  var m = document.getElementById('main-content');
+
+  if(qSent){
+    m.innerHTML = hdr('Ask a Question','Send a question to management')+
+    '<div class="card border-emerald-500/20 fade-in text-center py-10">'+
+    '<div class="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-500/10 flex items-center justify-center text-3xl">✓</div>'+
+    '<p class="text-white font-semibold mb-1">Question sent successfully.</p>'+
+    '<p class="text-slate-400 text-sm mb-5">You\'ll be notified when it\'s answered.</p>'+
+    '<button class="btn btn-primary" onclick="qSent=false;qSelectedClient=null;qClientSearch=\'\';renderAskQuestion()">Ask Another</button>'+
+    '</div>';
+    lucide.createIcons();
+    return;
+  }
+
+  // Campaign filter options
+  var cls = myClients();
+  var campIds = [];
+  cls.forEach(function(c){if(c.campaign_id && campIds.indexOf(c.campaign_id)===-1) campIds.push(c.campaign_id);});
+  var campOpts = '<option value="">All Campaigns</option>'+
+    campIds.map(function(cid){
+      var cp = campById(cid);
+      return cp ? '<option value="'+cid+'" '+(qSelectedCampaign===cid?'selected':'')+'>'+esc(cp.name)+'</option>' : '';
+    }).join('');
+
+  // Filter clients by campaign
+  var filteredClients = qSelectedCampaign ? cls.filter(function(c){return c.campaign_id===qSelectedCampaign;}) : cls;
+
+  // Filter by search
+  var searchResults = [];
+  if(qClientSearch.length >= 1){
+    var q = qClientSearch.toLowerCase();
+    searchResults = filteredClients.filter(function(c){
+      var name = getClientDisplayName(c).toLowerCase();
+      return name.indexOf(q) !== -1;
+    }).slice(0, 8);
+  }
+
+  var selectedClientHtml = '';
+  if(qSelectedClient){
+    var cp = campById(qSelectedClient.campaign_id);
+    selectedClientHtml = '<div class="flex items-center gap-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">'+
+      '<div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-xs font-bold">'+
+        initials(getClientDisplayName(qSelectedClient))+
+      '</div>'+
+      '<div class="flex-1 min-w-0">'+
+        '<p class="text-sm font-semibold text-white">'+esc(getClientDisplayName(qSelectedClient))+'</p>'+
+        '<p class="text-xs text-slate-400">'+(cp?esc(cp.name):'')+'</p>'+
+      '</div>'+
+      '<button onclick="qSelectedClient=null;qClientSearch=\'\';renderAskQuestion()" class="text-slate-400 hover:text-red-400 transition-colors">'+
+        '<i data-lucide="x" class="w-4 h-4"></i>'+
+      '</button>'+
+    '</div>';
+  }
+
+  m.innerHTML = hdr('Ask a Question','Send a question to management')+
+  '<div class="card fade-in" style="max-width:620px"><div class="space-y-5">'+
+
+  // Campaign filter
+  '<div>'+
+    '<label class="text-xs text-slate-400 mb-2 block font-medium uppercase tracking-wider">Filter by Campaign</label>'+
+    '<select class="input" onchange="qSelectedCampaign=this.value;qSelectedClient=null;qClientSearch=\'\';renderAskQuestion()">'+campOpts+'</select>'+
+  '</div>'+
+
+  // Client search
+  '<div>'+
+    '<label class="text-xs text-slate-400 mb-2 block font-medium uppercase tracking-wider">Related Client <span class="text-slate-600">(optional)</span></label>'+
+    (qSelectedClient ? selectedClientHtml :
+      '<div class="relative">'+
+        '<div class="relative">'+
+          '<i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>'+
+          '<input id="client-search-input" type="text" class="input pl-9" placeholder="Search client name..." '+
+            'value="'+esc(qClientSearch)+'" '+
+            'oninput="qClientSearch=this.value;renderAskQuestion()" '+
+            'onkeydown="if(event.key===\'Escape\'){qClientSearch=\'\';renderAskQuestion()}">'+
+        '</div>'+
+        (qClientSearch.length >= 1 ?
+          '<div class="absolute z-10 w-full mt-1 rounded-xl overflow-hidden border border-white/10 shadow-2xl" style="background:#0d1628">'+
+            (searchResults.length ?
+              searchResults.map(function(c){
+                var cp = campById(c.campaign_id);
+                return '<div class="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5" '+
+                  'onclick="qSelectedClient='+JSON.stringify({id:c.id,name:getClientDisplayName(c),campaign_id:c.campaign_id})+';qClientSearch=\'\';renderAskQuestion()">'+
+                  '<div class="w-8 h-8 rounded-full bg-blue-500/15 flex items-center justify-center text-blue-400 text-xs font-bold flex-shrink-0">'+
+                    initials(getClientDisplayName(c))+
+                  '</div>'+
+                  '<div class="min-w-0">'+
+                    '<p class="text-sm text-white font-medium truncate">'+esc(getClientDisplayName(c))+'</p>'+
+                    '<p class="text-xs text-slate-500">'+(cp?esc(cp.name):'')+'</p>'+
+                  '</div>'+
+                '</div>';
+              }).join('') :
+              '<div class="px-4 py-6 text-center text-slate-500 text-sm">No clients found</div>'
+            )+
+          '</div>' : ''
+        )+
+      '</div>'
+    )+
+  '</div>'+
+
+  // Question text
+  '<div>'+
+    '<label class="text-xs text-slate-400 mb-2 block font-medium uppercase tracking-wider">Question *</label>'+
+    '<textarea id="qtext" class="input" rows="4" placeholder="Type your question here..."></textarea>'+
+  '</div>'+
+
+  '<button class="btn btn-primary w-full" onclick="submitQuestion()">'+
+    '<i data-lucide="send" class="w-4 h-4"></i> Submit Question'+
+  '</button>'+
+
+  '</div></div>';
+
+  lucide.createIcons();
+
+  // Re-focus search input after re-render
+  if(qClientSearch){
+    var inp = document.getElementById('client-search-input');
+    if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}
+  }
+}
+
 function submitQuestion(){
-  var text=document.getElementById('qtext').value.trim();if(!text){toast('Type a question','error');return;}
-  sb.from('questions').insert({employee_id:S.employee.id,employee_name:S.employee.name,question_text:text,related_client_id:document.getElementById('qclient').value||null,related_campaign_id:document.getElementById('qcamp').value||null,status:'pending'})
-    .then(function(){qSent=true;toast('Question sent');renderAskQuestion();}).catch(function(e){toast(e.message,'error');});
+  var text = document.getElementById('qtext').value.trim();
+  if(!text){toast('Type a question first','error');return;}
+  sb.from('questions').insert({
+    employee_id: S.employee.id,
+    employee_name: S.employee.name,
+    question_text: text,
+    related_client_id: qSelectedClient ? qSelectedClient.id : null,
+    related_campaign_id: qSelectedCampaign || null,
+    status: 'pending'
+  }).then(function(){
+    qSent=true;
+    toast('Question sent!','success');
+    renderAskQuestion();
+  }).catch(function(e){toast(e.message,'error');});
 }
 
 // ── MY QUESTIONS ──
 function renderMyQuestions(){
-  var m=document.getElementById('main-content');
-  var qs=S.questions.filter(function(q){return q.employee_id===S.employee.id;});
-  qs.sort(function(a,b){if(a.status==='pending'&&b.status!=='pending')return-1;if(a.status!=='pending'&&b.status==='pending')return 1;return new Date(b.created_at)-new Date(a.created_at);});
-  m.innerHTML=hdr('My Questions',qs.length+' questions')+
-  '<div class="space-y-3 fade-in">'+(qs.length?qs.map(function(q){
-    return'<div class="card">'+sBadge(q.status)+'<span class="text-xs text-slate-500 ml-2">'+fmtDT(q.created_at)+'</span>'+
-    '<p class="text-sm text-slate-300 mt-2 mb-3">'+esc(q.question_text)+'</p>'+
-    (q.status==='answered'?'<div class="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10"><p class="text-xs text-emerald-400 font-medium mb-1">Reply</p><p class="text-sm text-slate-200">'+esc(q.admin_reply)+'</p></div>':
-    '<p class="text-xs text-amber-400">Awaiting reply...</p>')+'</div>';
-  }).join(''):'<div class="card text-center py-12"><p class="text-slate-500">No questions yet</p></div>')+'</div>';
+  var m = document.getElementById('main-content');
+  var qs = S.questions.filter(function(q){return q.employee_id===S.employee.id;});
+  qs.sort(function(a,b){
+    if(a.status==='pending'&&b.status!=='pending')return -1;
+    if(a.status!=='pending'&&b.status==='pending')return 1;
+    return new Date(b.created_at)-new Date(a.created_at);
+  });
+
+  m.innerHTML = hdr('My Questions', qs.length+' questions')+
+  '<div class="space-y-3 fade-in">'+
+  (qs.length ? qs.map(function(q){
+    var cl = q.related_client_id ? clientById(q.related_client_id) : null;
+    var cp = q.related_campaign_id ? campById(q.related_campaign_id) : null;
+    return '<div class="card">'+
+      '<div class="flex items-start justify-between gap-3 mb-3">'+
+        '<div class="flex items-center gap-2 flex-wrap">'+
+          sBadge(q.status)+
+          (cl?'<span class="text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">'+esc(getClientDisplayName(cl))+'</span>':'')+
+          (cp?'<span class="text-xs text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded-full">'+esc(cp.name)+'</span>':'')+
+        '</div>'+
+        '<span class="text-xs text-slate-500 flex-shrink-0">'+fmtDT(q.created_at)+'</span>'+
+      '</div>'+
+      '<p class="text-sm text-slate-200 mb-3 leading-relaxed">'+esc(q.question_text)+'</p>'+
+      (q.status==='answered' ?
+        '<div class="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15">'+
+          '<div class="flex items-center gap-2 mb-2">'+
+            '<div class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center"><i data-lucide="check" class="w-3 h-3 text-emerald-400"></i></div>'+
+            '<p class="text-xs text-emerald-400 font-semibold">Reply · '+fmtDT(q.replied_at)+'</p>'+
+          '</div>'+
+          '<p class="text-sm text-slate-200 leading-relaxed">'+esc(q.admin_reply)+'</p>'+
+        '</div>' :
+        '<div class="flex items-center gap-2 text-amber-400">'+
+          '<i data-lucide="clock" class="w-3.5 h-3.5"></i>'+
+          '<p class="text-xs font-medium">Awaiting reply...</p>'+
+        '</div>'
+      )+
+    '</div>';
+  }).join('') :
+  '<div class="card text-center py-12">'+
+    '<div class="w-12 h-12 mx-auto mb-3 rounded-full bg-white/5 flex items-center justify-center">'+
+      '<i data-lucide="messages-square" class="w-6 h-6 text-slate-600"></i>'+
+    '</div>'+
+    '<p class="text-slate-500">No questions yet</p>'+
+  '</div>')+
+  '</div>';
+
   lucide.createIcons();
 }
