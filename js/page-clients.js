@@ -50,16 +50,54 @@ function renderMyClients(){
   }).join(''):'<div class="card text-center py-12"><p class="text-slate-500">No clients assigned</p></div>')+'</div>';
   lucide.createIcons();
 }
-function saveClient(cid){
+async function saveClient(cid){
   var statusEl=document.getElementById('status-'+cid);
   var noteEl=document.getElementById('note-'+cid);
-  var status=statusEl?statusEl.value:null;
+  var newStatus=statusEl?statusEl.value:null;
   var note=noteEl?noteEl.value.trim():'';
-  var promises=[];
-  if(status){promises.push(sb.from('clients').update({status:status}).eq('id',cid));}
-  if(note){promises.push(sb.from('contact_history').insert({client_id:cid,note:note}));}
-  if(!promises.length){toast('Nothing to save','info');return;}
-  Promise.all(promises)
-    .then(function(){toast('Saved!','success');fetchAll().then(renderMyClients);})
-    .catch(function(e){toast(e.message,'error');});
+
+  if(!newStatus&&!note){toast('Nothing to save','info');return;}
+
+  try{
+    // 1. Update status
+    if(newStatus){
+      var res=await sb.from('clients').update({status:newStatus}).eq('id',cid);
+      if(res.error)throw res.error;
+
+      // Get client info for notification
+      var c=S.clients.find(function(x){return x.id===cid;});
+      if(c){
+        var clientName=getClientDisplayName(c);
+        var emp=empById(c.assigned_employee_id);
+
+        // Notify admin if employee changed status
+        if(S.role==='employee'){
+          await notifyAdmin(
+            'status_changed',
+            S.employee.name+' changed "'+clientName+'" status to '+newStatus
+          );
+        }
+
+        // Notify assigned employee if admin changed status
+        if(S.role==='admin'&&c.assigned_employee_id){
+          await notifyEmployee(
+            c.assigned_employee_id,
+            'status_changed',
+            'Admin changed "'+clientName+'" status to '+newStatus
+          );
+        }
+      }
+    }
+
+    // 2. Save note
+    if(note){
+      var r2=await sb.from('contact_history').insert({client_id:cid,note:note});
+      if(r2.error)throw r2.error;
+    }
+
+    toast('Saved!','success');
+    fetchAll().then(renderMyClients);
+  }catch(e){
+    toast(e.message,'error');
+  }
 }
