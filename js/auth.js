@@ -31,16 +31,35 @@ async function loginAsAdmin(){
       document.getElementById('admin-pass-input').value='';
       return;
     }
-    S.role='admin';S.employee=null;
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('app-shell').classList.remove('hidden');
-    document.getElementById('mobile-menu-btn').style.display='';
-    hideAdminPass();
-    fetchAll().then(function(){
-      buildSidebar();
-      navigateTo('dashboard');
-    }).catch(function(e){toast('Error loading data: '+e.message,'error');logout();});
+    // Save login if remember me is checked
+    var rememberMe=document.getElementById('admin-remember-me');
+    if(rememberMe&&rememberMe.checked){
+      localStorage.setItem('admin_remembered','true');
+    } else {
+      localStorage.removeItem('admin_remembered');
+    }
+    enterAdminDashboard();
   }catch(e){toast('Error checking password','error');}
+}
+
+function enterAdminDashboard(){
+  S.role='admin';S.employee=null;
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app-shell').classList.remove('hidden');
+  document.getElementById('mobile-menu-btn').style.display='';
+  hideAdminPass();
+  fetchAll().then(function(){
+    buildSidebar();
+    navigateTo('dashboard');
+  }).catch(function(e){toast('Error loading data: '+e.message,'error');logout();});
+}
+
+function checkRememberedAdmin(){
+  if(localStorage.getItem('admin_remembered')==='true'){
+    enterAdminDashboard();
+    return true;
+  }
+  return false;
 }
 
 function loginAsEmployee(){
@@ -74,6 +93,8 @@ function logout(){
   rptFilter={campaign:'',employee:'',status:'',dateFrom:'',dateTo:'',page:0};
   empClientFilter='';
 
+  // Clear remembered admin on logout
+  localStorage.removeItem('admin_remembered');
   document.getElementById('app-shell').classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('mobile-menu-btn').style.display='none';
