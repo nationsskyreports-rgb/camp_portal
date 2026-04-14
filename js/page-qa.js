@@ -33,8 +33,37 @@ function renderQA(){
   }).join(''):'<div class="card text-center py-12"><p class="text-slate-500">No questions</p></div>')+'</div>';
   lucide.createIcons();
 }
-function sendReply(qid){
-  var ta=document.getElementById('reply-'+qid);if(!ta||!ta.value.trim()){toast('Type a reply','error');return;}
-  sb.from('questions').update({status:'answered',admin_reply:ta.value.trim(),replied_at:new Date().toISOString()}).eq('id',qid)
-    .then(function(){var q=S.questions.find(function(x){return x.id===qid;});if(q&&q.employee_id)sb.from('notifications').insert({employee_id:q.employee_id,type:'question_answered',message:'Your question has been answered',read:false}).catch(function(){});toast('Reply sent');fetchAll().then(renderQA);}).catch(function(e){toast(e.message,'error');});
+async function sendReply(qid){
+  var ta=document.getElementById('reply-'+qid);
+  if(!ta||!ta.value.trim()){toast('Type a reply','error');return;}
+  var replyText=ta.value.trim();
+
+  // Disable button to prevent double submit
+  var btn=document.querySelector('[onclick="sendReply(''+qid+'')"]');
+  if(btn){btn.disabled=true;btn.innerHTML='<i data-lucide="loader" class="w-4 h-4"></i> Sending...';}
+
+  try{
+    // 1. Update question
+    var res=await sb.from('questions')
+      .update({status:'answered',admin_reply:replyText,replied_at:new Date().toISOString()})
+      .eq('id',qid);
+    if(res.error)throw res.error;
+
+    // 2. Send notification to employee
+    var q=S.questions.find(function(x){return x.id===qid;});
+    if(q&&q.employee_id){
+      await sb.from('notifications').insert({
+        employee_id:q.employee_id,
+        type:'question_answered',
+        message:'Your question has been answered: "'+replyText.slice(0,60)+(replyText.length>60?'...':'')+'"',
+        read:false
+      });
+    }
+
+    toast('Reply sent!','success');
+    fetchAll().then(renderQA);
+  }catch(e){
+    toast(e.message,'error');
+    if(btn){btn.disabled=false;btn.innerHTML='<i data-lucide="send" class="w-4 h-4"></i> Send';}
+  }
 }
