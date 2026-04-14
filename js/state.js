@@ -48,10 +48,6 @@ var cleanupState = {
   loading:false, searchText:'', importBatch:'', batches:[]
 };
 
-// Call timer state
-var activeCallTimer = null;
-var callStartTime   = 0;
-
 // ============================================================
 // DATA FETCH
 // ============================================================
