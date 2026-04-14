@@ -17,7 +17,7 @@ if(localStorage.getItem('darkMode')==='false'){
 // Upload state
 var U = {
   campaignId:'', rows:[], preview:null, uploadTab:'paste',
-  colConfig: null
+  colConfig: null, detectedCols: null
 };
 
 // Team form state
