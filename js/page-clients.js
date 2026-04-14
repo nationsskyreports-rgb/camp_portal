@@ -12,7 +12,21 @@ function renderMyClients(){
   '<div class="space-y-3 fade-in">'+(cls.length?cls.map(function(c){
     var isExp=expandedClientId===c.id;var hist=clientHistory(c.id);var extra=c.extra_data||{};var camp=campById(c.campaign_id);
     var visCols=camp?getVisibleCols(camp.id):DEFAULT_COLUMNS.filter(function(x){return x.visible;});
-    var displayName=c.name||Object.values(extra)[0]||'Client';
+    // Get best display name
+    var displayName = (function(){
+      if(c.name && c.name.trim() && c.name.trim()!=='"') return c.name.trim();
+      var nameKeys=['customer','client_name','name','full_name'];
+      for(var ni=0;ni<nameKeys.length;ni++){
+        var v=extra[nameKeys[ni]];
+        if(v&&v.toString().trim()&&v.toString().trim()!=='"') return v.toString().trim();
+      }
+      var vals=Object.values(extra);
+      for(var vi=0;vi<vals.length;vi++){
+        var vv=(vals[vi]||'').toString().trim();
+        if(vv&&vv!=='"'&&isNaN(vv)&&vv.length>2) return vv;
+      }
+      return 'Client';
+    })();
     var subInfo=visCols.slice(1,3).map(function(col){return extra[col.key]||c[col.key]||'';}).filter(Boolean).join(' · ');
     return'<div class="card client-card '+(isExp?'border-blue-500/30':'')+'">'+
     '<div class="flex items-center justify-between" onclick="expandedClientId='+(isExp?'null':'\''+c.id+'\'')+';renderMyClients()">'+
