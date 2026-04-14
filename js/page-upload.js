@@ -143,8 +143,21 @@ function confirmDistribute(){
     if(result.error){toast(result.error.message,'error');return;}
     var notifs=[];
     Object.keys(U.preview).forEach(function(eid){if(U.preview[eid].length){notifs.push({employee_id:eid,type:'data_updated',message:'New data - '+U.preview[eid].length+' client(s) in '+campName,read:false});}});
-    if(notifs.length)sb.from('notifications').insert(notifs);
-    toast(rows.length+' clients distributed successfully');
+    // Send notifications to employees
+    if(notifs.length){
+      var notifPromises = Object.keys(U.preview).map(function(eid){
+        if(U.preview[eid].length){
+          return notifyEmployee(
+            eid,
+            'new_clients',
+            'You have '+U.preview[eid].length+' new client(s) assigned in '+campName
+          );
+        }
+        return Promise.resolve();
+      });
+      Promise.all(notifPromises).catch(function(){});
+    }
+    toast(rows.length+' clients distributed successfully','success');
     U={campaignId:'',rows:[],preview:null,uploadTab:'paste',colConfig:null};
     fetchAll().then(renderUpload);
   });
