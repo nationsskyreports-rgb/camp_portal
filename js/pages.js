@@ -100,7 +100,7 @@ function renderUpload(){
   m.innerHTML=hdr('Upload & Distribute','Upload data and distribute to active employees')+previewHtml+
   '<div class="card fade-in mb-4">'+
   '<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px">'+
-  '<select class="input" style="max-width:280px;flex:1;min-width:180px" onchange="U.campaignId=this.value;U.preview=null;U.rows=[];renderUpload()">'+campOpts+'</select>'+
+  '<select class="input" style="max-width:280px;flex:1;min-width:180px" onchange="U.campaignId=this.value;U.preview=null;U.rows=[];U.detectedCols=null;renderUpload()">'+campOpts+'</select>'+
   '<button class="btn btn-ghost btn-sm" onclick="openColConfig(null)"><i data-lucide="settings-2" class="w-4 h-4"></i> Configure Columns</button></div>'+
   '<div class="flex flex-wrap gap-2 mb-5 p-3 rounded-lg bg-white/[0.02] border border-white/5">'+
   '<span class="text-xs text-slate-500 self-center mr-1">Columns:</span>'+cols.map(function(c){return'<span class="badge badge-new text-[11px]">'+esc(c.label)+'</span>';}).join('')+'</div>'+
@@ -113,48 +113,81 @@ function renderUpload(){
 }
 function addUploadRows(n){var cols=getCurrentUploadCols();for(var i=0;i<n;i++){var r={};cols.forEach(function(c){r[c.key]='';});U.rows.push(r);}renderUpload();}
 function parsePaste(){
-  var raw=document.getElementById('paste-area').value.trim();if(!raw){toast('Paste data first','error');return;}
-  var cols=getCurrentUploadCols();var lines=raw.split('\n');var rows=[];var startIdx=0;
-  var firstLine=lines[0]?lines[0].toLowerCase():'';
-  var colLabelsLower=cols.map(function(c){return c.label.toLowerCase();});
-  if(colLabelsLower.some(function(lbl){return firstLine.indexOf(lbl)!==-1;})){startIdx=1;}
-  for(var i=startIdx;i<lines.length;i++){
-    var line=lines[i].replace(/\r/g,'').trim();if(!line)continue;
-    var parts=line.split('\t');var obj={};
+  var raw=document.getElementById('paste-area').value.trim();
+  if(!raw){toast('Paste data first','error');return;}
+  var lines=raw.split('\n').map(function(l){return l.replace(/\r/g,'');});
+  if(!lines.length){toast('No data','error');return;}
+
+  // Always treat first row as headers
+  var headerParts=lines[0].split('\t');
+  var cols=buildColsFromHeaders(headerParts);
+  if(!cols.length){toast('Could not detect headers','error');return;}
+  saveDetectedCols(cols);
+
+  var rows=[];
+  for(var i=1;i<lines.length;i++){
+    var line=lines[i].trim();if(!line)continue;
+    var parts=line.split('\t');
+    var obj={};
     cols.forEach(function(c,ci){obj[c.key]=(parts[ci]||'').trim();});
-    var firstKey=cols[0]?cols[0].key:'';if(firstKey&&!obj[firstKey])continue;
+    if(!Object.values(obj).some(function(v){return v;}))continue;
     rows.push(obj);
   }
-  if(!rows.length){toast('No valid rows found','error');return;}
-  U.rows=rows;toast(rows.length+' rows parsed','success');renderUpload();
+  if(!rows.length){toast('No data rows found','error');return;}
+  U.rows=rows;
+  toast(cols.length+' columns detected · '+rows.length+' rows parsed','success');
+  renderUpload();
 }
 function handleExcelDrop(e){e.preventDefault();var f=e.dataTransfer.files[0];if(f)readExcelFile(f);}
 function handleExcelFile(input){var f=input.files[0];if(f)readExcelFile(f);}
 function readExcelFile(file){
-  var cols=getCurrentUploadCols();var name=file.name.toLowerCase();
+  var name=file.name.toLowerCase();
   if(name.endsWith('.csv')){
     var reader=new FileReader();
     reader.onload=function(e){
-      var lines=e.target.result.split('\n');var rows=[];var startIdx=0;
-      if(lines[0]){var firstLower=lines[0].toLowerCase();var hasHeader=cols.some(function(c){return firstLower.indexOf(c.label.toLowerCase())!==-1||firstLower.indexOf(c.key.toLowerCase())!==-1;});if(hasHeader)startIdx=1;}
-      for(var i=startIdx;i<lines.length;i++){var parts=lines[i].replace(/\r/g,'').split(',');var obj={};cols.forEach(function(c,ci){obj[c.key]=(parts[ci]||'').replace(/^"|"$/g,'').trim();});var firstKey=cols[0]?cols[0].key:'';if(firstKey&&!obj[firstKey])continue;rows.push(obj);}
-      U.rows=rows;toast(rows.length+' rows from CSV');renderUpload();
+      var lines=e.target.result.split('\n');
+      if(!lines.length){toast('Empty file','error');return;}
+      // First row = headers
+      var headerParts=lines[0].replace(/\r/g,'').split(',').map(function(h){return h.replace(/^"|"$/g,'').trim();});
+      var cols=buildColsFromHeaders(headerParts);
+      if(!cols.length){toast('Could not detect headers','error');return;}
+      saveDetectedCols(cols);
+      var rows=[];
+      for(var i=1;i<lines.length;i++){
+        var parts=lines[i].replace(/\r/g,'').split(',');
+        var obj={};
+        cols.forEach(function(c,ci){obj[c.key]=(parts[ci]||'').replace(/^"|"$/g,'').trim();});
+        if(!Object.values(obj).some(function(v){return v;}))continue;
+        rows.push(obj);
+      }
+      U.rows=rows;
+      toast(cols.length+' columns detected · '+rows.length+' rows from CSV','success');
+      renderUpload();
     };reader.readAsText(file);
   } else if(window.XLSX){
     var reader=new FileReader();
     reader.onload=function(e){
       try{
-        var wb=XLSX.read(e.target.result,{type:'array'});var ws=wb.Sheets[wb.SheetNames[0]];var data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        var wb=XLSX.read(e.target.result,{type:'array'});
+        var ws=wb.Sheets[wb.SheetNames[0]];
+        var data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
         if(!data.length){toast('Empty file','error');return;}
-        var startIdx=0;var firstRowStr=(data[0]||[]).join(',').toLowerCase();
-        var hasHeader=cols.some(function(c){return firstRowStr.indexOf(c.label.toLowerCase())!==-1||firstRowStr.indexOf(c.key.toLowerCase())!==-1;});
-        if(hasHeader)startIdx=1;
-        var colMap={};
-        if(hasHeader){data[0].forEach(function(h,hi){var hLower=(h||'').toString().toLowerCase().trim();cols.forEach(function(c){if(hLower===c.label.toLowerCase()||hLower===c.key.toLowerCase()){colMap[hi]=c.key;}});});}
-        else{cols.forEach(function(c,ci){colMap[ci]=c.key;});}
+        // First row = headers
+        var headerRow=(data[0]||[]).map(function(h){return(h||'').toString().trim();});
+        var cols=buildColsFromHeaders(headerRow);
+        if(!cols.length){toast('Could not detect headers','error');return;}
+        saveDetectedCols(cols);
         var rows=[];
-        for(var i=startIdx;i<data.length;i++){var row=data[i];var obj={};Object.keys(colMap).forEach(function(ci){obj[colMap[ci]]=(row[parseInt(ci)]||'').toString().trim();});var firstKey=cols[0]?cols[0].key:'';if(firstKey&&!obj[firstKey])continue;rows.push(obj);}
-        U.rows=rows;toast(rows.length+' rows from Excel');renderUpload();
+        for(var i=1;i<data.length;i++){
+          var row=data[i];
+          var obj={};
+          cols.forEach(function(c,ci){obj[c.key]=(row[ci]||'').toString().trim();});
+          if(!Object.values(obj).some(function(v){return v;}))continue;
+          rows.push(obj);
+        }
+        U.rows=rows;
+        toast(cols.length+' columns detected · '+rows.length+' rows from Excel','success');
+        renderUpload();
       }catch(err){toast('Could not read file: '+err.message,'error');}
     };reader.readAsArrayBuffer(file);
   } else {toast('XLSX library not loaded','error');}
