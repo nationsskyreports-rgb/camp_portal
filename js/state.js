@@ -17,7 +17,7 @@ if(localStorage.getItem('darkMode')==='false'){
 // Upload state
 var U = {
   campaignId:'', rows:[], preview:null, uploadTab:'paste',
-  colConfig: null
+  colConfig: null, detectedCols: null
 };
 
 // Team form state
@@ -48,10 +48,6 @@ var cleanupState = {
   loading:false, searchText:'', importBatch:'', batches:[]
 };
 
-// Call timer state
-var activeCallTimer = null;
-var callStartTime   = 0;
-
 // ============================================================
 // DATA FETCH
 // ============================================================
@@ -80,7 +76,7 @@ function fetchAll(){
       ]).then(function(r2){S.notifications=r2[0].data||[];S.contactHistory=r2[1].data||[];});
     } else if(S.role==='admin'){
       return Promise.all([
-        sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(100),
+        sb.from('notifications').select('*').is('employee_id',null).order('created_at',{ascending:false}).limit(100),
         sb.from('contact_history').select('*').order('created_at',{ascending:false})
       ]).then(function(r2){S.notifications=r2[0].data||[];S.contactHistory=r2[1].data||[];});
     } else {S.notifications=[];S.contactHistory=[];}
