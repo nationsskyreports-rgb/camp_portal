@@ -16,8 +16,35 @@ function getVisibleCols(campId){
   return cols.filter(function(c){return c.visible;}).sort(function(a,b){return a.order-b.order;});
 }
 
+// ── Auto-detect headers from first row ──
+function buildColsFromHeaders(headers){
+  return headers
+    .map(function(h,i){
+      var clean=(h||'').toString().trim();
+      if(!clean)return null;
+      var key=clean.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+      if(!key)key='col_'+i;
+      return {key:key, label:clean, visible:true, order:i};
+    })
+    .filter(Boolean);
+}
+
+// Save detected cols to state + campaign if selected
+function saveDetectedCols(cols){
+  U.detectedCols=cols;
+  if(U.campaignId){
+    sb.from('campaigns').update({column_config:cols}).eq('id',U.campaignId)
+      .then(function(){fetchAll();})
+      .catch(function(){});
+  }
+}
+
 function getCurrentUploadCols(){
+  // 1. Prefer detected cols from current upload session
+  if(U.detectedCols&&U.detectedCols.length>0){return U.detectedCols;}
+  // 2. Then campaign saved cols
   if(U.campaignId){return getVisibleCols(U.campaignId);}
+  // 3. Fallback to default
   var cfg=U.colConfig||DEFAULT_COLUMNS;
   return cfg.filter(function(c){return c.visible;}).sort(function(a,b){return a.order-b.order;});
 }
@@ -112,6 +139,7 @@ function saveColConfig(){
     });
   } else {
     U.colConfig=colConfigWorking.slice();
+    U.detectedCols=colConfigWorking.slice();
     toast('Column config applied');
     closeColConfig();
     renderUpload();
