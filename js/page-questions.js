@@ -105,7 +105,7 @@ function renderAskQuestion(){
             'onkeydown="if(event.key===\'Escape\'){qClientSearch=\'\';renderAskQuestion()}">'+
         '</div>'+
         (qClientSearch.length >= 1 ?
-          '<div class="absolute z-10 w-full mt-1 rounded-xl overflow-hidden border border-white/10 shadow-2xl" style="background:#0d1628">'+
+          '<div class="absolute z-10 w-full mt-1 rounded-xl overflow-hidden shadow-2xl" style="background:var(--dropdown-bg,#0d1628);border:1px solid rgba(255,255,255,0.1)">'+
             (searchResults.length ?
               searchResults.map(function(c){
                 var cp = campById(c.campaign_id);
