@@ -6,7 +6,11 @@ var notifFilter = 'all'; // 'all' | 'unread' | 'data_updated' | 'question_answer
 
 function renderNotifPage(){
   var m = document.getElementById('main-content');
-  var all = S.notifications;
+  // Admin sees notifications where employee_id is null
+  // Employee sees their own notifications
+  var all = S.role==='admin'
+    ? S.notifications.filter(function(n){return n.employee_id===null;})
+    : S.notifications;
   var unreadCount = all.filter(function(n){return !n.read;}).length;
 
   // Apply filter
