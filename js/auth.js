@@ -63,6 +63,10 @@ function logout(){
   var empIdToDeactivate=(S.role==='employee'&&S.employee)?S.employee.id:null;
 
   S={role:null,employee:null,currentPage:'',employees:[],campaigns:[],clients:[],questions:[],notifications:[],contactHistory:[],darkMode:S.darkMode,callTimers:{}};
+  notifFilter='all';
+  qClientSearch='';
+  qSelectedClient=null;
+  qSelectedCampaign='';
   U={campaignId:'',rows:[],preview:null,uploadTab:'paste',colConfig:null};
   T={showForm:false,editId:null,name:'',email:'',phone:''};
   showCampForm=false;selectedCampId=null;expandedClientId=null;qSent=false;
@@ -73,6 +77,9 @@ function logout(){
   document.getElementById('app-shell').classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('mobile-menu-btn').style.display='none';
+  // Hide mobile topbar title
+  var tb=document.getElementById('mobile-topbar-title');
+  if(tb)tb.style.display='none';
   closeMobileSidebar();
 
   function reloadDropdown(){
