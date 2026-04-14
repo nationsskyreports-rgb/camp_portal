@@ -22,14 +22,15 @@ var DEFAULT_COLUMNS = [
 ];
 
 var ADMIN_PAGES = [
-  {id:'dashboard',   label:'Dashboard',          icon:'layout-dashboard'},
-  {id:'campaigns',   label:'Campaigns',          icon:'target'},
-  {id:'upload',      label:'Upload & Distribute', icon:'upload'},
-  {id:'qa',          label:'Q&A Inbox',           icon:'message-circle-question'},
-  {id:'reports',     label:'Reports & Export',    icon:'file-bar-chart'},
-  {id:'team',        label:'Team Management',     icon:'users'},
-  {id:'my-clients',  label:'All Clients',         icon:'contact'},
-  {id:'cleanup',     label:'Data Cleanup',        icon:'trash-2'}
+  {id:'dashboard',      label:'Dashboard',          icon:'layout-dashboard'},
+  {id:'campaigns',      label:'Campaigns',          icon:'target'},
+  {id:'upload',         label:'Upload & Distribute', icon:'upload'},
+  {id:'qa',             label:'Q&A Inbox',           icon:'message-circle-question'},
+  {id:'reports',        label:'Reports & Export',    icon:'file-bar-chart'},
+  {id:'team',           label:'Team Management',     icon:'users'},
+  {id:'my-clients',     label:'All Clients',         icon:'contact'},
+  {id:'notifications',  label:'Notifications',       icon:'bell'},
+  {id:'cleanup',        label:'Data Cleanup',        icon:'trash-2'}
 ];
 
 var EMP_PAGES = [
