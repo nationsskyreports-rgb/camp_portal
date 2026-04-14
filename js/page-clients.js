@@ -15,7 +15,7 @@ function renderMyClients(){
     // Get best display name
     var displayName = (function(){
       if(c.name && c.name.trim() && c.name.trim()!=='"') return c.name.trim();
-      var nameKeys=['customer','client_name','name','full_name'];
+      var nameKeys=['contract_id','customer_name','client_name','full_name'];
       for(var ni=0;ni<nameKeys.length;ni++){
         var v=extra[nameKeys[ni]];
         if(v&&v.toString().trim()&&v.toString().trim()!=='"') return v.toString().trim();
@@ -38,14 +38,14 @@ function renderMyClients(){
     visCols.map(function(col){return'<div><p class="text-xs text-slate-500 mb-1">'+esc(col.label)+'</p><p class="text-sm text-white">'+esc(extra[col.key]||c[col.key]||'-')+'</p></div>';}).join('')+
     (S.role==='admin'?'<div><p class="text-xs text-slate-500 mb-1">Assigned To</p><p class="text-sm text-white">'+esc((empById(c.assigned_employee_id)||{}).name||'Unassigned')+'</p></div>':'')+
     '<div><p class="text-xs text-slate-500 mb-1">Status</p>'+
-    '<select class="input text-sm" onclick="event.stopPropagation()" onchange="updateClientStatus(\''+c.id+'\',this.value)">'+
+    '<select id="status-'+c.id+'" class="input text-sm" onclick="event.stopPropagation()">'+
     ['New','Contacted','Interested','Closed'].map(function(s){return'<option value="'+s+'" '+(c.status===s?'selected':'')+'>'+s+'</option>';}).join('')+
     '</select></div></div>'+
     '<div><p class="text-xs text-slate-500 mb-2 font-medium">History ('+hist.length+')</p>'+
     (hist.length?'<div class="space-y-2 max-h-48 overflow-y-auto">'+hist.map(function(h){return'<div class="p-2 rounded-lg bg-white/[0.02] text-xs"><span class="text-slate-500">'+fmtDT(h.created_at)+'</span><p class="text-slate-300 mt-1">'+esc(h.note)+'</p></div>';}).join('')+'</div>':'<p class="text-slate-500 text-xs">No notes yet</p>')+'</div>'+
     '<div class="flex gap-2" onclick="event.stopPropagation()">'+
     '<textarea id="note-'+c.id+'" class="input flex-1" placeholder="Add a note..." rows="2"></textarea>'+
-    '<button class="btn btn-primary self-end" onclick="addNote(\''+c.id+'\')"><i data-lucide="plus" class="w-4 h-4"></i> Save</button></div></div>':'')+
+    '<button class="btn btn-primary self-end" onclick="saveClient(\''+c.id+'\')"><i data-lucide="save" class="w-4 h-4"></i> Save</button></div></div>':'')+
     '</div>';
   }).join(''):'<div class="card text-center py-12"><p class="text-slate-500">No clients assigned</p></div>')+'</div>';
   lucide.createIcons();
