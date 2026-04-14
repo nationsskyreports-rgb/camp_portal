@@ -388,8 +388,19 @@ function renderMyClients(){
   }).join(''):'<div class="card text-center py-12"><p class="text-slate-500">No clients assigned</p></div>')+'</div>';
   lucide.createIcons();
 }
-function updateClientStatus(cid,st){sb.from('clients').update({status:st}).eq('id',cid).then(function(){toast('Status updated');fetchAll().then(renderMyClients);}).catch(function(e){toast(e.message,'error');});}
-function addNote(cid){var ta=document.getElementById('note-'+cid);if(!ta||!ta.value.trim()){toast('Type a note first','error');return;}sb.from('contact_history').insert({client_id:cid,note:ta.value.trim()}).then(function(){toast('Note saved');fetchAll().then(renderMyClients);}).catch(function(e){toast(e.message,'error');});}
+function saveClient(cid){
+  var statusEl=document.getElementById('status-'+cid);
+  var noteEl=document.getElementById('note-'+cid);
+  var status=statusEl?statusEl.value:null;
+  var note=noteEl?noteEl.value.trim():'';
+  var promises=[];
+  if(status){promises.push(sb.from('clients').update({status:status}).eq('id',cid));}
+  if(note){promises.push(sb.from('contact_history').insert({client_id:cid,note:note}));}
+  if(!promises.length){toast('Nothing to save','info');return;}
+  Promise.all(promises)
+    .then(function(){toast('Saved!','success');fetchAll().then(renderMyClients);})
+    .catch(function(e){toast(e.message,'error');});
+}
 
 // ── ASK QUESTION ──
 function renderAskQuestion(){
