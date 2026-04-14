@@ -30,8 +30,11 @@ function buildSidebar(){
     updateActiveToggleUI();
   }
 
-  document.getElementById('sidebar-title').textContent    = S.role==='admin'?'Admin Portal':'Employee Portal';
-  document.getElementById('sidebar-subtitle').textContent = S.role==='admin'?'Management':'Dashboard';
+  document.getElementById('sidebar-title').textContent = S.role==='admin'?'Admin Portal':'Employee Portal';
+  // Update subtitle to current page name
+  var allPages = ADMIN_PAGES.concat(EMP_PAGES);
+  var currentPg = allPages.find(function(p){return p.id===S.currentPage;});
+  document.getElementById('sidebar-subtitle').textContent = currentPg ? currentPg.label : (S.role==='admin'?'Management':'Dashboard');
   lucide.createIcons();
 }
 
@@ -39,12 +42,15 @@ function navigateTo(page){
   S.currentPage=page;
   buildSidebar();
   renderPage();
-  var allPages=ADMIN_PAGES.concat(EMP_PAGES);
-  var pg=allPages.find(function(p){return p.id===page;});
-  var titleEl=document.getElementById('mobile-page-title');
-  if(titleEl&&pg)titleEl.textContent=pg.label;
-  var tb=document.getElementById('mobile-topbar-title');
-  if(tb)tb.style.display='flex';
+  // Only show mobile topbar title when inside the app shell
+  if(S.role){
+    var allPages=ADMIN_PAGES.concat(EMP_PAGES);
+    var pg=allPages.find(function(p){return p.id===page;});
+    var titleEl=document.getElementById('mobile-page-title');
+    if(titleEl&&pg)titleEl.textContent=pg.label;
+    var tb=document.getElementById('mobile-topbar-title');
+    if(tb)tb.style.display='flex';
+  }
 }
 
 function renderPage(){
