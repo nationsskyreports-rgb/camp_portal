@@ -7,9 +7,13 @@ function buildSidebar(){
   for(var i=0;i<pages.length;i++){
     var p=pages[i];
     var extra='';
-    if(p.id==='notifications'&&S.role==='employee'){
+    if(p.id==='notifications'){
       var uc=unreadCount();
       if(uc>0)extra='<span class="ml-auto text-xs bg-blue-500/20 text-blue-400 rounded-full px-2 py-0.5">'+uc+'</span>';
+    }
+    if(p.id==='qa'&&S.role==='admin'){
+      var pq=S.questions.filter(function(q){return q.status==='pending';}).length;
+      if(pq>0)extra='<span class="ml-auto text-xs bg-amber-500/20 text-amber-400 rounded-full px-2 py-0.5">'+pq+'</span>';
     }
     html+='<div class="sidebar-item '+(S.currentPage===p.id?'active':'')+'" onclick="navigateTo(\''+p.id+'\');closeMobileSidebar()">'+
       '<i data-lucide="'+p.icon+'" class="w-[18px] h-[18px]"></i><span>'+p.label+'</span>'+extra+'</div>';
