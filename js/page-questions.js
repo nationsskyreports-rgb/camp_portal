@@ -9,7 +9,7 @@ function getClientDisplayName(c){
   if(c.name && c.name.trim() && c.name.trim() !== '"') return c.name.trim();
   // Try extra_data fields that look like names
   var extra = c.extra_data || {};
-  var nameKeys = ['customer','client_name','name','full_name','الاسم','اسم العميل'];
+  var nameKeys = ['contract_id','customer_name','client_name','full_name'];
   for(var i=0;i<nameKeys.length;i++){
     var val = extra[nameKeys[i]];
     if(val && val.toString().trim() && val.toString().trim() !== '"') return val.toString().trim();
