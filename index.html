@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Campaign Portal</title>
+<link rel="icon" type="image/png" sizes="192x192" href="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-192.png">
+<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-192.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body class="grid-bg">
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+<div class="mobile-menu-btn" id="mobile-menu-btn" onclick="openMobileSidebar()">
+  <i data-lucide="menu" class="w-5 h-5 text-slate-300"></i>
+</div>
+<div id="mobile-topbar-title" style="display:none" class="fixed top-0 left-12 right-4 h-[52px] z-44 items-center justify-center pointer-events-none">
+  <span class="text-sm font-bold text-white" style="font-family:'Syne',sans-serif" id="mobile-page-title">Campaign Portal</span>
+</div>
+<div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-2"></div>
+
+<!-- LOGIN -->
+<div id="login-screen" class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+  <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.07] scale-[1.8] rotate-12">
+    <img src="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-512.png" alt="Watermark" class="w-full max-w-2xl object-contain" style="mix-blend-mode:lighten;">
+  </div>
+  <div class="w-full max-w-md fade-in relative z-10">
+    <div class="text-center mb-10 flex flex-col items-center">
+      <div class="relative mb-6">
+        <div class="absolute inset-0 bg-blue-500/10 blur-2xl rounded-full scale-125"></div>
+        <img src="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-512.png" alt="Logo" class="relative w-24 h-24 object-contain" style="mix-blend-mode:lighten;filter:drop-shadow(0 0 10px rgba(59,130,246,0.4));">
+      </div>
+      <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight" style="font-family:'Syne',sans-serif">Campaign Portal</h1>
+      <div class="h-1 w-12 bg-blue-500 rounded-full mb-3"></div>
+      <p class="text-slate-400 text-xs font-medium uppercase tracking-[0.2em]">Management & Employee Dashboard</p>
+    </div>
+    <div class="card" style="background:rgba(13,22,40,0.7);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.05);">
+      <div class="space-y-3">
+        <div id="admin-btn" onclick="showAdminPass()" class="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold cursor-pointer hover:from-blue-500 hover:to-blue-600 transition-all hover:scale-[1.02] active:scale-[0.98]">
+          <i data-lucide="shield-check" class="w-5 h-5"></i>Login as Admin
+        </div>
+        <div id="admin-pass-area" class="hidden space-y-2">
+          <div class="relative">
+            <input id="admin-pass-input" type="password" class="input pr-11" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')loginAsAdmin()">
+            <button type="button" onclick="togglePassVis()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors">
+              <i data-lucide="eye" class="w-4 h-4" id="pass-eye-icon"></i>
+            </button>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn-primary flex-1" onclick="loginAsAdmin()"><i data-lucide="log-in" class="w-4 h-4"></i>Login</button>
+            <button class="btn btn-ghost" onclick="hideAdminPass()">Cancel</button>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 my-2"><div class="flex-1 h-px bg-white/10"></div><span class="text-xs text-slate-500">OR</span><div class="flex-1 h-px bg-white/10"></div></div>
+        <select id="employee-select" class="input text-center"><option value="">Select Employee...</option></select>
+        <div onclick="loginAsEmployee()" class="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10 text-slate-300 font-semibold cursor-pointer hover:bg-white/10 hover:text-white transition-all hover:scale-[1.02] active:scale-[0.98]">
+          <i data-lucide="user" class="w-5 h-5"></i>Login as Employee
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app-shell" class="hidden min-h-screen flex">
+  <aside id="sidebar" class="w-64 min-h-screen border-r border-white/5 bg-[#080e1a] flex flex-col fixed left-0 top-0 bottom-0 z-50">
+    <div class="p-5 border-b border-white/5">
+      <div class="flex items-center gap-3">
+        <img src="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-192.png" alt="Logo" class="w-9 h-9 object-contain" style="mix-blend-mode:lighten;filter:drop-shadow(0 0 4px rgba(59,130,246,0.3))">
+        <div><h2 class="text-sm font-bold text-white leading-tight" id="sidebar-title">Admin Portal</h2><p class="text-[11px] text-slate-500" id="sidebar-subtitle">Management</p></div>
+      </div>
+    </div>
+    <div id="active-toggle-area" class="hidden px-3 pt-3">
+      <div id="active-toggle-btn" onclick="toggleActiveStatus()" class="active-toggle is-inactive">
+        <div class="toggle-track off" id="toggle-track"><div class="toggle-thumb off" id="toggle-thumb"></div></div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold" id="toggle-label">Set Active</p>
+          <p class="text-[11px] text-slate-500" id="toggle-sublabel">You're currently offline</p>
+        </div>
+        <span class="badge" id="toggle-badge" style="background:rgba(100,116,139,0.15);color:#64748b">Offline</span>
+      </div>
+    </div>
+    <nav id="sidebar-nav" class="flex-1 p-3 space-y-1 overflow-y-auto"></nav>
+    <div class="p-4 border-t border-white/5">
+      <div id="sidebar-user" class="flex items-center gap-3 mb-3"></div>
+      <div onclick="logout()" class="flex items-center gap-2 text-slate-500 hover:text-red-400 cursor-pointer text-sm transition-colors">
+        <i data-lucide="log-out" class="w-4 h-4"></i><span>Logout</span>
+      </div>
+    </div>
+  </aside>
+  <main id="main-content" class="flex-1 ml-64 p-6 min-h-screen"></main>
+  <button onclick="toggleDarkMode()" class="mode-toggle" title="Toggle Dark/Light Mode"><i data-lucide="sun" class="w-6 h-6"></i></button>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div id="confirm-overlay" class="hidden fixed inset-0 bg-black/60 z-[80] flex items-center justify-center p-4">
+  <div class="card w-full max-w-sm border-red-500/20 fade-in">
+    <h3 class="text-white font-bold mb-2" id="confirm-title">Confirm</h3>
+    <p class="text-slate-400 text-sm mb-5" id="confirm-msg">Are you sure?</p>
+    <div class="flex gap-2 justify-end">
+      <button class="btn btn-ghost btn-sm" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="confirm-exec-btn" onclick="execConfirm()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- COLUMN CONFIG MODAL -->
+<div id="col-config-modal" class="hidden modal-overlay" onclick="if(event.target===this)closeColConfig()">
+  <div class="modal fade-in">
+    <div class="modal-header">
+      <h3 class="font-bold text-white">Configure Columns</h3>
+      <button onclick="closeColConfig()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div class="modal-body">
+      <p class="text-xs text-slate-400 mb-4">Drag to reorder · Toggle visibility · Double-click label to rename</p>
+      <div id="col-config-list" class="space-y-2 mb-6"></div>
+      <div class="flex gap-2">
+        <button class="btn btn-primary flex-1" onclick="saveColConfig()"><i data-lucide="save" class="w-4 h-4"></i> Save Config</button>
+        <button class="btn btn-ghost" onclick="addCustomColumn()"><i data-lucide="plus" class="w-4 h-4"></i> Add Column</button>
+        <button class="btn btn-ghost" onclick="closeColConfig()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JS FILES — Order matters! -->
+<script src="js/config.js"></script>
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/columns.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/page-dashboard.js"></script>
+<script src="js/page-campaigns.js"></script>
+<script src="js/page-upload.js"></script>
+<script src="js/page-qa.js"></script>
+<script src="js/page-reports.js"></script>
+<script src="js/page-team.js"></script>
+<script src="js/page-clients.js"></script>
+<script src="js/page-questions.js"></script>
+<script src="js/page-notifications.js"></script>
+<script src="js/page-cleanup.js"></script>
+
+<script>
+// ── INIT ──
+document.getElementById('mobile-menu-btn').style.display='none';
+
+// Dark/Light mode on load
+if(localStorage.getItem('darkMode')==='false'){
+  document.body.classList.add('light-mode');
+}
+
+// Auto-refresh every 30s when logged in
+setInterval(function(){
+  if(!S.role)return;
+  fetchAll().then(function(){
+    buildSidebar();
+    if(['dashboard','notifications','my-questions'].indexOf(S.currentPage)!==-1){
+      renderPage();
+    }
+  });
+},30000);
+
+// Start
+initializeEmployeeList();
+lucide.createIcons();
+</script>
+</body>
+</html>
