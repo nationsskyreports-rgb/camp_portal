@@ -103,6 +103,8 @@ body.light-mode .modal{background:#fff;border-color:rgba(59,130,246,0.2)}
 body.light-mode .text-white{color:#0f172a!important}
 body.light-mode #sidebar .text-white{color:#fff!important}
 body.light-mode .table-row:hover{background:rgba(59,130,246,0.05)!important}
+body{--dropdown-bg:#0d1628;--text-primary:#ffffff;}
+body.light-mode{--dropdown-bg:#ffffff;--text-primary:#0f172a;}
 /* Responsive */
 @media(max-width:768px){
   #sidebar{transform:translateX(-100%);z-index:50}
