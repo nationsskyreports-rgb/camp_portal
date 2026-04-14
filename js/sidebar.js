@@ -39,12 +39,15 @@ function navigateTo(page){
   S.currentPage=page;
   buildSidebar();
   renderPage();
-  var allPages=ADMIN_PAGES.concat(EMP_PAGES);
-  var pg=allPages.find(function(p){return p.id===page;});
-  var titleEl=document.getElementById('mobile-page-title');
-  if(titleEl&&pg)titleEl.textContent=pg.label;
-  var tb=document.getElementById('mobile-topbar-title');
-  if(tb)tb.style.display='flex';
+  // Only show mobile topbar title when inside the app shell
+  if(S.role){
+    var allPages=ADMIN_PAGES.concat(EMP_PAGES);
+    var pg=allPages.find(function(p){return p.id===page;});
+    var titleEl=document.getElementById('mobile-page-title');
+    if(titleEl&&pg)titleEl.textContent=pg.label;
+    var tb=document.getElementById('mobile-topbar-title');
+    if(tb)tb.style.display='flex';
+  }
 }
 
 function renderPage(){
