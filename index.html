@@ -54,6 +54,10 @@
               <i data-lucide="eye" class="w-4 h-4" id="pass-eye-icon"></i>
             </button>
           </div>
+          <div class="flex items-center gap-2 mb-1">
+            <input type="checkbox" id="admin-remember-me" class="w-4 h-4 rounded cursor-pointer accent-blue-500">
+            <label for="admin-remember-me" class="text-xs text-slate-400 cursor-pointer select-none">Remember me on this device</label>
+          </div>
           <div class="flex gap-2">
             <button class="btn btn-primary flex-1" onclick="loginAsAdmin()"><i data-lucide="log-in" class="w-4 h-4"></i>Login</button>
             <button class="btn btn-ghost" onclick="hideAdminPass()">Cancel</button>
@@ -170,7 +174,10 @@ setInterval(function(){
 },30000);
 
 // Start
-initializeEmployeeList();
+// Check if admin is remembered
+if(!checkRememberedAdmin()){
+  initializeEmployeeList();
+}
 lucide.createIcons();
 </script>
 </body>
