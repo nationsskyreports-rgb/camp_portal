@@ -163,8 +163,16 @@ if(localStorage.getItem('darkMode')==='false'){
   document.body.classList.add('light-mode');
 }
 
-// Realtime is set up in auth.js on login (setupRealtime).
-// Fallback polling is handled inside state.js if realtime fails.
+// Auto-refresh every 30s when logged in
+setInterval(function(){
+  if(!S.role)return;
+  fetchAll().then(function(){
+    buildSidebar();
+    if(['dashboard','notifications','my-questions'].indexOf(S.currentPage)!==-1){
+      renderPage();
+    }
+  });
+},30000);
 
 // Start
 // Check if admin is remembered
