@@ -117,3 +117,36 @@ function saveColConfig(){
     renderUpload();
   }
 }
+
+// ── Auto-detect columns from file headers ──
+function buildColsFromHeaders(headers){
+  var cols=[];
+  headers.forEach(function(h,i){
+    var label=(h||'').toString().trim();
+    if(!label)return;
+    var known=DEFAULT_COLUMNS.find(function(d){
+      return d.label.toLowerCase()===label.toLowerCase()||
+             d.key.toLowerCase()===label.toLowerCase().replace(/[^a-z0-9]+/g,'_');
+    });
+    if(known){
+      cols.push({key:known.key,label:known.label,visible:true,order:i});
+    } else {
+      var key=label.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||('col_'+i);
+      cols.push({key:key,label:label,visible:true,order:i,custom:true});
+    }
+  });
+  return cols;
+}
+
+function saveDetectedCols(cols){
+  U.detectedCols=cols;
+  if(U.campaignId){
+    var camp=campById(U.campaignId);
+    if(camp&&(!camp.column_config||camp.column_config.length===0)){
+      sb.from('campaigns').update({column_config:cols}).eq('id',U.campaignId)
+        .then(function(r){if(!r.error)fetchAll();}).catch(function(){});
+    }
+  } else {
+    U.colConfig=cols;
+  }
+}
