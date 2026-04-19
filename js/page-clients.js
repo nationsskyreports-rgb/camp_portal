@@ -171,10 +171,13 @@ function renderMyClients() {
           }).join('') +
           (S.role === 'admin' ? '<div><p class="text-xs text-slate-500 mb-1">Assigned To</p><p class="text-sm text-white">' + esc((empById(c.assigned_employee_id) || {}).name || 'Unassigned') + '</p></div>' : '') +
           '<div><p class="text-xs text-slate-500 mb-1">Status</p>' +
-          '<select id="status-' + c.id + '" class="input text-sm" onclick="event.stopPropagation()">' +
-          ['New', 'Contacted', 'Interested', 'Closed'].map(function(s) {
-            return '<option value="' + s + '" ' + (c.status === s ? 'selected' : '') + '>' + s + '</option>';
-          }).join('') + '</select></div>' +
+          (S.role === 'employee'
+            ? '<select id="status-' + c.id + '" class="input text-sm" onclick="event.stopPropagation()">' +
+              ['New', 'Contacted', 'Interested', 'Closed'].map(function(s) {
+                return '<option value="' + s + '" ' + (c.status === s ? 'selected' : '') + '>' + s + '</option>';
+              }).join('') + '</select>'
+            : '<p class="text-sm text-white">' + esc(c.status || '-') + '</p>') +
+          '</div>' +
           '</div>' +
 
           '<div><p class="text-xs text-slate-500 mb-2 font-medium">Contact History (' + totalAttempts + ' attempts)</p>' +
@@ -190,15 +193,17 @@ function renderMyClients() {
               }).join('') + '</div>'
             : '<p class="text-slate-500 text-xs">No contact attempts yet</p>') + '</div>' +
 
-          '<div onclick="event.stopPropagation()">' +
-          '<p class="text-xs text-slate-500 mb-3 font-medium">Log Contact Attempt</p>' +
-          '<div class="space-y-3">' +
-          outcomeSelector(c.id) +
-          '<div class="flex gap-2">' +
-          '<textarea id="note-' + c.id + '" class="input flex-1" placeholder="Note (optional)..." rows="2"></textarea>' +
-          '<button class="btn btn-primary self-end" onclick="saveClient(\'' + c.id + '\')">' +
-          '<i data-lucide="save" class="w-4 h-4"></i> Save</button>' +
-          '</div></div></div>' +
+          (S.role === 'employee'
+            ? '<div onclick="event.stopPropagation()">' +
+              '<p class="text-xs text-slate-500 mb-3 font-medium">Log Contact Attempt</p>' +
+              '<div class="space-y-3">' +
+              outcomeSelector(c.id) +
+              '<div class="flex gap-2">' +
+              '<textarea id="note-' + c.id + '" class="input flex-1" placeholder="Note (optional)..." rows="2"></textarea>' +
+              '<button class="btn btn-primary self-end" onclick="saveClient(\'' + c.id + '\')">' +
+              '<i data-lucide="save" class="w-4 h-4"></i> Save</button>' +
+              '</div></div></div>'
+            : '') +
 
           '</div>' : '') +
         '</div>';
