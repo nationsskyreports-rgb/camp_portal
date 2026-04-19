@@ -1,6 +1,45 @@
 // ============================================================
 // PAGE UPLOAD — Upload & Smart Distribute
 // ============================================================
+
+// ── Column auto-detection from file headers ──
+function buildColsFromHeaders(headers) {
+  var cols = [];
+  headers.forEach(function(h, i) {
+    var label = (h || '').toString().trim();
+    if (!label) return;
+    // Try to match a known DEFAULT_COLUMNS entry by label or key
+    var known = DEFAULT_COLUMNS.find(function(d) {
+      return d.label.toLowerCase() === label.toLowerCase() ||
+             d.key.toLowerCase() === label.toLowerCase().replace(/[\s-]+/g, '_');
+    });
+    if (known) {
+      cols.push({ key: known.key, label: known.label, visible: true, order: i });
+    } else {
+      var key = label.toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '') || ('col_' + i);
+      cols.push({ key: key, label: label, visible: true, order: i, custom: true });
+    }
+  });
+  return cols;
+}
+
+function saveDetectedCols(cols) {
+  U.detectedCols = cols;
+  if (U.campaignId) {
+    var camp = campById(U.campaignId);
+    // Only auto-save if the campaign has no column config yet
+    if (camp && (!camp.column_config || camp.column_config.length === 0)) {
+      sb.from('campaigns').update({ column_config: cols }).eq('id', U.campaignId)
+        .then(function(r) { if (!r.error) fetchAll(); })
+        .catch(function() {});
+    }
+  } else {
+    U.colConfig = cols;
+  }
+}
+
 function setUploadTab(tab){U.uploadTab=tab;renderUpload();}
 function tabBtn(tab,icon,label){var act=U.uploadTab===tab;return'<button class="btn btn-sm '+(act?'btn-primary':'btn-ghost')+'" onclick="setUploadTab(\''+tab+'\')"><i data-lucide="'+icon+'" class="w-3.5 h-3.5"></i> '+label+'</button>';}
 
