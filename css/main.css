@@ -85,9 +85,9 @@ textarea.input{resize:vertical;min-height:70px}
 .outcome-btn.selected-wrong_number{border-color:#ef4444;background:rgba(239,68,68,0.1);color:#ef4444}
 .mood-btn{font-size:20px;padding:4px 10px;border-radius:8px;border:2px solid transparent;background:rgba(0,0,0,0.04);cursor:pointer;transition:all .15s}
 .mood-btn:hover{background:rgba(0,0,0,0.08)}
-.mood-btn.selected-happy{border-color:#10b981;background:rgba(16,185,129,0.1)}
+.mood-btn.selected-interested{border-color:#10b981;background:rgba(16,185,129,0.1)}
 .mood-btn.selected-neutral{border-color:#f59e0b;background:rgba(245,158,11,0.1)}
-.mood-btn.selected-unhappy{border-color:#ef4444;background:rgba(239,68,68,0.1)}
+.mood-btn.selected-refused{border-color:#ef4444;background:rgba(239,68,68,0.1)}
 /* Dark mode overrides for outcome/mood buttons */
 body:not(.light-mode) .outcome-btn{border-color:rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#94a3b8}
 body:not(.light-mode) .outcome-btn:hover{background:rgba(255,255,255,0.08);color:#e2e8f0}
@@ -96,9 +96,9 @@ body:not(.light-mode) .outcome-btn.selected-no_answer{border-color:#f59e0b;backg
 body:not(.light-mode) .outcome-btn.selected-wrong_number{border-color:#ef4444;background:rgba(239,68,68,0.15);color:#ef4444}
 body:not(.light-mode) .mood-btn{background:rgba(255,255,255,0.04)}
 body:not(.light-mode) .mood-btn:hover{background:rgba(255,255,255,0.08)}
-body:not(.light-mode) .mood-btn.selected-happy{border-color:#10b981;background:rgba(16,185,129,0.15)}
+body:not(.light-mode) .mood-btn.selected-interested{border-color:#10b981;background:rgba(16,185,129,0.15)}
 body:not(.light-mode) .mood-btn.selected-neutral{border-color:#f59e0b;background:rgba(245,158,11,0.15)}
-body:not(.light-mode) .mood-btn.selected-unhappy{border-color:#ef4444;background:rgba(239,68,68,0.15)}
+body:not(.light-mode) .mood-btn.selected-refused{border-color:#ef4444;background:rgba(239,68,68,0.15)}
 #sidebar{transition:transform .25s ease}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:40}
 .progress-bar{width:100%;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;margin-top:8px}
