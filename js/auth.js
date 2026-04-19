@@ -2,7 +2,58 @@
 // AUTH — Login / Logout
 // ============================================================
 
-// ── Admin UI helpers ─────────────────────────────────────────
+var SESSION_KEY     = 'cp_session';
+var SESSION_TIMEOUT = 8 * 60 * 60 * 1000; // 8 hours in ms
+
+// ── Session helpers ───────────────────────────────────────────
+function saveSession(role, employee) {
+  var session = {
+    role:      role,
+    employee:  employee || null,
+    savedAt:   Date.now()
+  };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
+
+function restoreSession() {
+  try {
+    var raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return false;
+
+    var session = JSON.parse(raw);
+
+    // Expire after SESSION_TIMEOUT
+    if (!session.savedAt || Date.now() - session.savedAt > SESSION_TIMEOUT) {
+      clearSession();
+      return false;
+    }
+
+    if (session.role === 'admin') {
+      enterAdminDashboard(true);
+      return true;
+    }
+
+    if (session.role === 'employee' && session.employee) {
+      // Re-validate that employee still exists in DB before restoring
+      sb.from('employees').select('id,name,is_active,color,email,phone').eq('id', session.employee.id).single()
+        .then(function(res) {
+          if (res.error || !res.data) { clearSession(); initializeEmployeeList(); return; }
+          enterEmployeeDashboard(res.data, true);
+        })
+        .catch(function() { clearSession(); initializeEmployeeList(); });
+      return true;
+    }
+  } catch (e) {
+    clearSession();
+  }
+  return false;
+}
+
+// ── Admin UI helpers ──────────────────────────────────────────
 function showAdminPass() {
   document.getElementById('admin-btn').classList.add('hidden');
   document.getElementById('admin-pass-area').classList.remove('hidden');
@@ -30,8 +81,7 @@ function togglePassVis() {
   lucide.createIcons();
 }
 
-// ── Admin login ──────────────────────────────────────────────
-// Password verified server-side via RPC — never returned to client.
+// ── Admin login ───────────────────────────────────────────────
 async function loginAsAdmin() {
   var pass = document.getElementById('admin-pass-input').value;
   if (!pass) { toast('Enter password', 'error'); return; }
@@ -49,7 +99,8 @@ async function loginAsAdmin() {
       return;
     }
 
-    enterAdminDashboard();
+    saveSession('admin', null);
+    enterAdminDashboard(false);
   } catch (e) {
     toast('Error checking password', 'error');
   } finally {
@@ -61,19 +112,19 @@ async function loginAsAdmin() {
   }
 }
 
-function enterAdminDashboard() {
+function enterAdminDashboard(fromRestore) {
   S.role = 'admin'; S.employee = null;
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-shell').classList.remove('hidden');
   document.getElementById('mobile-menu-btn').style.display = '';
-  hideAdminPass();
+  if (!fromRestore) hideAdminPass();
   fetchAll().then(function() {
     buildSidebar();
     navigateTo('dashboard');
   }).catch(function(e) { toast('Error loading data: ' + e.message, 'error'); logout(); });
 }
 
-// ── Employee login ───────────────────────────────────────────
+// ── Employee login ────────────────────────────────────────────
 function loginAsEmployee() {
   var sel   = document.getElementById('employee-select');
   var empId = sel.value;
@@ -82,6 +133,11 @@ function loginAsEmployee() {
   var emp = S.employees.find(function(e) { return e.id === empId; });
   if (!emp) { toast('Employee not found', 'error'); return; }
 
+  saveSession('employee', emp);
+  enterEmployeeDashboard(emp, false);
+}
+
+function enterEmployeeDashboard(emp, fromRestore) {
   S.role = 'employee'; S.employee = emp;
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-shell').classList.remove('hidden');
@@ -95,6 +151,8 @@ function loginAsEmployee() {
 // ── Logout ────────────────────────────────────────────────────
 function logout() {
   var empIdToDeactivate = (S.role === 'employee' && S.employee) ? S.employee.id : null;
+
+  clearSession();
 
   S = {
     role: null, employee: null, currentPage: '',
