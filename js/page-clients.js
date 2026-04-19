@@ -96,7 +96,7 @@ function renderMyClients(){
 
         // ── Card header (click to expand) ──
         '<div class="flex items-center justify-between" style="cursor:pointer" '+
-          'onclick="expandedClientId='+(isExp?'null':'\\''+c.id+'\\'')+';\rmoothExpandClient(\''+c.id+'\')">'+
+          'onclick="expandedClientId='+(isExp?'null':'\\''+c.id+'\\'')+';smoothExpandClient(\''+c.id+'\')">'+
           '<div class="flex items-center gap-3">'+
             '<div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">'+
               '<i data-lucide="user" class="w-5 h-5"></i>'+
