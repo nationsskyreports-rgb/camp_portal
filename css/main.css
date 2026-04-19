@@ -14,6 +14,46 @@ body{background:#060b14;color:#e2e8f0;min-height:100vh;overflow-x:hidden}
 .badge-closed{background:rgba(16,185,129,0.15);color:#10b981}
 .badge-pending{background:rgba(245,158,11,0.15);color:#f59e0b}
 .badge-answered{background:rgba(16,185,129,0.15);color:#10b981}
+
+/* ── Mood badges ── */
+.badge-mood-happy{background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.2)}
+.badge-mood-neutral{background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.2)}
+.badge-mood-unhappy{background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.2)}
+.badge-mood-none{background:rgba(100,116,139,0.1);color:#64748b}
+
+/* ── Trials badges ── */
+.badge-trials-none{background:rgba(100,116,139,0.1);color:#64748b}
+.badge-trials-low{background:rgba(59,130,246,0.12);color:#60a5fa}
+.badge-trials-mid{background:rgba(245,158,11,0.12);color:#fbbf24}
+.badge-trials-high{background:rgba(239,68,68,0.12);color:#f87171}
+
+/* ── Mood picker ── */
+.mood-picker{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.mood-btn{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 10px;font-size:18px;cursor:pointer;transition:all .15s;line-height:1}
+.mood-btn:hover{background:rgba(255,255,255,0.1);transform:scale(1.1)}
+.mood-btn-active{background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.4);transform:scale(1.05)}
+.mood-btn-clear{font-size:12px;padding:6px 8px;color:#64748b;font-weight:700}
+.mood-btn-clear:hover{color:#ef4444;border-color:rgba(239,68,68,0.3)}
+
+/* ── Client stats bar ── */
+.client-stats-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;margin-bottom:16px}
+.cs-item{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:44px}
+.cs-num{font-size:18px;font-weight:700;line-height:1}
+.cs-lbl{font-size:10px;color:#64748b;white-space:nowrap}
+.cs-blue .cs-num{color:#60a5fa}
+.cs-purple .cs-num{color:#a78bfa}
+.cs-amber .cs-num{color:#fbbf24}
+.cs-green .cs-num{color:#34d399}
+.cs-happy .cs-num{color:#34d399}
+.cs-unhappy .cs-num{color:#f87171}
+.cs-sep{width:1px;height:32px;background:rgba(255,255,255,0.08);margin:0 4px}
+
+/* ── Employee performance mini row ── */
+.perf-mini-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.perf-mini-stat{display:flex;flex-direction:column;align-items:center;min-width:48px}
+.perf-mini-num{font-size:15px;font-weight:700;line-height:1}
+.perf-mini-lbl{font-size:10px;color:#475569;margin-top:1px;white-space:nowrap}
+
 .btn{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;border:none;transition:all .2s ease;white-space:nowrap}
 .btn-primary{background:#3b82f6;color:#fff}
 .btn-primary:hover{background:#2563eb;transform:translateY(-1px)}
@@ -103,6 +143,10 @@ body.light-mode .modal{background:#fff;border-color:rgba(59,130,246,0.2)}
 body.light-mode .text-white{color:#0f172a!important}
 body.light-mode #sidebar .text-white{color:#fff!important}
 body.light-mode .table-row:hover{background:rgba(59,130,246,0.05)!important}
+body.light-mode .client-stats-bar{background:rgba(0,0,0,0.03);border-color:rgba(0,0,0,0.07)}
+body.light-mode .mood-btn{background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.1)}
+body.light-mode .mood-btn:hover{background:rgba(0,0,0,0.08)}
+body.light-mode .mood-btn-active{background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3)}
 body{--dropdown-bg:#0d1628;--text-primary:#ffffff;}
 body.light-mode{--dropdown-bg:#ffffff;--text-primary:#0f172a;}
 /* Responsive */
@@ -120,6 +164,9 @@ body.light-mode{--dropdown-bg:#ffffff;--text-primary:#0f172a;}
   .modal-overlay{align-items:flex-end;padding:0}
   .mode-toggle{bottom:80px}
   body::before{content:'';position:fixed;top:0;left:0;right:0;height:52px;background:#080e1a;border-bottom:1px solid rgba(255,255,255,0.05);z-index:44}
+  .client-stats-bar{gap:8px;padding:10px 12px}
+  .cs-sep{display:none}
+  .perf-mini-row{gap:10px}
 }
 @media(min-width:769px) and (max-width:1200px){
   #main-content{padding:24px 20px}
