@@ -175,7 +175,7 @@ function logout(){
   closeMobileSidebar();
 
   function reloadDropdown(){
-    sb.from('employees').select('id,name,is_active,color,pin').order('name')
+    sb.from('employees').select('*').order('name')
       .then(function(res){S.employees=res.data||[];loadEmpDropdown();lucide.createIcons();})
       .catch(function(){loadEmpDropdown();lucide.createIcons();});
   }
@@ -203,7 +203,7 @@ function loadEmpDropdown(){
 }
 
 function initializeEmployeeList(){
-  sb.from('employees').select('id,name,is_active,color,pin').order('name')
+  sb.from('employees').select('*').order('name')
     .then(function(res){S.employees=res.data||[];loadEmpDropdown();lucide.createIcons();})
     .catch(function(e){
       console.error('Error loading employees:',e);
