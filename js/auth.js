@@ -1,139 +1,238 @@
 // ============================================================
 // AUTH — Login / Logout
 // ============================================================
-function showAdminPass(){
+
+// ── Utility: SHA-256 hash (Web Crypto API) ──────────────────
+async function sha256(str) {
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf))
+    .map(function(b) { return b.toString(16).padStart(2, '0'); })
+    .join('');
+}
+
+// ── Admin UI helpers ────────────────────────────────────────
+function showAdminPass() {
   document.getElementById('admin-btn').classList.add('hidden');
   document.getElementById('admin-pass-area').classList.remove('hidden');
   document.getElementById('admin-pass-input').focus();
   lucide.createIcons();
 }
-function hideAdminPass(){
+
+function hideAdminPass() {
   document.getElementById('admin-btn').classList.remove('hidden');
   document.getElementById('admin-pass-area').classList.add('hidden');
-  document.getElementById('admin-pass-input').value='';
+  document.getElementById('admin-pass-input').value = '';
 }
-function togglePassVis(){
-  var inp=document.getElementById('admin-pass-input');
-  var icon=document.getElementById('pass-eye-icon');
-  if(!inp)return;
-  if(inp.type==='password'){inp.type='text';icon.setAttribute('data-lucide','eye-off');}
-  else{inp.type='password';icon.setAttribute('data-lucide','eye');}
+
+function togglePassVis() {
+  var inp  = document.getElementById('admin-pass-input');
+  var icon = document.getElementById('pass-eye-icon');
+  if (!inp) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    icon.setAttribute('data-lucide', 'eye-off');
+  } else {
+    inp.type = 'password';
+    icon.setAttribute('data-lucide', 'eye');
+  }
   lucide.createIcons();
 }
 
-async function loginAsAdmin(){
-  var pass=document.getElementById('admin-pass-input').value;
-  if(!pass){toast('Enter password','error');return;}
-  try{
-    var res=await sb.from('app_settings').select('value').eq('key','admin_password').single();
-    if(!res.data||pass!==res.data.value){
-      toast('Wrong password','error');
-      document.getElementById('admin-pass-input').value='';
+// ── Admin login ─────────────────────────────────────────────
+// Calls a Postgres RPC function that returns only boolean.
+// The password is checked server-side and never returned to the client.
+async function loginAsAdmin() {
+  var pass = document.getElementById('admin-pass-input').value;
+  if (!pass) { toast('Enter password', 'error'); return; }
+
+  var btn = document.querySelector('#admin-pass-area .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Checking...'; }
+
+  try {
+    var res = await sb.rpc('verify_admin_password', { input_password: pass });
+
+    if (res.error) throw res.error;
+
+    if (!res.data) {
+      toast('Wrong password', 'error');
+      document.getElementById('admin-pass-input').value = '';
       return;
     }
-    // Save login if remember me is checked
-    var rememberMe=document.getElementById('admin-remember-me');
-    if(rememberMe&&rememberMe.checked){
-      localStorage.setItem('admin_remembered','true');
-    } else {
-      localStorage.removeItem('admin_remembered');
-    }
+
     enterAdminDashboard();
-  }catch(e){toast('Error checking password','error');}
+  } catch (e) {
+    toast('Error checking password', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4"></i>Login'; lucide.createIcons(); }
+  }
 }
 
-function enterAdminDashboard(){
-  S.role='admin';S.employee=null;
+function enterAdminDashboard() {
+  S.role = 'admin'; S.employee = null;
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-shell').classList.remove('hidden');
-  document.getElementById('mobile-menu-btn').style.display='';
+  document.getElementById('mobile-menu-btn').style.display = '';
   hideAdminPass();
-  fetchAll().then(function(){
+  fetchAll().then(function() {
     buildSidebar();
     navigateTo('dashboard');
-  }).catch(function(e){toast('Error loading data: '+e.message,'error');logout();});
+  }).catch(function(e) { toast('Error loading data: ' + e.message, 'error'); logout(); });
 }
 
-function checkRememberedAdmin(){
-  if(localStorage.getItem('admin_remembered')==='true'){
-    enterAdminDashboard();
-    return true;
+// ── Employee UI helpers ──────────────────────────────────────
+// Called when the employee dropdown changes.
+// Shows the PIN input area or resets it.
+function onEmployeeSelected() {
+  var sel     = document.getElementById('employee-select');
+  var pinArea = document.getElementById('emp-pin-area');
+  var pinInp  = document.getElementById('emp-pin-input');
+
+  if (!sel.value) {
+    pinArea.classList.add('hidden');
+    if (pinInp) pinInp.value = '';
+    return;
   }
-  return false;
+  pinArea.classList.remove('hidden');
+  if (pinInp) { pinInp.value = ''; pinInp.focus(); }
+  lucide.createIcons();
 }
 
-function loginAsEmployee(){
-  var sel=document.getElementById('employee-select');
-  var empId=sel.value;
-  if(!empId){toast('Select an employee','error');return;}
-  var emp=S.employees.find(function(e){return e.id===empId;});
-  if(!emp){toast('Employee not found','error');return;}
-  S.role='employee';S.employee=emp;
-  document.getElementById('login-screen').classList.add('hidden');
-  document.getElementById('app-shell').classList.remove('hidden');
-  document.getElementById('mobile-menu-btn').style.display='';
-  fetchAll().then(function(){
-    buildSidebar();
-    navigateTo('my-clients');
-  }).catch(function(e){toast('Error loading data: '+e.message,'error');logout();});
+function hideEmpPin() {
+  document.getElementById('emp-pin-area').classList.add('hidden');
+  document.getElementById('emp-pin-input').value = '';
+  document.getElementById('employee-select').value = '';
 }
 
-function logout(){
-  var empIdToDeactivate=(S.role==='employee'&&S.employee)?S.employee.id:null;
+function toggleEmpPinVis() {
+  var inp  = document.getElementById('emp-pin-input');
+  var icon = document.getElementById('emp-pin-eye');
+  if (!inp) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    icon.setAttribute('data-lucide', 'eye-off');
+  } else {
+    inp.type = 'password';
+    icon.setAttribute('data-lucide', 'eye');
+  }
+  lucide.createIcons();
+}
 
-  S={role:null,employee:null,currentPage:'',employees:[],campaigns:[],clients:[],questions:[],notifications:[],contactHistory:[],darkMode:S.darkMode,callTimers:{}};
-  notifFilter='all';
-  qClientSearch='';
-  qSelectedClient=null;
-  qSelectedCampaign='';
-  U={campaignId:'',rows:[],preview:null,uploadTab:'paste',colConfig:null};
-  T={showForm:false,editId:null,name:'',email:'',phone:''};
-  showCampForm=false;selectedCampId=null;expandedClientId=null;qSent=false;
-  qaFilter={employee:'',campaign:'',status:''};
-  rptFilter={campaign:'',employee:'',status:'',dateFrom:'',dateTo:'',page:0};
-  empClientFilter='';
+// ── Employee login ───────────────────────────────────────────
+// Hashes the PIN client-side, then calls RPC to verify against stored hash.
+// The raw PIN never leaves the browser unencrypted.
+async function loginAsEmployee() {
+  var sel   = document.getElementById('employee-select');
+  var empId = sel.value;
+  if (!empId) { toast('Select an employee', 'error'); return; }
 
-  // Clear remembered admin on logout
-  localStorage.removeItem('admin_remembered');
+  var pin = document.getElementById('emp-pin-input').value.trim();
+  if (!pin) { toast('Enter your PIN', 'error'); return; }
+
+  var emp = S.employees.find(function(e) { return e.id === empId; });
+  if (!emp) { toast('Employee not found', 'error'); return; }
+
+  var btn = document.querySelector('#emp-pin-area .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Checking...'; }
+
+  try {
+    var pinHash = await sha256(pin);
+    var res     = await sb.rpc('verify_employee_pin', { emp_id: empId, input_hash: pinHash });
+
+    if (res.error) throw res.error;
+
+    if (!res.data) {
+      toast('Wrong PIN', 'error');
+      document.getElementById('emp-pin-input').value = '';
+      return;
+    }
+
+    S.role = 'employee'; S.employee = emp;
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app-shell').classList.remove('hidden');
+    document.getElementById('mobile-menu-btn').style.display = '';
+    hideEmpPin();
+    fetchAll().then(function() {
+      buildSidebar();
+      navigateTo('my-clients');
+    }).catch(function(e) { toast('Error loading data: ' + e.message, 'error'); logout(); });
+
+  } catch (e) {
+    toast('Error checking PIN', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4"></i>Login'; lucide.createIcons(); }
+  }
+}
+
+// ── Logout ───────────────────────────────────────────────────
+function logout() {
+  var empIdToDeactivate = (S.role === 'employee' && S.employee) ? S.employee.id : null;
+
+  S = {
+    role: null, employee: null, currentPage: '',
+    employees: [], campaigns: [], clients: [],
+    questions: [], notifications: [], contactHistory: [],
+    darkMode: S.darkMode, callTimers: {}
+  };
+
+  notifFilter    = 'all';
+  qClientSearch  = '';
+  qSelectedClient   = null;
+  qSelectedCampaign = '';
+  U = { campaignId: '', rows: [], preview: null, uploadTab: 'paste', colConfig: null };
+  T = { showForm: false, editId: null, name: '', email: '', phone: '', pin: '' };
+  showCampForm     = false;
+  selectedCampId   = null;
+  expandedClientId = null;
+  qSent            = false;
+  qaFilter         = { employee: '', campaign: '', status: '' };
+  rptFilter        = { campaign: '', employee: '', status: '', dateFrom: '', dateTo: '', page: 0 };
+  empClientFilter  = '';
+
   document.getElementById('app-shell').classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
-  document.getElementById('mobile-menu-btn').style.display='none';
-  // Hide mobile topbar title
-  var tb=document.getElementById('mobile-topbar-title');
-  if(tb)tb.style.display='none';
+  document.getElementById('mobile-menu-btn').style.display = 'none';
+
+  var tb = document.getElementById('mobile-topbar-title');
+  if (tb) tb.style.display = 'none';
   closeMobileSidebar();
 
-  function reloadDropdown(){
+  // Reset employee PIN area
+  hideEmpPin();
+
+  function reloadDropdown() {
     sb.from('employees').select('id,name,is_active,color').order('name')
-      .then(function(res){S.employees=res.data||[];loadEmpDropdown();lucide.createIcons();})
-      .catch(function(){loadEmpDropdown();lucide.createIcons();});
+      .then(function(res) { S.employees = res.data || []; loadEmpDropdown(); lucide.createIcons(); })
+      .catch(function() { loadEmpDropdown(); lucide.createIcons(); });
   }
 
-  if(empIdToDeactivate){
-    sb.from('employees').update({is_active:false}).eq('id',empIdToDeactivate)
+  if (empIdToDeactivate) {
+    sb.from('employees').update({ is_active: false }).eq('id', empIdToDeactivate)
       .then(reloadDropdown).catch(reloadDropdown);
   } else {
     reloadDropdown();
   }
 }
 
-function loadEmpDropdown(){
-  var select=document.getElementById('employee-select');
-  if(!select)return;
-  if(S.employees&&S.employees.length>0){
-    select.innerHTML='<option value="">Select Employee...</option>'+
-      S.employees.map(function(e){return'<option value="'+e.id+'">'+esc(e.name)+'</option>';}).join('');
+// ── Dropdown loader ──────────────────────────────────────────
+function loadEmpDropdown() {
+  var select = document.getElementById('employee-select');
+  if (!select) return;
+  if (S.employees && S.employees.length > 0) {
+    select.innerHTML = '<option value="">Select Employee...</option>' +
+      S.employees.map(function(e) {
+        return '<option value="' + e.id + '">' + esc(e.name) + '</option>';
+      }).join('');
   } else {
-    select.innerHTML='<option value="">Loading employees...</option>';
+    select.innerHTML = '<option value="">Loading employees...</option>';
   }
 }
 
-function initializeEmployeeList(){
+function initializeEmployeeList() {
   sb.from('employees').select('id,name,is_active,color').order('name')
-    .then(function(res){S.employees=res.data||[];loadEmpDropdown();lucide.createIcons();})
-    .catch(function(e){
-      console.error('Error loading employees:',e);
-      toast('Error loading employees. Please refresh.','error');
-      setTimeout(initializeEmployeeList,3000);
+    .then(function(res) { S.employees = res.data || []; loadEmpDropdown(); lucide.createIcons(); })
+    .catch(function(e) {
+      console.error('Error loading employees:', e);
+      toast('Error loading employees. Please refresh.', 'error');
+      setTimeout(initializeEmployeeList, 3000);
     });
 }
