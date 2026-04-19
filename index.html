@@ -60,21 +60,9 @@
           </div>
         </div>
         <div class="flex items-center gap-3 my-2"><div class="flex-1 h-px bg-white/10"></div><span class="text-xs text-slate-500">OR</span><div class="flex-1 h-px bg-white/10"></div></div>
-        <select id="employee-select" class="input text-center" onchange="onEmployeeSelected()"><option value="">Select Employee...</option></select>
-        <!-- PIN area — shown after employee is selected -->
-        <div id="emp-pin-area" class="hidden space-y-2">
-          <div class="relative">
-            <input id="emp-pin-input" type="password" inputmode="numeric" maxlength="8"
-              class="input pr-11 text-center tracking-widest" placeholder="Enter PIN"
-              onkeydown="if(event.key==='Enter')loginAsEmployee()">
-            <button type="button" onclick="toggleEmpPinVis()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors">
-              <i data-lucide="eye" class="w-4 h-4" id="emp-pin-eye"></i>
-            </button>
-          </div>
-          <div class="flex gap-2">
-            <button class="btn btn-primary flex-1" onclick="loginAsEmployee()"><i data-lucide="log-in" class="w-4 h-4"></i>Login</button>
-            <button class="btn btn-ghost" onclick="hideEmpPin()">Cancel</button>
-          </div>
+        <select id="employee-select" class="input text-center"><option value="">Select Employee...</option></select>
+        <div onclick="loginAsEmployee()" class="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10 text-slate-300 font-semibold cursor-pointer hover:bg-white/10 hover:text-white transition-all hover:scale-[1.02] active:scale-[0.98]">
+          <i data-lucide="user" class="w-5 h-5"></i>Login as Employee
         </div>
       </div>
     </div>
