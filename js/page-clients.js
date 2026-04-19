@@ -242,8 +242,7 @@ async function saveClient(cid) {
     }
 
     if (outcome) {
-      var entry = { client_id: cid, outcome: outcome };
-      if (note) entry.note = note;
+      var entry = { client_id: cid, outcome: outcome, note: note || '' };
       if (mood) entry.mood = mood;
       var r2 = await sb.from('contact_history').insert(entry);
       if (r2.error) throw r2.error;
