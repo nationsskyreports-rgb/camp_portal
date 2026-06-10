@@ -460,20 +460,17 @@
 var SB_URL = 'https://biwrdwxgfyhnltzddlwu.supabase.co';
 var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpd3Jkd3hnZnlobmx0emRkbHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTczMTYsImV4cCI6MjA4OTc5MzMxNn0.EMOV5v3cGaDEqQJusnyrWTWdSPPwKeyuguPzxJvtKdQ';
 
-var SKIP_KEYS = ['contract_id','customer','contract_date','actual_price','contract_status','approval_status'];
+var SKIP_KEYS = ['contract_id','customer','contract_date','actual_price','contract_status','approval_status','name','phone','phone2','email','notes'];
 
 // NOS Projects dropdown options
 var NOS_PROJECTS = [
-  'Casa',
   'Jirian',
-  'Hapi',
-  'Veranda',
-  'Stei8ht',
-  'Nawy',
-  'Oasis',
-  'Seashore',
-  'Blume',
-  'Anakaji'
+  'Sky Ridge Elite',
+  'Sky Ridge Executives',
+  'Zomra',
+  'ISLA',
+  'Upviews',
+  'Sadaf'
 ];
 
 // Keys that render as <select> dropdowns in the intake form
@@ -789,24 +786,41 @@ function submitChange() {
   isSubmitting = true;
   setBtnLoading(true, 'btn-change', 'btn-change-label', 'btn-progress-change', t.btnChanging);
 
-  sbGet('clients', 'phone=eq.' + encodeURIComponent(oldPhone) + '&campaign_id=eq.' + campaignId + '&select=id,extra_data&limit=1')
+  // Try to find existing client by old phone (primary or secondary)
+  sbGet('clients', 'phone=eq.' + encodeURIComponent(oldPhone) + '&campaign_id=eq.' + campaignId + '&select=id,name,extra_data&limit=1')
     .then(function(rows) {
       if (!rows || !rows.length) {
-        return sbGet('clients', 'campaign_id=eq.' + campaignId + '&select=id,extra_data')
+        // Check phone2 in extra_data
+        return sbGet('clients', 'campaign_id=eq.' + campaignId + '&select=id,name,extra_data')
           .then(function(all) {
             var found = null;
             (all || []).forEach(function(r) {
               if (r.extra_data && r.extra_data.phone2 === oldPhone) found = r;
             });
-            if (!found) throw new Error('NOT_FOUND');
-            return found;
+            return found; // null if not found — will create new record
           });
       }
       return rows[0];
     })
     .then(function(client) {
-      var updatedExtra = Object.assign({}, client.extra_data || {}, { phone: newPhone });
-      return sbPatch('clients', 'id=eq.' + client.id, { phone: newPhone, extra_data: updatedExtra });
+      if (client) {
+        // Found — update existing record
+        var updatedExtra = Object.assign({}, client.extra_data || {}, { phone: newPhone });
+        return sbPatch('clients', 'id=eq.' + client.id, { phone: newPhone, extra_data: updatedExtra });
+      } else {
+        // Not found — create new record with new phone
+        return getLeastLoadedEmployee().then(function(employee) {
+          var record = {
+            name                 : oldPhone, // use old phone as placeholder name
+            phone                : newPhone,
+            extra_data           : { phone: newPhone, old_phone: oldPhone },
+            status               : 'New',
+            campaign_id          : campaignId,
+            assigned_employee_id : employee ? employee.id : null
+          };
+          return sbInsert('clients', record);
+        });
+      }
     })
     .then(function() {
       document.getElementById('success-title').textContent = t.successChTitle;
@@ -816,8 +830,7 @@ function submitChange() {
     .catch(function(err) {
       isSubmitting = false;
       setBtnLoading(false, 'btn-change', 'btn-change-label', 'btn-progress-change', t.btnChange);
-      if (err && err.message === 'NOT_FOUND') showBanner(t.errNotFound);
-      else showBanner(err && err.message ? err.message : t.errGeneral);
+      showBanner(err && err.message ? err.message : t.errGeneral);
     });
 }
 
