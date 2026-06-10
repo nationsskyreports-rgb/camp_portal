@@ -3,16 +3,28 @@
 // ============================================================
 
 var SESSION_KEY     = 'cp_session';
-var SESSION_TIMEOUT = 8 * 60 * 60 * 1000; // 8 hours in ms
+var SESSION_TIMEOUT = 8 * 60 * 60 * 1000; // 8 hours
 
 // ── Session helpers ───────────────────────────────────────────
 function saveSession(role, employee) {
   var session = {
-    role:      role,
-    employee:  employee || null,
-    savedAt:   Date.now()
+    role:     role,
+    employee: employee || null,
+    savedAt:  Date.now(),
+    page:     S.currentPage || ''
   };
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+// Call this whenever navigating so page is always up to date in session
+function updateSessionPage(page) {
+  try {
+    var raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return;
+    var session = JSON.parse(raw);
+    session.page = page;
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  } catch(e) {}
 }
 
 function clearSession() {
@@ -33,21 +45,21 @@ function restoreSession() {
     }
 
     if (session.role === 'admin') {
-      enterAdminDashboard(true);
+      enterAdminDashboard(true, session.page || 'dashboard');
       return true;
     }
 
     if (session.role === 'employee' && session.employee) {
-      // Re-validate that employee still exists in DB before restoring
+      // Re-validate employee still exists
       sb.from('employees').select('id,name,is_active,color,email,phone').eq('id', session.employee.id).single()
         .then(function(res) {
           if (res.error || !res.data) { clearSession(); initializeEmployeeList(); return; }
-          enterEmployeeDashboard(res.data, true);
+          enterEmployeeDashboard(res.data, true, session.page || 'my-clients');
         })
         .catch(function() { clearSession(); initializeEmployeeList(); });
       return true;
     }
-  } catch (e) {
+  } catch(e) {
     clearSession();
   }
   return false;
@@ -100,8 +112,8 @@ async function loginAsAdmin() {
     }
 
     saveSession('admin', null);
-    enterAdminDashboard(false);
-  } catch (e) {
+    enterAdminDashboard(false, 'dashboard');
+  } catch(e) {
     toast('Error checking password', 'error');
   } finally {
     if (btn) {
@@ -112,16 +124,27 @@ async function loginAsAdmin() {
   }
 }
 
-function enterAdminDashboard(fromRestore) {
+function enterAdminDashboard(fromRestore, targetPage) {
   S.role = 'admin'; S.employee = null;
-  document.getElementById('login-screen').classList.add('hidden');
-  document.getElementById('app-shell').classList.remove('hidden');
+
+  // ── Fix 2: keep app-shell hidden until data is ready ──
+  var appShell   = document.getElementById('app-shell');
+  var loginScreen = document.getElementById('login-screen');
+
+  loginScreen.classList.add('hidden');
+  appShell.classList.add('hidden'); // keep hidden while loading
+
   document.getElementById('mobile-menu-btn').style.display = '';
   if (!fromRestore) hideAdminPass();
+
   fetchAll().then(function() {
     buildSidebar();
-    navigateTo('dashboard');
-  }).catch(function(e) { toast('Error loading data: ' + e.message, 'error'); logout(); });
+    appShell.classList.remove('hidden'); // show only after data loaded
+    navigateTo(targetPage || 'dashboard');
+  }).catch(function(e) {
+    toast('Error loading data: ' + e.message, 'error');
+    logout();
+  });
 }
 
 // ── Employee login ────────────────────────────────────────────
@@ -134,18 +157,29 @@ function loginAsEmployee() {
   if (!emp) { toast('Employee not found', 'error'); return; }
 
   saveSession('employee', emp);
-  enterEmployeeDashboard(emp, false);
+  enterEmployeeDashboard(emp, false, 'my-clients');
 }
 
-function enterEmployeeDashboard(emp, fromRestore) {
+function enterEmployeeDashboard(emp, fromRestore, targetPage) {
   S.role = 'employee'; S.employee = emp;
-  document.getElementById('login-screen').classList.add('hidden');
-  document.getElementById('app-shell').classList.remove('hidden');
+
+  // ── Fix 2: keep app-shell hidden until data is ready ──
+  var appShell    = document.getElementById('app-shell');
+  var loginScreen = document.getElementById('login-screen');
+
+  loginScreen.classList.add('hidden');
+  appShell.classList.add('hidden'); // keep hidden while loading
+
   document.getElementById('mobile-menu-btn').style.display = '';
+
   fetchAll().then(function() {
     buildSidebar();
-    navigateTo('my-clients');
-  }).catch(function(e) { toast('Error loading data: ' + e.message, 'error'); logout(); });
+    appShell.classList.remove('hidden'); // show only after data loaded
+    navigateTo(targetPage || 'my-clients');
+  }).catch(function(e) {
+    toast('Error loading data: ' + e.message, 'error');
+    logout();
+  });
 }
 
 // ── Logout ────────────────────────────────────────────────────
