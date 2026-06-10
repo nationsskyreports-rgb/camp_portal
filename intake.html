@@ -370,14 +370,14 @@
         </div>
 
         <div class="field" id="field-phone2">
-          <label id="lbl-phone2">رقم التليفون الإضافي <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>
+          <label id="lbl-phone2">رقم التليفون الإضافي <span class="req">*</span></label>
           <input type="tel" id="inp-phone2" placeholder="01xxxxxxxxx" autocomplete="tel" dir="ltr">
           <div class="err-msg" id="err-phone2">أدخل رقماً صحيحاً</div>
         </div>
 
         <!-- EMAIL FIELD -->
         <div class="field" id="field-email">
-          <label id="lbl-email">البريد الإلكتروني <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>
+          <label id="lbl-email">البريد الإلكتروني <span class="req">*</span></label>
           <input type="email" id="inp-email" placeholder="example@email.com" autocomplete="email" dir="ltr">
           <div class="err-msg" id="err-email">أدخل بريداً إلكترونياً صحيحاً</div>
         </div>
@@ -461,6 +461,25 @@ var SB_URL = 'https://biwrdwxgfyhnltzddlwu.supabase.co';
 var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpd3Jkd3hnZnlobmx0emRkbHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTczMTYsImV4cCI6MjA4OTc5MzMxNn0.EMOV5v3cGaDEqQJusnyrWTWdSPPwKeyuguPzxJvtKdQ';
 
 var SKIP_KEYS = ['contract_id','customer','contract_date','actual_price','contract_status','approval_status'];
+
+// NOS Projects dropdown options
+var NOS_PROJECTS = [
+  'Casa',
+  'Jirian',
+  'Hapi',
+  'Veranda',
+  'Stei8ht',
+  'Nawy',
+  'Oasis',
+  'Seashore',
+  'Blume',
+  'Anakaji'
+];
+
+// Keys that render as <select> dropdowns in the intake form
+var DROPDOWN_KEYS = {
+  project: NOS_PROJECTS
+};
 
 var AR_LABELS = {
   project:'المشروع', unit:'رقم الوحدة',
@@ -582,8 +601,8 @@ function setLang(lang) {
 
   setLabelText('lbl-name',   t.lblName,   true);
   setLabelText('lbl-phone',  t.lblPhone,  true);
-  setLabelText('lbl-phone2', t.lblPhone2, false, t.lblOptional);
-  setLabelText('lbl-email',  t.lblEmail,  false, t.lblOptional);
+  setLabelText('lbl-phone2', t.lblPhone2, true);
+  setLabelText('lbl-email',  t.lblEmail,  true);
   setLabelText('lbl-notes',  t.lblNotes,  false, t.lblOptional);
 
   document.getElementById('inp-name').placeholder  = t.namePlaceholder;
@@ -668,10 +687,23 @@ function buildDynamicFields(camp) {
   var html = '<hr class="divider"><div class="section-label">' + escHtml(t.lblDetails) + '</div>';
   visibleCols.forEach(function(col) {
     var label = labelMap[col.key] || col.label;
-    html += '<div class="field">' +
-      '<label>' + escHtml(label) + ' <span style="color:var(--muted);font-weight:400">' + escHtml(t.lblOptional) + '</span></label>' +
-      '<input type="text" id="inp-' + escHtml(col.key) + '" placeholder="' + escHtml(label) + '" data-col-key="' + escHtml(col.key) + '">' +
-      '</div>';
+    var opts  = DROPDOWN_KEYS[col.key];
+    if (opts) {
+      // Render as <select> dropdown
+      var arrowStyle = 'appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'%236b7280\'%3E%3Cpath d=\'M7 10l5 5 5-5z\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center;padding-left:2rem;';
+      html += '<div class="field">' +
+        '<label>' + escHtml(label) + ' <span style="color:var(--muted);font-weight:400">' + escHtml(t.lblOptional) + '</span></label>' +
+        '<select id="inp-' + escHtml(col.key) + '" data-col-key="' + escHtml(col.key) + '" style="' + arrowStyle + '">' +
+        '<option value="">' + escHtml(label) + '...</option>' +
+        opts.map(function(o){ return '<option value="' + escHtml(o) + '">' + escHtml(o) + '</option>'; }).join('') +
+        '</select>' +
+        '</div>';
+    } else {
+      html += '<div class="field">' +
+        '<label>' + escHtml(label) + ' <span style="color:var(--muted);font-weight:400">' + escHtml(t.lblOptional) + '</span></label>' +
+        '<input type="text" id="inp-' + escHtml(col.key) + '" placeholder="' + escHtml(label) + '" data-col-key="' + escHtml(col.key) + '">' +
+        '</div>';
+    }
   });
   document.getElementById('dynamic-fields').innerHTML = html;
 }
@@ -690,8 +722,8 @@ function submitForm() {
 
   if (!name)                               { setErr('field-name');   valid = false; }
   if (!isValidPhone(phone))                { setErr('field-phone');  valid = false; }
-  if (phone2 && !isValidPhone(phone2))     { setErr('field-phone2'); valid = false; }
-  if (email  && !isValidEmail(email))      { setErr('field-email');  valid = false; }
+  if (!isValidPhone(phone2))               { setErr('field-phone2'); valid = false; }
+  if (!isValidEmail(email))                { setErr('field-email');  valid = false; }
   if (!valid) return;
 
   isSubmitting = true;
