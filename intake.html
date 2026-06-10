@@ -6,13 +6,13 @@
   <title>Nations of Sky — تواصل معنا</title>
   <meta property="og:type"        content="website">
   <meta property="og:site_name"   content="Nations of Sky">
-  <meta property="og:title"       content="Nations of Sky — سجّل بياناتك الآن">
-  <meta property="og:description" content="فريقنا متاح لمساعدتك. سجّل بياناتك وسيتواصل معك أحد مستشارينا في أقرب وقت.">
+  <meta property="og:title"       content="Nations of Sky — سجّل هنا الآن">
+  <meta property="og:description" content="فريقنا متاح لمساعدتك. سجّل معلوماتك وسيتواصل معك أحد مستشارينا في أقرب وقت.">
   <meta property="og:image"       content="https://nationsskyreports-rgb.github.io/icon-512.png">
   <meta property="og:url"         content="https://nationsskyreports-rgb.github.io/intake.html">
   <meta name="twitter:card"       content="summary_large_image">
-  <meta name="twitter:title"      content="Nations of Sky — سجّل بياناتك الآن">
-  <meta name="twitter:description" content="فريقنا متاح لمساعدتك. سجّل بياناتك وسيتواصل معك أحد مستشارينا في أقرب وقت.">
+  <meta name="twitter:title"      content="Nations of Sky — سجّل هنا الآن">
+  <meta name="twitter:description" content="فريقنا متاح لمساعدتك. سجّل معلوماتك وسيتواصل معك أحد مستشارينا في أقرب وقت.">
   <meta name="twitter:image"      content="https://nationsskyreports-rgb.github.io/icon-512.png">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -311,10 +311,10 @@
   <!-- Brand -->
   <div class="brand">
    <div class="brand-logo" style="background:none;padding:0">
-  <img src="logo.png" alt="Nations of Sky" style="width:56px;height:56px;border-radius:16px;object-fit:cover">
+  <img src="https://nationsskyreports-rgb.github.io/icon-512.png" alt="Nations of Sky" style="width:56px;height:56px;border-radius:16px;object-fit:cover">
 </div>
     <div class="brand-title">Nations of Sky</div>
-    <div class="brand-sub" id="brand-sub">أهلاً بك! سجّل بياناتك وسيتواصل معك أحد مستشارينا قريباً</div>
+    <div class="brand-sub" id="brand-sub">أهلاً بك! سجّل هنا وسيتواصل معك أحد مستشارينا قريباً</div>
   </div>
 
   <!-- Card -->
@@ -346,10 +346,10 @@
 
       <!-- Single Form -->
       <div id="panel-register">
-        <div class="card-title" id="form-title">سجّل بياناتك</div>
-        <div class="card-desc"  id="form-desc">أدخل بياناتك وسيقوم فريقنا بالتواصل معك في أقرب وقت.</div>
+        <div class="card-title" id="form-title">سجّل هنا</div>
+        <div class="card-desc"  id="form-desc">أدخل معلوماتك وسيقوم فريقنا بالتواصل معك في أقرب وقت.</div>
 
-        <div class="section-label" id="lbl-basic">البيانات الأساسية</div>
+        <div class="section-label" id="lbl-basic">المعلومات الأساسية</div>
 
         <div class="field" id="field-name">
           <label id="lbl-name">الاسم الكامل <span class="req">*</span></label>
@@ -379,6 +379,12 @@
           <label id="lbl-email">البريد الإلكتروني <span class="req">*</span></label>
           <input type="email" id="inp-email" placeholder="example@email.com" autocomplete="email" dir="ltr">
           <div class="err-msg" id="err-email">أدخل بريداً إلكترونياً صحيحاً</div>
+        </div>
+
+        <div class="field" id="field-email2">
+          <label id="lbl-email2">البريد الإلكتروني الإضافي <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>
+          <input type="email" id="inp-email2" placeholder="example2@email.com" dir="ltr">
+          <div class="err-msg" id="err-email2">أدخل بريداً إلكترونياً صحيحاً</div>
         </div>
 
         <div id="dynamic-fields"></div>
@@ -461,17 +467,18 @@ var EN_LABELS = {
 // TRANSLATIONS
 var T = {
   ar: {
-    brandSub        : 'أهلاً بك! سجّل بياناتك وسيتواصل معك أحد مستشارينا قريباً',
+    brandSub        : 'أهلاً بك! سجّل هنا وسيتواصل معك أحد مستشارينا قريباً',
     tabRegister     : 'تسجيل جديد',
     tabChange       : 'تغيير رقم التليفون',
-    formTitle       : 'سجّل بياناتك',
-    formDesc        : 'أدخل بياناتك وسيقوم فريقنا بالتواصل معك في أقرب وقت.',
-    lblBasic        : 'البيانات الأساسية',
+    formTitle       : 'سجّل هنا',
+    formDesc        : 'أدخل معلوماتك وسيقوم فريقنا بالتواصل معك في أقرب وقت.',
+    lblBasic        : 'المعلومات الأساسية',
     lblName         : 'الاسم الكامل',
     lblPhone        : 'رقم التليفون الأساسي',
-    lblNewPhone     : 'رقم التليفون الجديد',
+    lblNewPhone     : 'رقم التليفون الجديد (لو عايز تغيّر رقمك الأساسي)',
     lblPhone2       : 'رقم التليفون الإضافي',
-    lblEmail        : 'البريد الإلكتروني',
+    lblEmail        : 'البريد الإلكتروني الأساسي',
+    lblEmail2       : 'البريد الإلكتروني الإضافي',
     lblOptional     : '(اختياري)',
     lblNotes        : 'ملاحظات إضافية',
     lblDetails      : 'تفاصيل الاهتمام',
@@ -493,7 +500,7 @@ var T = {
     successChMsg    : 'تم تحديث رقم التليفون الخاص بك. سيتواصل معك فريقنا إذا احتجنا لأي تأكيد.',
     nfTitle         : 'الرابط غير صحيح',
     nfSub           : 'هذا الرابط غير صالح أو انتهت صلاحيته.<br>تواصل مع المبيعات للحصول على الرابط الصحيح.',
-    errNotFound     : 'الرقم ده مش موجود عندنا. لو لسه مسجلتش، اضغط على تبويب "تسجيل جديد" واملا بياناتك الأول.',
+    errNotFound     : 'الرقم ده مش موجود عندنا. لو لسه مسجلتش، اضغط على تبويب "تسجيل جديد" واملا معلوماتك الأول.',
     errGeneral      : 'حدث خطأ. يرجى المحاولة مرة أخرى.',
     footerTxt       : 'مدعوم بواسطة Nations of Sky Portal',
     namePlaceholder : 'مثال: محمد أحمد',
@@ -501,18 +508,19 @@ var T = {
     lang            : 'ar'
   },
   en: {
-    brandSub        : 'Welcome! Fill in your details and one of our consultants will reach out shortly.',
+    brandSub        : 'Welcome! Register here and one of our consultants will reach out shortly.',
     tabRegister     : 'New Registration',
     tabChange       : 'Change Phone Number',
-    formTitle       : 'Register Your Details',
-    formDesc        : 'Fill in your details and our team will get in touch as soon as possible.',
+    formTitle       : 'Register Here',
+    formDesc        : 'Fill in your information and our team will get in touch as soon as possible.',
     lblBasic        : 'Basic Information',
     lblName         : 'Full Name',
     lblPhone        : 'Primary Phone Number',
-    lblNewPhone     : 'New Phone Number',
+    lblNewPhone     : 'New Phone Number (if you want to change your primary number)',
     lblPhone2       : 'Secondary Phone Number',
-    lblEmail        : 'Email Address',
-    lblOptional     : '(optional)',
+    lblEmail        : 'Primary Email Address',
+    lblEmail2       : 'Secondary Email Address',
+    lblOptional     : '(Optional)',
     lblNotes        : 'Additional Notes',
     lblDetails      : 'Interest Details',
     btnSubmit       : 'Submit Request',
@@ -533,7 +541,7 @@ var T = {
     successChMsg    : 'Your phone number has been updated successfully. Our team will reach out if any confirmation is needed.',
     nfTitle         : 'Invalid Link',
     nfSub           : 'This link is invalid or has expired.<br>Please contact sales to get the correct link.',
-    errNotFound     : 'This number is not registered. If you haven\'t signed up yet, go to "New Registration" and fill in your details first.',
+    errNotFound     : 'This number is not registered. If you haven\'t signed up yet, go to "New Registration" and fill in your information first.',
     errGeneral      : 'An error occurred. Please try again.',
     footerTxt       : 'Powered by Nations of Sky Portal',
     namePlaceholder : 'e.g. John Smith',
@@ -568,6 +576,7 @@ function setLang(lang) {
   setLabelText('lbl-new-phone', t.lblNewPhone, false, t.lblOptional);
   setLabelText('lbl-phone2',    t.lblPhone2,   true);
   setLabelText('lbl-email',     t.lblEmail,    true);
+  setLabelText('lbl-email2',    t.lblEmail2,   false, t.lblOptional);
   setLabelText('lbl-notes',     t.lblNotes,    false, t.lblOptional);
 
   document.getElementById('inp-name').placeholder  = t.namePlaceholder;
@@ -578,6 +587,7 @@ function setLang(lang) {
   document.getElementById('err-new-phone').textContent = t.errPhone;
   document.getElementById('err-phone2').textContent   = t.errPhone;
   document.getElementById('err-email').textContent    = t.errEmail;
+  document.getElementById('err-email2').textContent   = t.errEmail;
 
   document.getElementById('nf-title').textContent   = t.nfTitle;
   document.getElementById('nf-sub').innerHTML       = t.nfSub;
@@ -663,6 +673,7 @@ function submitForm() {
   var newPhone = val('inp-new-phone');
   var phone2   = val('inp-phone2');
   var email    = val('inp-email');
+  var email2   = val('inp-email2');
   var valid    = true;
 
   if (!name)                                              { setErr('field-name');      valid = false; }
@@ -670,6 +681,7 @@ function submitForm() {
   if (newPhone && !isValidPhone(newPhone))                { setErr('field-new-phone'); valid = false; }
   if (!isValidPhone(phone2))                              { setErr('field-phone2');    valid = false; }
   if (!isValidEmail(email))                               { setErr('field-email');     valid = false; }
+  if (email2 && !isValidEmail(email2))                    { setErr('field-email2');    valid = false; }
   if (!valid) return;
 
   // الرقم الفعلي اللي هيتحفظ — لو في رقم جديد يبقى هو الأساسي
@@ -682,6 +694,7 @@ function submitForm() {
   if (newPhone) extraData.old_phone = phone;
   if (phone2)   extraData.phone2    = phone2;
   if (email)    extraData.email     = email;
+  if (email2)   extraData.email2    = email2;
 
   document.querySelectorAll('[data-col-key]').forEach(function(inp) {
     if (inp.value.trim()) extraData[inp.getAttribute('data-col-key')] = inp.value.trim();
