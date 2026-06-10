@@ -56,7 +56,7 @@ function copyFormLinkBtn(campaignId) {
 }
 
 function copyIntakeLink(campaignId) {
-  var base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
+  var base = window.location.origin + '/';
   var url  = base + 'intake.html?c=' + campaignId;
   navigator.clipboard.writeText(url).then(function() {
     toast('Form link copied!', 'success');
