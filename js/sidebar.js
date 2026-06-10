@@ -15,7 +15,7 @@ function buildSidebar(){
       var pq=S.questions.filter(function(q){return q.status==='pending';}).length;
       if(pq>0)extra='<span class="ml-auto text-xs bg-amber-500/20 text-amber-400 rounded-full px-2 py-0.5">'+pq+'</span>';
     }
-    html+='<div class="sidebar-item '+(S.currentPage===p.id?'active':'')+'" onclick="navigateTo(\''+p.id+'\');closeMobileSidebar()">'+
+    html+='<div class="sidebar-item '+(S.currentPage===p.id?'active':'')+'\" onclick=\"navigateTo(\''+p.id+'\');closeMobileSidebar()\">'+
       '<i data-lucide="'+p.icon+'" class="w-[18px] h-[18px]"></i><span>'+p.label+'</span>'+extra+'</div>';
   }
   document.getElementById('sidebar-nav').innerHTML=html;
@@ -35,7 +35,6 @@ function buildSidebar(){
   }
 
   document.getElementById('sidebar-title').textContent = S.role==='admin'?'Admin Portal':'Employee Portal';
-  // Update subtitle to current page name
   var allPages = ADMIN_PAGES.concat(EMP_PAGES);
   var currentPg = allPages.find(function(p){return p.id===S.currentPage;});
   document.getElementById('sidebar-subtitle').textContent = currentPg ? currentPg.label : (S.role==='admin'?'Management':'Dashboard');
@@ -44,9 +43,13 @@ function buildSidebar(){
 
 function navigateTo(page){
   S.currentPage=page;
+
+  // ── Fix 1: save current page so refresh restores it ──
+  updateSessionPage(page);
+
   buildSidebar();
   renderPage();
-  // Only show mobile topbar title when inside the app shell
+
   if(S.role){
     var allPages=ADMIN_PAGES.concat(EMP_PAGES);
     var pg=allPages.find(function(p){return p.id===page;});
