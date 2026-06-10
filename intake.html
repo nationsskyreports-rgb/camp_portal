@@ -36,11 +36,33 @@
 
     .wrapper { width: 100%; max-width: 480px; }
 
-    /* ─── Brand Header ─── */
-    .brand {
-      text-align: center;
-      margin-bottom: 1.5rem;
+    /* ─── Lang Toggle ─── */
+    .lang-toggle {
+      display: flex;
+      justify-content: center;
+      gap: .5rem;
+      margin-bottom: 1.25rem;
     }
+    .lang-btn {
+      padding: .4rem 1.1rem;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all .15s;
+      font-family: inherit;
+    }
+    .lang-btn.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+
+    /* ─── Brand Header ─── */
+    .brand { text-align: center; margin-bottom: 1.5rem; }
     .brand-logo {
       width: 56px; height: 56px;
       background: var(--blue);
@@ -77,17 +99,33 @@
     }
     .campaign-tag svg { width: 13px; height: 13px; fill: var(--blue); }
 
-    .card-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: .4rem;
-      color: var(--text);
+    .card-title { font-size: 1.25rem; font-weight: 700; margin-bottom: .4rem; color: var(--text); }
+    .card-desc  { font-size: .88rem; color: var(--muted); margin-bottom: 1.75rem; line-height: 1.6; }
+
+    /* ─── Form Tabs ─── */
+    .form-tabs {
+      display: flex;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 1.5rem;
+      gap: 0;
     }
-    .card-desc {
+    .tab-btn {
+      flex: 1;
+      padding: .6rem .5rem;
+      background: none;
+      border: none;
+      border-bottom: 2.5px solid transparent;
+      margin-bottom: -2px;
       font-size: .88rem;
+      font-weight: 600;
       color: var(--muted);
-      margin-bottom: 1.75rem;
-      line-height: 1.6;
+      cursor: pointer;
+      font-family: inherit;
+      transition: color .15s, border-color .15s;
+    }
+    .tab-btn.active {
+      color: var(--blue);
+      border-bottom-color: var(--blue);
     }
 
     /* ─── Form ─── */
@@ -99,7 +137,7 @@
       margin-bottom: .4rem;
       color: #374151;
     }
-    .field label .req { color: var(--red); margin-right: .15rem; }
+    .field label .req { color: var(--red); margin-right: .15rem; margin-left: .15rem; }
     .field input,
     .field select,
     .field textarea {
@@ -120,24 +158,29 @@
       border-color: var(--blue);
       box-shadow: 0 0 0 3px rgba(59,130,246,.12);
     }
-    .field input.err,
-    .field select.err { border-color: var(--red); }
+    .field.has-err .err-msg { display: block; }
+    .field.has-err input,
+    .field.has-err select { border-color: var(--red); }
     .field .err-msg {
       font-size: .78rem;
       color: var(--red);
       margin-top: .3rem;
       display: none;
     }
-    .field.has-err .err-msg { display: block; }
-    .field.has-err input,
-    .field.has-err select { border-color: var(--red); }
     .field textarea { resize: vertical; min-height: 90px; }
 
-    .divider {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 1.5rem 0 1.25rem;
+    /* phone change hint */
+    .change-hint {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      line-height: 1.5;
+      background: var(--blue-bg);
+      border-radius: 8px;
+      padding: .6rem .8rem;
     }
+
+    .divider { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0 1.25rem; }
     .section-label {
       font-size: .75rem;
       font-weight: 700;
@@ -173,17 +216,13 @@
     .btn-submit:disabled { opacity: .65; cursor: not-allowed; }
     .btn-submit svg { width: 18px; height: 18px; fill: #fff; flex-shrink: 0; }
 
-    /* ─── Progress bar inside button ─── */
     .btn-progress {
-      position: absolute;
-      inset: 0;
+      position: absolute; inset: 0;
       background: rgba(255,255,255,.18);
-      width: 0%;
-      transition: width .4s ease;
+      width: 0%; transition: width .4s ease;
       pointer-events: none;
     }
 
-    /* ─── Spinner ─── */
     .spinner {
       width: 18px; height: 18px;
       border: 2.5px solid rgba(255,255,255,.35);
@@ -198,7 +237,6 @@
     .state { display: none; }
     .state.active { display: block; }
 
-    /* Loading skeleton */
     .skeleton {
       height: 14px; border-radius: 6px;
       background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
@@ -208,18 +246,12 @@
     }
     @keyframes shimmer { to { background-position: -200% 0; } }
 
-    /* ─── Success State ─── */
-    .success-box {
-      text-align: center;
-      padding: 1rem 0 .5rem;
-    }
+    .success-box { text-align: center; padding: 1rem 0 .5rem; }
     .success-circle {
       width: 72px; height: 72px;
       background: var(--green-bg);
       border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      display: inline-flex; align-items: center; justify-content: center;
       margin-bottom: 1.25rem;
       animation: popIn .4s cubic-bezier(.34,1.56,.64,1) both;
     }
@@ -228,7 +260,6 @@
     .success-title { font-size: 1.2rem; font-weight: 700; margin-bottom: .5rem; }
     .success-sub   { font-size: .9rem; color: var(--muted); line-height: 1.6; }
 
-    /* ─── Error Banner ─── */
     .error-banner {
       background: var(--red-bg);
       border: 1px solid #fecaca;
@@ -241,23 +272,13 @@
     }
     .error-banner.show { display: flex; align-items: flex-start; gap: .5rem; }
 
-    /* ─── Footer ─── */
-    .footer {
-      text-align: center;
-      margin-top: 1.5rem;
-      font-size: .78rem;
-      color: #9ca3af;
-    }
+    .footer { text-align: center; margin-top: 1.5rem; font-size: .78rem; color: #9ca3af; }
 
-    /* ─── Not Found State ─── */
     .notfound-box { text-align: center; padding: 1rem 0; }
     .notfound-icon {
       width: 64px; height: 64px;
-      background: #fef2f2;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      background: #fef2f2; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
       margin-bottom: 1rem;
     }
     .notfound-icon svg { width: 30px; height: 30px; fill: var(--red); }
@@ -273,21 +294,25 @@
 <body>
 <div class="wrapper">
 
+  <!-- Lang Toggle -->
+  <div class="lang-toggle">
+    <button class="lang-btn active" id="btn-ar" onclick="setLang('ar')">العربية</button>
+    <button class="lang-btn"        id="btn-en" onclick="setLang('en')">English</button>
+  </div>
+
   <!-- Brand -->
   <div class="brand">
     <div class="brand-logo">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M3 9.5L12 3l9 6.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
-      </svg>
+      <svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/></svg>
     </div>
     <div class="brand-title">Nations of Sky</div>
-    <div class="brand-sub">سجّل اهتمامك وسيتواصل معك أحد ممثلينا قريباً</div>
+    <div class="brand-sub" id="brand-sub">سجّل اهتمامك وسيتواصل معك أحد ممثلينا قريباً</div>
   </div>
 
   <!-- Card -->
   <div class="card">
 
-    <!-- ── Loading State ── -->
+    <!-- Loading -->
     <div id="state-loading" class="state active">
       <div class="skeleton" style="width:35%;margin-bottom:1rem"></div>
       <div class="skeleton" style="width:70%;height:20px;margin-bottom:.5rem"></div>
@@ -298,45 +323,56 @@
       <div class="skeleton" style="height:44px"></div>
     </div>
 
-    <!-- ── Form State ── -->
+    <!-- Form -->
     <div id="state-form" class="state">
       <div class="campaign-tag">
         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.86 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z"/></svg>
         <span id="camp-tag-name">...</span>
       </div>
-      <div class="card-title">سجّل بياناتك</div>
-      <div class="card-desc" id="form-desc">أدخل بياناتك وسيقوم فريقنا بالتواصل معك في أقرب وقت.</div>
 
-      <div class="error-banner" id="error-banner">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="flex-shrink:0;margin-top:1px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-        <span id="error-text">حدث خطأ. حاول مرة أخرى.</span>
+      <!-- Tabs: Register / Change Phone -->
+      <div class="form-tabs">
+        <button class="tab-btn active" id="tab-register" onclick="switchTab('register')" data-ar="تسجيل جديد" data-en="New Registration">تسجيل جديد</button>
+        <button class="tab-btn"        id="tab-change"   onclick="switchTab('change')"   data-ar="تغيير رقم التليفون" data-en="Change Phone Number">تغيير رقم التليفون</button>
       </div>
 
-      <form id="intake-form" onsubmit="return false">
+      <!-- Error Banner (shared) -->
+      <div class="error-banner" id="error-banner">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="flex-shrink:0;margin-top:1px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        <span id="error-text"></span>
+      </div>
 
-        <!-- Always: Name + Phone -->
-        <div class="section-label">البيانات الأساسية</div>
+      <!-- ══ TAB: Register ══ -->
+      <div id="panel-register">
+        <div class="card-title" id="form-title">سجّل بياناتك</div>
+        <div class="card-desc"  id="form-desc">أدخل بياناتك وسيقوم فريقنا بالتواصل معك في أقرب وقت.</div>
+
+        <div class="section-label" id="lbl-basic">البيانات الأساسية</div>
 
         <div class="field" id="field-name">
-          <label>الاسم الكامل <span class="req">*</span></label>
-          <input type="text" id="inp-name" placeholder="مثال: محمد أحمد" autocomplete="name">
-          <div class="err-msg">هذا الحقل مطلوب</div>
+          <label id="lbl-name">الاسم الكامل <span class="req">*</span></label>
+          <input type="text" id="inp-name" autocomplete="name">
+          <div class="err-msg" id="err-name">هذا الحقل مطلوب</div>
         </div>
 
         <div class="field" id="field-phone">
-          <label>رقم التليفون <span class="req">*</span></label>
+          <label id="lbl-phone">رقم التليفون الأساسي <span class="req">*</span></label>
           <input type="tel" id="inp-phone" placeholder="01xxxxxxxxx" autocomplete="tel" dir="ltr">
-          <div class="err-msg">أدخل رقماً صحيحاً</div>
+          <div class="err-msg" id="err-phone">أدخل رقماً صحيحاً</div>
         </div>
 
-        <!-- Dynamic fields from column_config -->
+        <div class="field" id="field-phone2">
+          <label id="lbl-phone2">رقم التليفون الإضافي <span style="color:var(--muted);font-weight:400" id="lbl-optional">(اختياري)</span></label>
+          <input type="tel" id="inp-phone2" placeholder="01xxxxxxxxx" autocomplete="tel" dir="ltr">
+          <div class="err-msg" id="err-phone2">أدخل رقماً صحيحاً</div>
+        </div>
+
         <div id="dynamic-fields"></div>
 
-        <!-- Always: Notes -->
         <hr class="divider">
         <div class="field">
-          <label>ملاحظات إضافية <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>
-          <textarea id="inp-notes" placeholder="أي تفاصيل أو استفسارات تودّ مشاركتها..."></textarea>
+          <label id="lbl-notes">ملاحظات إضافية <span style="color:var(--muted);font-weight:400" id="lbl-optional2">(اختياري)</span></label>
+          <textarea id="inp-notes" id="inp-notes"></textarea>
         </div>
 
         <button type="button" class="btn-submit" id="btn-submit" onclick="submitForm()">
@@ -344,35 +380,63 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
           <span id="btn-label">إرسال الطلب</span>
         </button>
+      </div>
 
-      </form>
-    </div>
+      <!-- ══ TAB: Change Phone ══ -->
+      <div id="panel-change" style="display:none">
+        <div class="card-title" id="change-title">تغيير رقم التليفون</div>
+        <div class="card-desc"  id="change-desc">أدخل رقمك القديم ثم الرقم الجديد اللي عايز تغيّر إليه.</div>
 
-    <!-- ── Success State ── -->
+        <div class="change-hint" id="change-hint">
+          💡 اكتب الرقم القديم المسجّل عندنا، وتحته الرقم الجديد اللي عايز تستبدله بيه.
+        </div>
+
+        <div class="field" id="field-old-phone">
+          <label id="lbl-old-phone">الرقم القديم <span class="req">*</span></label>
+          <input type="tel" id="inp-old-phone" placeholder="01xxxxxxxxx" dir="ltr">
+          <div class="err-msg" id="err-old-phone">أدخل رقماً صحيحاً</div>
+        </div>
+
+        <div class="field" id="field-new-phone">
+          <label id="lbl-new-phone">الرقم الجديد <span class="req">*</span></label>
+          <input type="tel" id="inp-new-phone" placeholder="01xxxxxxxxx" dir="ltr">
+          <div class="err-msg" id="err-new-phone">أدخل رقماً صحيحاً</div>
+        </div>
+
+        <button type="button" class="btn-submit" id="btn-change" onclick="submitChange()">
+          <div class="btn-progress" id="btn-progress-change"></div>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+          <span id="btn-change-label">تأكيد التغيير</span>
+        </button>
+      </div>
+
+    </div><!-- /state-form -->
+
+    <!-- Success -->
     <div id="state-success" class="state">
       <div class="success-box">
         <div class="success-circle">
           <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
         </div>
-        <div class="success-title">تم إرسال طلبك بنجاح!</div>
-        <div class="success-sub" id="success-msg">شكراً لك. سيتواصل معك أحد ممثلينا في أقرب وقت ممكن.</div>
+        <div class="success-title" id="success-title">تم إرسال طلبك بنجاح!</div>
+        <div class="success-sub"   id="success-msg">شكراً لك. سيتواصل معك أحد ممثلينا في أقرب وقت ممكن.</div>
       </div>
     </div>
 
-    <!-- ── Not Found State ── -->
+    <!-- Not Found -->
     <div id="state-notfound" class="state">
       <div class="notfound-box">
         <div class="notfound-icon">
           <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
         </div>
-        <div class="notfound-title">الرابط غير صحيح</div>
-        <div class="notfound-sub">هذا الرابط غير صالح أو انتهت صلاحيته.<br>تواصل مع المبيعات للحصول على الرابط الصحيح.</div>
+        <div class="notfound-title" id="nf-title">الرابط غير صحيح</div>
+        <div class="notfound-sub"   id="nf-sub">هذا الرابط غير صالح أو انتهت صلاحيته.<br>تواصل مع المبيعات للحصول على الرابط الصحيح.</div>
       </div>
     </div>
 
   </div><!-- /card -->
 
-  <div class="footer">مدعوم بواسطة Nations of Sky Portal</div>
+  <div class="footer" id="footer-txt">مدعوم بواسطة Nations of Sky Portal</div>
 
 </div><!-- /wrapper -->
 
@@ -381,127 +445,327 @@
 var SB_URL = 'https://biwrdwxgfyhnltzddlwu.supabase.co';
 var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpd3Jkd3hnZnlobmx0emRkbHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTczMTYsImV4cCI6MjA4OTc5MzMxNn0.EMOV5v3cGaDEqQJusnyrWTWdSPPwKeyuguPzxJvtKdQ';
 
-// حقول admin-only مش المفروض تطلع في الفورم العام
-var SKIP_KEYS = ['contract_id','customer','contract_date','actual_price',
-                 'contract_status','approval_status'];
+var SKIP_KEYS = ['contract_id','customer','contract_date','actual_price','contract_status','approval_status'];
 
-// ترجمة عربية للحقول الشائعة
 var AR_LABELS = {
-  project:      'المشروع',
-  unit:         'رقم الوحدة',
-  property_type:'نوع الوحدة',
-  payment_term: 'طريقة السداد',
+  project:'المشروع', unit:'رقم الوحدة',
+  property_type:'نوع الوحدة', payment_term:'طريقة السداد'
+};
+var EN_LABELS = {
+  project:'Project', unit:'Unit Number',
+  property_type:'Property Type', payment_term:'Payment Method'
 };
 
-// ─── STATE ──────────────────────────────────────────────────
+// ─── TRANSLATIONS ────────────────────────────────────────────
+var T = {
+  ar: {
+    brandSub       : 'سجّل اهتمامك وسيتواصل معك أحد ممثلينا قريباً',
+    tabRegister    : 'تسجيل جديد',
+    tabChange      : 'تغيير رقم التليفون',
+    formTitle      : 'سجّل بياناتك',
+    formDesc       : 'أدخل بياناتك وسيقوم فريقنا بالتواصل معك في أقرب وقت.',
+    lblBasic       : 'البيانات الأساسية',
+    lblName        : 'الاسم الكامل',
+    lblPhone       : 'رقم التليفون الأساسي',
+    lblPhone2      : 'رقم التليفون الإضافي',
+    lblOptional    : '(اختياري)',
+    lblNotes       : 'ملاحظات إضافية',
+    lblDetails     : 'تفاصيل الاهتمام',
+    btnSubmit      : 'إرسال الطلب',
+    btnSending     : 'جارٍ الإرسال...',
+    errRequired    : 'هذا الحقل مطلوب',
+    errPhone       : 'أدخل رقماً صحيحاً',
+    changeTitle    : 'تغيير رقم التليفون',
+    changeDesc     : 'أدخل رقمك القديم ثم الرقم الجديد اللي عايز تغيّر إليه.',
+    changeHint     : '💡 اكتب الرقم القديم المسجّل عندنا، وتحته الرقم الجديد اللي عايز تستبدله بيه.',
+    lblOldPhone    : 'الرقم القديم',
+    lblNewPhone    : 'الرقم الجديد',
+    btnChange      : 'تأكيد التغيير',
+    btnChanging    : 'جارٍ التغيير...',
+    successTitle   : 'تم إرسال طلبك بنجاح!',
+    successMsg     : 'شكراً لك. سيتواصل معك أحد ممثلينا في أقرب وقت ممكن.',
+    successChTitle : 'تم تغيير الرقم بنجاح!',
+    successChMsg   : 'تم تحديث رقم التليفون الخاص بك. سيتواصل معك فريقنا إذا احتجنا لأي تأكيد.',
+    nfTitle        : 'الرابط غير صحيح',
+    nfSub          : 'هذا الرابط غير صالح أو انتهت صلاحيته.<br>تواصل مع المبيعات للحصول على الرابط الصحيح.',
+    errNotFound    : 'الرقم القديم غير موجود في النظام.',
+    errGeneral     : 'حدث خطأ. يرجى المحاولة مرة أخرى.',
+    footerTxt      : 'مدعوم بواسطة Nations of Sky Portal',
+    namePlaceholder: 'مثال: محمد أحمد',
+    dir            : 'rtl',
+    lang           : 'ar'
+  },
+  en: {
+    brandSub       : 'Register your interest and our team will contact you shortly.',
+    tabRegister    : 'New Registration',
+    tabChange      : 'Change Phone Number',
+    formTitle      : 'Register Your Details',
+    formDesc       : 'Fill in your details and our team will get in touch as soon as possible.',
+    lblBasic       : 'Basic Information',
+    lblName        : 'Full Name',
+    lblPhone       : 'Primary Phone Number',
+    lblPhone2      : 'Secondary Phone Number',
+    lblOptional    : '(optional)',
+    lblNotes       : 'Additional Notes',
+    lblDetails     : 'Interest Details',
+    btnSubmit      : 'Submit Request',
+    btnSending     : 'Sending...',
+    errRequired    : 'This field is required',
+    errPhone       : 'Please enter a valid number',
+    changeTitle    : 'Change Phone Number',
+    changeDesc     : 'Enter your old registered number, then the new number you want to switch to.',
+    changeHint     : '💡 Enter the old number registered with us, then the new number you want to replace it with.',
+    lblOldPhone    : 'Old Number',
+    lblNewPhone    : 'New Number',
+    btnChange      : 'Confirm Change',
+    btnChanging    : 'Updating...',
+    successTitle   : 'Request Submitted Successfully!',
+    successMsg     : 'Thank you. One of our representatives will contact you as soon as possible.',
+    successChTitle : 'Phone Number Updated!',
+    successChMsg   : 'Your phone number has been updated successfully. Our team will reach out if any confirmation is needed.',
+    nfTitle        : 'Invalid Link',
+    nfSub          : 'This link is invalid or has expired.<br>Please contact sales to get the correct link.',
+    errNotFound    : 'The old number was not found in our system.',
+    errGeneral     : 'An error occurred. Please try again.',
+    footerTxt      : 'Powered by Nations of Sky Portal',
+    namePlaceholder: 'e.g. John Smith',
+    dir            : 'ltr',
+    lang           : 'en'
+  }
+};
+
+// ─── STATE ───────────────────────────────────────────────────
 var campaignId   = null;
 var campaignData = null;
 var isSubmitting = false;
+var currentLang  = 'ar';
+var currentTab   = 'register';
+
+// ─── LANG ────────────────────────────────────────────────────
+function setLang(lang) {
+  currentLang = lang;
+  var t = T[lang];
+
+  // html dir
+  document.documentElement.setAttribute('lang', lang);
+  document.documentElement.setAttribute('dir', t.dir);
+
+  // toggle buttons
+  document.getElementById('btn-ar').classList.toggle('active', lang === 'ar');
+  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+
+  // brand
+  document.getElementById('brand-sub').textContent = t.brandSub;
+
+  // tabs
+  document.getElementById('tab-register').textContent = t.tabRegister;
+  document.getElementById('tab-change').textContent   = t.tabChange;
+
+  // register panel
+  document.getElementById('form-title').textContent  = t.formTitle;
+  document.getElementById('form-desc').textContent   = t.formDesc;
+  document.getElementById('lbl-basic').textContent   = t.lblBasic;
+  setLabelText('lbl-name',    t.lblName,    true);
+  setLabelText('lbl-phone',   t.lblPhone,   true);
+  setLabelText('lbl-phone2',  t.lblPhone2,  false, t.lblOptional);
+  setLabelText('lbl-notes',   t.lblNotes,   false, t.lblOptional);
+  document.getElementById('inp-name').placeholder = t.namePlaceholder;
+  document.getElementById('btn-label').textContent = t.btnSubmit;
+  document.getElementById('err-name').textContent  = t.errRequired;
+  document.getElementById('err-phone').textContent = t.errPhone;
+  document.getElementById('err-phone2').textContent= t.errPhone;
+
+  // change panel
+  document.getElementById('change-title').textContent = t.changeTitle;
+  document.getElementById('change-desc').textContent  = t.changeDesc;
+  document.getElementById('change-hint').textContent  = t.changeHint;
+  setLabelText('lbl-old-phone', t.lblOldPhone, true);
+  setLabelText('lbl-new-phone', t.lblNewPhone, true);
+  document.getElementById('btn-change-label').textContent = t.btnChange;
+  document.getElementById('err-old-phone').textContent = t.errPhone;
+  document.getElementById('err-new-phone').textContent = t.errPhone;
+
+  // not found / success / footer
+  document.getElementById('nf-title').textContent   = t.nfTitle;
+  document.getElementById('nf-sub').innerHTML       = t.nfSub;
+  document.getElementById('footer-txt').textContent = t.footerTxt;
+
+  // rebuild dynamic fields with correct labels
+  if (campaignData) buildDynamicFields(campaignData);
+}
+
+function setLabelText(id, text, required, optionalText) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = escHtml(text) +
+    (required    ? ' <span class="req">*</span>' : '') +
+    (optionalText? ' <span style="color:var(--muted);font-weight:400">' + escHtml(optionalText) + '</span>' : '');
+}
+
+// ─── TAB SWITCH ──────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  hideBanner();
+  clearErrors();
+  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  document.getElementById('tab-change').classList.toggle('active',   tab === 'change');
+  document.getElementById('panel-register').style.display = tab === 'register' ? '' : 'none';
+  document.getElementById('panel-change').style.display   = tab === 'change'   ? '' : 'none';
+}
 
 // ─── INIT ────────────────────────────────────────────────────
 (function init(){
   var params = new URLSearchParams(window.location.search);
   campaignId = params.get('c') || params.get('campaign');
-
   if (!campaignId) { showState('notfound'); return; }
 
   sbGet('campaigns', 'id=eq.' + campaignId + '&select=id,name,column_config&limit=1')
     .then(function(rows) {
       if (!rows || !rows.length) { showState('notfound'); return; }
       campaignData = rows[0];
-      buildForm(campaignData);
+      document.getElementById('camp-tag-name').textContent = campaignData.name || 'Campaign';
+      document.title = (currentLang === 'ar' ? 'تسجيل الاهتمام' : 'Register Interest') + ' — ' + (campaignData.name || '');
+      buildDynamicFields(campaignData);
       showState('form');
     })
     .catch(function() { showState('notfound'); });
+
+  // apply default lang
+  setLang('ar');
 })();
 
-// ─── BUILD FORM DYNAMICALLY ───────────────────────────────────
-function buildForm(camp) {
-  // اسم الـ campaign في الـ tag
-  document.getElementById('camp-tag-name').textContent = camp.name || 'Campaign';
-  document.title = 'تسجيل الاهتمام — ' + (camp.name || '');
-
-  // dynamic fields من column_config
+// ─── BUILD DYNAMIC FIELDS ────────────────────────────────────
+function buildDynamicFields(camp) {
   var cols = camp.column_config || [];
   if (typeof cols === 'string') { try { cols = JSON.parse(cols); } catch(e) { cols = []; } }
-
   var visibleCols = cols
     .filter(function(c) { return c.visible && SKIP_KEYS.indexOf(c.key) === -1; })
-    .sort(function(a, b) { return a.order - b.order; });
+    .sort(function(a,b)  { return a.order - b.order; });
 
-  if (!visibleCols.length) return;
+  if (!visibleCols.length) { document.getElementById('dynamic-fields').innerHTML = ''; return; }
 
-  var html = '<hr class="divider"><div class="section-label">تفاصيل الاهتمام</div>';
+  var t   = T[currentLang];
+  var labelMap = currentLang === 'ar' ? AR_LABELS : EN_LABELS;
+
+  var html = '<hr class="divider"><div class="section-label">' + escHtml(t.lblDetails) + '</div>';
   visibleCols.forEach(function(col) {
-    var label = AR_LABELS[col.key] || col.label;
+    var label = labelMap[col.key] || col.label;
     html += '<div class="field">' +
-      '<label>' + escHtml(label) + ' <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>' +
-      '<input type="text" id="inp-' + escHtml(col.key) + '" ' +
-      'placeholder="' + escHtml(label) + '" data-col-key="' + escHtml(col.key) + '">' +
+      '<label>' + escHtml(label) + ' <span style="color:var(--muted);font-weight:400">' + escHtml(t.lblOptional) + '</span></label>' +
+      '<input type="text" id="inp-' + escHtml(col.key) + '" placeholder="' + escHtml(label) + '" data-col-key="' + escHtml(col.key) + '">' +
       '</div>';
   });
-
   document.getElementById('dynamic-fields').innerHTML = html;
 }
 
-// ─── SUBMIT ──────────────────────────────────────────────────
+// ─── SUBMIT REGISTER ────────────────────────────────────────
 function submitForm() {
   if (isSubmitting) return;
-  clearErrors();
-  hideBanner();
+  var t = T[currentLang];
+  clearErrors(); hideBanner();
 
-  var name  = val('inp-name');
-  var phone = val('inp-phone');
-  var valid = true;
+  var name   = val('inp-name');
+  var phone  = val('inp-phone');
+  var phone2 = val('inp-phone2');
+  var valid  = true;
 
-  if (!name) { setErr('field-name'); valid = false; }
-  if (!phone || !/^0[0-9]{9,10}$/.test(phone.replace(/\s/g,''))) {
-    setErr('field-phone'); valid = false;
-  }
+  if (!name)  { setErr('field-name');  valid = false; }
+  if (!isValidPhone(phone))  { setErr('field-phone');  valid = false; }
+  if (phone2 && !isValidPhone(phone2)) { setErr('field-phone2'); valid = false; }
   if (!valid) return;
 
   isSubmitting = true;
-  setBtnLoading(true);
+  setBtnLoading(true, 'btn-submit', 'btn-label', 'btn-progress', t.btnSending);
 
-  // جمع extra_data
   var extraData = { name: name, phone: phone };
+  if (phone2) extraData.phone2 = phone2;
   document.querySelectorAll('[data-col-key]').forEach(function(inp) {
     if (inp.value.trim()) extraData[inp.getAttribute('data-col-key')] = inp.value.trim();
   });
   var notes = val('inp-notes');
   if (notes) extraData.notes = notes;
 
-  // جيب الموظفين وعمل round-robin
   getLeastLoadedEmployee()
     .then(function(employee) {
       var record = {
-        name               : name,
-        phone              : phone,
-        extra_data         : extraData,
-        status             : 'New',
-        campaign_id        : campaignId,
+        name                : name,
+        phone               : phone,
+        extra_data          : extraData,
+        status              : 'New',
+        campaign_id         : campaignId,
         assigned_employee_id: employee ? employee.id : null
       };
       return sbInsert('clients', record).then(function() {
-        // notification للموظف
         if (employee) {
           sbInsert('notifications', {
             employee_id : employee.id,
             type        : 'new_clients',
-            message     : 'عميل جديد من رابط الفورم: ' + name,
+            message     : (currentLang === 'ar' ? 'عميل جديد من رابط الفورم: ' : 'New client from form link: ') + name,
             read        : false
           }).catch(function(){});
         }
-        return employee;
       });
     })
     .then(function() {
+      document.getElementById('success-title').textContent = t.successTitle;
+      document.getElementById('success-msg').textContent   = t.successMsg;
       showState('success');
     })
     .catch(function(err) {
       isSubmitting = false;
-      setBtnLoading(false);
-      showBanner(err && err.message ? err.message : 'حدث خطأ. يرجى المحاولة مرة أخرى.');
+      setBtnLoading(false, 'btn-submit', 'btn-label', 'btn-progress', t.btnSubmit);
+      showBanner(err && err.message ? err.message : t.errGeneral);
+    });
+}
+
+// ─── SUBMIT CHANGE PHONE ─────────────────────────────────────
+function submitChange() {
+  if (isSubmitting) return;
+  var t = T[currentLang];
+  clearErrors(); hideBanner();
+
+  var oldPhone = val('inp-old-phone');
+  var newPhone = val('inp-new-phone');
+  var valid    = true;
+
+  if (!isValidPhone(oldPhone)) { setErr('field-old-phone'); valid = false; }
+  if (!isValidPhone(newPhone)) { setErr('field-new-phone'); valid = false; }
+  if (!valid) return;
+
+  isSubmitting = true;
+  setBtnLoading(true, 'btn-change', 'btn-change-label', 'btn-progress-change', t.btnChanging);
+
+  // Find client by old phone in this campaign
+  sbGet('clients', 'phone=eq.' + encodeURIComponent(oldPhone) + '&campaign_id=eq.' + campaignId + '&select=id&limit=1')
+    .then(function(rows) {
+      if (!rows || !rows.length) {
+        // also check phone2 in extra_data — fallback: search by extra_data->phone2
+        return sbGet('clients', 'campaign_id=eq.' + campaignId + '&select=id,extra_data')
+          .then(function(all) {
+            var found = null;
+            (all || []).forEach(function(r) {
+              if (r.extra_data && r.extra_data.phone2 === oldPhone) found = r;
+            });
+            if (!found) throw new Error('NOT_FOUND');
+            return found;
+          });
+      }
+      return rows[0];
+    })
+    .then(function(client) {
+      // update phone field + extra_data.phone
+      return sbPatch('clients', 'id=eq.' + client.id, { phone: newPhone, extra_data: Object.assign({}, client.extra_data || {}, { phone: newPhone }) });
+    })
+    .then(function() {
+      document.getElementById('success-title').textContent = t.successChTitle;
+      document.getElementById('success-msg').textContent   = t.successChMsg;
+      showState('success');
+    })
+    .catch(function(err) {
+      isSubmitting = false;
+      setBtnLoading(false, 'btn-change', 'btn-change-label', 'btn-progress-change', t.btnChange);
+      if (err && err.message === 'NOT_FOUND') showBanner(t.errNotFound);
+      else showBanner(err && err.message ? err.message : t.errGeneral);
     });
 }
 
@@ -513,47 +777,41 @@ function getLeastLoadedEmployee() {
   ]).then(function(results) {
     var emps    = results[0] || [];
     var clients = results[1] || [];
-
     if (!emps.length) return null;
-
     var counts = {};
     emps.forEach(function(e) { counts[e.id] = 0; });
     clients.forEach(function(c) {
       if (c.assigned_employee_id && counts[c.assigned_employee_id] !== undefined)
         counts[c.assigned_employee_id]++;
     });
-
-    return emps.reduce(function(min, e) {
-      return counts[e.id] < counts[min.id] ? e : min;
-    });
-  }).catch(function() { return null; }); // fallback: بدون assign
+    return emps.reduce(function(min, e) { return counts[e.id] < counts[min.id] ? e : min; });
+  }).catch(function() { return null; });
 }
 
 // ─── SUPABASE REST ────────────────────────────────────────────
 function sbHeaders() {
-  return {
-    'apikey'       : SB_KEY,
-    'Authorization': 'Bearer ' + SB_KEY,
-    'Content-Type' : 'application/json'
-  };
+  return { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
 }
-
 function sbGet(table, query) {
-  return fetch(SB_URL + '/rest/v1/' + table + '?' + query, {
-    headers: sbHeaders()
-  }).then(function(r) {
-    if (!r.ok) throw new Error('Supabase GET error: ' + r.status);
-    return r.json();
-  });
+  return fetch(SB_URL + '/rest/v1/' + table + '?' + query, { headers: sbHeaders() })
+    .then(function(r) { if (!r.ok) throw new Error('GET error ' + r.status); return r.json(); });
 }
-
 function sbInsert(table, payload) {
   return fetch(SB_URL + '/rest/v1/' + table, {
-    method : 'POST',
+    method: 'POST',
     headers: Object.assign(sbHeaders(), { 'Prefer': 'return=minimal' }),
-    body   : JSON.stringify(payload)
+    body: JSON.stringify(payload)
   }).then(function(r) {
     if (r.status !== 201) return r.text().then(function(t) { throw new Error(t); });
+  });
+}
+function sbPatch(table, query, payload) {
+  return fetch(SB_URL + '/rest/v1/' + table + '?' + query, {
+    method: 'PATCH',
+    headers: Object.assign(sbHeaders(), { 'Prefer': 'return=minimal' }),
+    body: JSON.stringify(payload)
+  }).then(function(r) {
+    if (!r.ok) return r.text().then(function(t) { throw new Error(t); });
   });
 }
 
@@ -564,51 +822,42 @@ function showState(id) {
     if (el) el.classList.toggle('active', s === id);
   });
 }
-
 function val(id) {
-  var el = document.getElementById(id);
-  return el ? el.value.trim() : '';
+  var el = document.getElementById(id); return el ? el.value.trim() : '';
 }
-
+function isValidPhone(p) {
+  return p && /^0[0-9]{9,10}$/.test(p.replace(/\s/g,''));
+}
 function setErr(fieldId) {
-  var el = document.getElementById(fieldId);
-  if (el) el.classList.add('has-err');
+  var el = document.getElementById(fieldId); if (el) el.classList.add('has-err');
 }
-
 function clearErrors() {
-  document.querySelectorAll('.field.has-err').forEach(function(el) {
-    el.classList.remove('has-err');
-  });
+  document.querySelectorAll('.field.has-err').forEach(function(el) { el.classList.remove('has-err'); });
 }
-
 function showBanner(msg) {
   var b = document.getElementById('error-banner');
   document.getElementById('error-text').textContent = msg;
   b.classList.add('show');
 }
-
 function hideBanner() {
   document.getElementById('error-banner').classList.remove('show');
 }
-
-function setBtnLoading(loading) {
-  var btn   = document.getElementById('btn-submit');
-  var label = document.getElementById('btn-label');
-  var prog  = document.getElementById('btn-progress');
+function setBtnLoading(loading, btnId, labelId, progId, labelText) {
+  var btn  = document.getElementById(btnId);
+  var lbl  = document.getElementById(labelId);
+  var prog = document.getElementById(progId);
+  if (!btn) return;
   btn.disabled = loading;
   if (loading) {
-    label.innerHTML = '<span class="spinner"></span> جارٍ الإرسال...';
+    lbl.innerHTML = '<span class="spinner"></span> ' + escHtml(labelText);
     prog.style.width = '70%';
   } else {
-    label.textContent = 'إرسال الطلب';
-    prog.style.width  = '0%';
+    lbl.textContent = labelText;
+    prog.style.width = '0%';
   }
 }
-
 function escHtml(str) {
-  return String(str || '')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
 </body>
