@@ -9,16 +9,15 @@ var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 var COLORS = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
 
 var DEFAULT_COLUMNS = [
-  {key:'contract_id',    label:'Contract ID',      visible:true,  order:0},
-  {key:'customer',       label:'Customer',         visible:true,  order:1},
-  {key:'project',        label:'Project',          visible:true,  order:2},
-  {key:'unit',           label:'Unit',             visible:true,  order:3},
-  {key:'property_type',  label:'Property Type',    visible:true,  order:4},
-  {key:'contract_date',  label:'Contract Date',    visible:true,  order:5},
-  {key:'payment_term',   label:'Payment Term',     visible:true,  order:6},
-  {key:'actual_price',   label:'Actual Price',     visible:true,  order:7},
-  {key:'contract_status',label:'Contract Status',  visible:true,  order:8},
-  {key:'approval_status',label:'Approval Status',  visible:true,  order:9}
+  {key:'name',          label:'Client Name',    visible:true,  order:0},
+  {key:'phone',         label:'Mobile',         visible:true,  order:1},
+  {key:'phone2',        label:'Mobile 2',       visible:true,  order:2},
+  {key:'email',         label:'Email',          visible:true,  order:3},
+  {key:'project',       label:'Project',        visible:true,  order:4},
+  {key:'unit',          label:'Unit',           visible:true,  order:5},
+  {key:'property_type', label:'Property Type',  visible:true,  order:6},
+  {key:'payment_term',  label:'Payment Term',   visible:true,  order:7},
+  {key:'notes',         label:'Notes',          visible:true,  order:8}
 ];
 
 var ADMIN_PAGES = [
