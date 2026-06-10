@@ -298,7 +298,10 @@
 
     <!-- Form -->
     <div id="state-form" class="state">
-      <!-- Removed Data Tag -->
+      <div class="campaign-tag" id="camp-tag" style="display: none;">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        <span id="camp-tag-name"></span>
+      </div>
 
       <!-- Error Banner -->
       <div class="error-banner" id="error-banner">
@@ -550,7 +553,11 @@ function setLabelText(id, text, required, optionalText) {
     .then(function(rows) {
       if (!rows || !rows.length) { showState('notfound'); return; }
       campaignData = rows[0];
-      document.getElementById('camp-tag-name').textContent = campaignData.name || 'Campaign';
+      var tagNameEl = document.getElementById('camp-tag-name');
+      var tagEl = document.getElementById('camp-tag');
+      if (tagNameEl) tagNameEl.textContent = campaignData.name || '';
+      if (tagEl && campaignData.name) tagEl.style.display = 'inline-flex';
+      
       document.title = (currentLang === 'ar' ? 'تسجيل الاهتمام' : 'Register Interest') + ' — ' + (campaignData.name || '');
       buildDynamicFields(campaignData);
       showState('form');
