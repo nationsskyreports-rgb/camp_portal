@@ -132,6 +132,47 @@ body.light-mode .modal{background:#fff;border-color:rgba(59,130,246,0.2)}
 body.light-mode .text-white{color:#0f172a!important}
 body.light-mode #sidebar .text-white{color:#fff!important}
 body.light-mode .table-row:hover{background:rgba(59,130,246,0.05)!important}
+
+/* ── Light Mode: Text Contrast Fixes ── */
+body.light-mode .text-slate-300{color:#1e293b!important}
+body.light-mode .text-slate-400{color:#334155!important}
+body.light-mode .text-slate-500{color:#475569!important}
+body.light-mode .text-slate-600{color:#334155!important}
+body.light-mode .text-violet-400{color:#7c3aed!important}
+body.light-mode .text-emerald-400{color:#059669!important}
+body.light-mode .text-blue-400{color:#2563eb!important}
+body.light-mode .text-2xl{color:#0f172a}
+body.light-mode .font-bold{color:inherit}
+body.light-mode .font-semibold{color:inherit}
+/* Table cells */
+body.light-mode table td{color:#1e293b!important}
+body.light-mode table th{color:#475569!important}
+/* Stats bar badges */
+body.light-mode [style*="color:#818cf8"]{color:#4f46e5!important}
+body.light-mode [style*="color:#94a3b8"]{color:#475569!important}
+/* Header sub-text */
+body.light-mode #main-content p.text-slate-400,
+body.light-mode #main-content p.text-slate-500{color:#475569!important}
+/* Client card */
+body.light-mode .client-card{background:#fff;border-color:rgba(0,0,0,0.08)}
+body.light-mode .client-card:hover{border-color:rgba(59,130,246,0.35)}
+/* Section labels, xs text */
+body.light-mode .text-xs{color:#475569}
+body.light-mode .text-sm{color:#1e293b}
+/* Expanded client detail fields */
+body.light-mode .border-white\/5{border-color:rgba(0,0,0,0.07)!important}
+body.light-mode .border-white\/\[0\.03\]{border-color:rgba(0,0,0,0.05)!important}
+body.light-mode .bg-white\/\[0\.02\]{background:rgba(0,0,0,0.02)!important}
+body.light-mode .bg-white\/5{background:rgba(0,0,0,0.03)!important}
+body.light-mode .bg-blue-500\/10{background:rgba(59,130,246,0.1)!important}
+/* Contact history note text */
+body.light-mode p.text-slate-300{color:#1e293b!important}
+/* Stat cards total number */
+body.light-mode .card p.text-2xl{color:#0f172a!important}
+/* Section dividers */
+body.light-mode .border-b{border-color:rgba(0,0,0,0.08)!important}
+body.light-mode .border-white\/10{border-color:rgba(0,0,0,0.08)!important}
+
 body{--dropdown-bg:#0d1628;--text-primary:#ffffff;}
 body.light-mode{--dropdown-bg:#ffffff;--text-primary:#0f172a;}
 /* Responsive */
