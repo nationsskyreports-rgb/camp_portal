@@ -566,10 +566,20 @@ var T = {
   }
 };
 
-var campaignId   = null;
-var campaignData = null;
-var isSubmitting = false;
-var currentLang  = 'ar';
+var campaignId    = null;
+var campaignData  = null;
+var isSubmitting  = false;
+var currentLang   = 'ar';
+
+// ── Anti-Duplicate: track submitted phones in this session ──
+var submittedPhones = {};
+
+// ── Rate Limiting: cooldown after successful submit ──
+var RATE_LIMIT_MS  = 60000; // 60 seconds cooldown
+var lastSubmitTime = 0;
+
+// ── Auto-save Draft key ──
+var DRAFT_KEY = 'intake_draft_' + (new URLSearchParams(window.location.search).get('c') || 'x');
 
 function setLang(lang) {
   currentLang = lang;
@@ -642,6 +652,8 @@ function setLabelText(id, text, required, optionalText) {
       document.title = 'Nations OF Sky Form — ' + (campaignData.name || '');
       buildDynamicFields(campaignData);
       showState('form');
+      loadDraft();
+      attachDraftListeners();
     })
     .catch(function() { showState('notfound'); });
 
@@ -682,6 +694,66 @@ function buildDynamicFields(camp) {
     }
   });
   document.getElementById('dynamic-fields').innerHTML = html;
+  // re-attach draft save listener for newly added dynamic fields
+  var dynArea = document.getElementById('dynamic-fields');
+  if (dynArea) dynArea.addEventListener('input', saveDraft);
+}
+
+// ── Auto-save Draft helpers ──────────────────────────────────
+function saveDraft() {
+  try {
+    var draft = {
+      name   : val('inp-name'),
+      phone  : val('inp-phone'),
+      phone2 : val('inp-phone2'),
+      email  : val('inp-email'),
+      email2 : val('inp-email2'),
+      notes  : val('inp-notes')
+    };
+    // also save dynamic fields
+    document.querySelectorAll('[data-col-key]').forEach(function(inp) {
+      draft['_col_' + inp.getAttribute('data-col-key')] = inp.value.trim();
+    });
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  } catch(e) {}
+}
+
+function loadDraft() {
+  try {
+    var raw = sessionStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    var draft = JSON.parse(raw);
+    if (draft.name)   { var el = document.getElementById('inp-name');   if (el) el.value = draft.name; }
+    if (draft.phone)  { var el = document.getElementById('inp-phone');  if (el) el.value = draft.phone; }
+    if (draft.phone2) { var el = document.getElementById('inp-phone2'); if (el) el.value = draft.phone2; }
+    if (draft.email)  { var el = document.getElementById('inp-email');  if (el) el.value = draft.email; }
+    if (draft.email2) { var el = document.getElementById('inp-email2'); if (el) el.value = draft.email2; }
+    if (draft.notes)  { var el = document.getElementById('inp-notes');  if (el) el.value = draft.notes; }
+    // restore dynamic fields
+    Object.keys(draft).forEach(function(k) {
+      if (k.indexOf('_col_') === 0) {
+        var key = k.replace('_col_', '');
+        var inp = document.querySelector('[data-col-key="' + key + '"]');
+        if (inp && draft[k]) inp.value = draft[k];
+      }
+    });
+  } catch(e) {}
+}
+
+function clearDraft() {
+  try { sessionStorage.removeItem(DRAFT_KEY); } catch(e) {}
+}
+
+// Attach auto-save on input change (called after form is shown)
+function attachDraftListeners() {
+  var fields = ['inp-name','inp-phone','inp-phone2','inp-email','inp-email2','inp-notes','inp-new-phone'];
+  fields.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', saveDraft);
+  });
+  // dynamic fields via event delegation
+  var dynArea = document.getElementById('dynamic-fields');
+  if (dynArea) dynArea.addEventListener('input', saveDraft);
 }
 
 function submitForm() {
@@ -697,19 +769,42 @@ function submitForm() {
   var email2   = val('inp-email2');
   var valid    = true;
 
-  if (!name)                                              { setErr('field-name');      valid = false; }
-  if (!isValidPhone(phone))                               { setErr('field-phone');     valid = false; }
-  if (newPhone && !isValidPhone(newPhone))                { setErr('field-new-phone'); valid = false; }
-  if (phone2 && !isValidPhone(phone2))                    { setErr('field-phone2');    valid = false; }
-  if (!isValidEmail(email))                               { setErr('field-email');     valid = false; }
-  if (email2 && !isValidEmail(email2))                    { setErr('field-email2');    valid = false; }
-  
+  if (!name)                               { setErr('field-name');      valid = false; }
+  if (!isValidPhone(phone))                { setErr('field-phone');     valid = false; }
+  if (newPhone && !isValidPhone(newPhone)) { setErr('field-new-phone'); valid = false; }
+  if (phone2 && !isValidPhone(phone2))     { setErr('field-phone2');    valid = false; }
+  if (!isValidEmail(email))                { setErr('field-email');     valid = false; }
+  if (email2 && !isValidEmail(email2))     { setErr('field-email2');    valid = false; }
+
   var privacy = document.getElementById('inp-privacy').checked;
   if (!privacy) { showBanner(t.errPrivacy); valid = false; }
 
   if (!valid) return;
 
+  // ── Rate Limiting ──
+  var now = Date.now();
+  if (lastSubmitTime && (now - lastSubmitTime) < RATE_LIMIT_MS) {
+    var secsLeft = Math.ceil((RATE_LIMIT_MS - (now - lastSubmitTime)) / 1000);
+    showBanner(
+      currentLang === 'ar'
+        ? 'يرجى الانتظار ' + secsLeft + ' ثانية قبل الإرسال مرة أخرى.'
+        : 'Please wait ' + secsLeft + ' seconds before submitting again.'
+    );
+    return;
+  }
+
   var finalPhone = newPhone || phone;
+  var phoneKey   = campaignId + '_' + finalPhone.replace(/\s/g,'');
+
+  // ── Anti-Duplicate ──
+  if (submittedPhones[phoneKey]) {
+    showBanner(
+      currentLang === 'ar'
+        ? 'هذا الرقم مسجّل بالفعل. سيتواصل معك فريقنا قريباً.'
+        : 'This number is already registered. Our team will contact you shortly.'
+    );
+    return;
+  }
 
   isSubmitting = true;
   setBtnLoading(true, 'btn-submit', 'btn-label', 'btn-progress', t.btnSending);
@@ -726,7 +821,23 @@ function submitForm() {
   var notes = val('inp-notes');
   if (notes) extraData.notes = notes;
 
-  getLeastLoadedEmployee()
+  // ── Anti-Duplicate: check DB too ──
+  sbGet('clients', 'phone=eq.' + encodeURIComponent(finalPhone) + '&campaign_id=eq.' + campaignId + '&select=id&limit=1')
+    .then(function(existing) {
+      if (existing && existing.length) {
+        // Already registered in DB
+        submittedPhones[phoneKey] = true;
+        isSubmitting = false;
+        setBtnLoading(false, 'btn-submit', 'btn-label', 'btn-progress', t.btnSubmit);
+        showBanner(
+          currentLang === 'ar'
+            ? 'هذا الرقم مسجّل بالفعل في هذه الحملة. سيتواصل معك فريقنا قريباً.'
+            : 'This number is already registered in this campaign. Our team will contact you shortly.'
+        );
+        return Promise.reject('duplicate');
+      }
+      return getLeastLoadedEmployee();
+    })
     .then(function(employee) {
       var record = {
         name                 : name,
@@ -748,11 +859,17 @@ function submitForm() {
       });
     })
     .then(function() {
+      // ── Success: update rate limit + mark phone + clear draft ──
+      lastSubmitTime           = Date.now();
+      submittedPhones[phoneKey] = true;
+      clearDraft();
+
       document.getElementById('success-title').textContent = t.successTitle;
       document.getElementById('success-msg').textContent   = t.successMsg;
       showState('success');
     })
     .catch(function(err) {
+      if (err === 'duplicate') return; // already handled
       isSubmitting = false;
       setBtnLoading(false, 'btn-submit', 'btn-label', 'btn-progress', t.btnSubmit);
       showBanner(err && err.message ? err.message : t.errGeneral);
