@@ -45,3 +45,30 @@ function changeCampStatus(id,st){
   sb.from('campaigns').update({status:st}).eq('id',id)
     .then(function(r){if(r.error){toast(r.error.message,'error');return;}toast('Status updated');fetchAll().then(renderCampaigns);}).catch(function(e){toast(e.message,'error');});
 }
+function copyFormLinkBtn(campaignId) {
+  return '<button ' +
+    'class="btn btn-ghost btn-sm" ' +
+    'style="padding:4px 10px;font-size:11px;display:flex;align-items:center;gap:4px" ' +
+    'title="نسخ رابط فورم العملاء" ' +
+    'onclick="copyIntakeLink(\'' + campaignId + '\');event.stopPropagation()">' +
+    '<i data-lucide="link" class="w-3.5 h-3.5"></i> رابط الفورم' +
+    '</button>';
+}
+ 
+function copyIntakeLink(campaignId) {
+  var base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
+  var url  = base + 'intake.html?c=' + campaignId;
+  navigator.clipboard.writeText(url).then(function() {
+    toast('تم نسخ رابط الفورم!', 'success');
+  }).catch(function() {
+    // fallback لو clipboard API مش متاحة
+    var inp = document.createElement('input');
+    inp.value = url;
+    document.body.appendChild(inp);
+    inp.select();
+    document.execCommand('copy');
+    document.body.removeChild(inp);
+    toast('تم نسخ الرابط: ' + url, 'success');
+  });
+}
+ 
