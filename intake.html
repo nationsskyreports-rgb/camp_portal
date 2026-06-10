@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل الاهتمام</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:      #3b82f6;
+      --blue-dark: #2563eb;
+      --blue-bg:   #eff6ff;
+      --green:     #10b981;
+      --green-bg:  #ecfdf5;
+      --red:       #ef4444;
+      --red-bg:    #fef2f2;
+      --border:    #e5e7eb;
+      --text:      #111827;
+      --muted:     #6b7280;
+      --card-bg:   #ffffff;
+      --page-bg:   #f3f4f6;
+      --radius:    10px;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, 'Cairo', Arial, sans-serif;
+      background: var(--page-bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem 4rem;
+      color: var(--text);
+    }
+
+    .wrapper { width: 100%; max-width: 480px; }
+
+    /* ─── Brand Header ─── */
+    .brand {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .brand-logo {
+      width: 56px; height: 56px;
+      background: var(--blue);
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: .75rem;
+    }
+    .brand-logo svg { width: 28px; height: 28px; fill: #fff; }
+    .brand-title { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+    .brand-sub   { font-size: .85rem; color: var(--muted); margin-top: .2rem; }
+
+    /* ─── Card ─── */
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 2rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+    }
+
+    .campaign-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      background: var(--blue-bg);
+      color: var(--blue-dark);
+      border-radius: 6px;
+      font-size: .78rem;
+      font-weight: 600;
+      padding: .3rem .7rem;
+      margin-bottom: 1.25rem;
+    }
+    .campaign-tag svg { width: 13px; height: 13px; fill: var(--blue); }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: .4rem;
+      color: var(--text);
+    }
+    .card-desc {
+      font-size: .88rem;
+      color: var(--muted);
+      margin-bottom: 1.75rem;
+      line-height: 1.6;
+    }
+
+    /* ─── Form ─── */
+    .field { margin-bottom: 1.1rem; }
+    .field label {
+      display: block;
+      font-size: .82rem;
+      font-weight: 600;
+      margin-bottom: .4rem;
+      color: #374151;
+    }
+    .field label .req { color: var(--red); margin-right: .15rem; }
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      padding: .65rem .9rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-size: .9rem;
+      font-family: inherit;
+      color: var(--text);
+      background: #fff;
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+    }
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+    }
+    .field input.err,
+    .field select.err { border-color: var(--red); }
+    .field .err-msg {
+      font-size: .78rem;
+      color: var(--red);
+      margin-top: .3rem;
+      display: none;
+    }
+    .field.has-err .err-msg { display: block; }
+    .field.has-err input,
+    .field.has-err select { border-color: var(--red); }
+    .field textarea { resize: vertical; min-height: 90px; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.5rem 0 1.25rem;
+    }
+    .section-label {
+      font-size: .75rem;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    /* ─── Submit Button ─── */
+    .btn-submit {
+      width: 100%;
+      padding: .85rem;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: .95rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background .15s, transform .1s, opacity .15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      margin-top: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-submit:hover:not(:disabled) { background: var(--blue-dark); }
+    .btn-submit:active:not(:disabled) { transform: scale(.99); }
+    .btn-submit:disabled { opacity: .65; cursor: not-allowed; }
+    .btn-submit svg { width: 18px; height: 18px; fill: #fff; flex-shrink: 0; }
+
+    /* ─── Progress bar inside button ─── */
+    .btn-progress {
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,.18);
+      width: 0%;
+      transition: width .4s ease;
+      pointer-events: none;
+    }
+
+    /* ─── Spinner ─── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── States ─── */
+    .state { display: none; }
+    .state.active { display: block; }
+
+    /* Loading skeleton */
+    .skeleton {
+      height: 14px; border-radius: 6px;
+      background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      margin-bottom: .6rem;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    /* ─── Success State ─── */
+    .success-box {
+      text-align: center;
+      padding: 1rem 0 .5rem;
+    }
+    .success-circle {
+      width: 72px; height: 72px;
+      background: var(--green-bg);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+      animation: popIn .4s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .success-circle svg { width: 36px; height: 36px; fill: var(--green); }
+    .success-title { font-size: 1.2rem; font-weight: 700; margin-bottom: .5rem; }
+    .success-sub   { font-size: .9rem; color: var(--muted); line-height: 1.6; }
+
+    /* ─── Error Banner ─── */
+    .error-banner {
+      background: var(--red-bg);
+      border: 1px solid #fecaca;
+      border-radius: var(--radius);
+      padding: .75rem 1rem;
+      font-size: .85rem;
+      color: #b91c1c;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .error-banner.show { display: flex; align-items: flex-start; gap: .5rem; }
+
+    /* ─── Footer ─── */
+    .footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: .78rem;
+      color: #9ca3af;
+    }
+
+    /* ─── Not Found State ─── */
+    .notfound-box { text-align: center; padding: 1rem 0; }
+    .notfound-icon {
+      width: 64px; height: 64px;
+      background: #fef2f2;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    .notfound-icon svg { width: 30px; height: 30px; fill: var(--red); }
+    .notfound-title { font-size: 1.1rem; font-weight: 700; margin-bottom: .4rem; }
+    .notfound-sub   { font-size: .88rem; color: var(--muted); }
+
+    @media (max-width: 500px) {
+      body { padding: 1rem .75rem 3rem; }
+      .card { padding: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Brand -->
+  <div class="brand">
+    <div class="brand-logo">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 9.5L12 3l9 6.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
+      </svg>
+    </div>
+    <div class="brand-title">Nations of Sky</div>
+    <div class="brand-sub">سجّل اهتمامك وسيتواصل معك أحد ممثلينا قريباً</div>
+  </div>
+
+  <!-- Card -->
+  <div class="card">
+
+    <!-- ── Loading State ── -->
+    <div id="state-loading" class="state active">
+      <div class="skeleton" style="width:35%;margin-bottom:1rem"></div>
+      <div class="skeleton" style="width:70%;height:20px;margin-bottom:.5rem"></div>
+      <div class="skeleton" style="width:50%;height:12px;margin-bottom:2rem"></div>
+      <div class="skeleton" style="height:44px;margin-bottom:1rem"></div>
+      <div class="skeleton" style="height:44px;margin-bottom:1rem"></div>
+      <div class="skeleton" style="height:44px;margin-bottom:1rem"></div>
+      <div class="skeleton" style="height:44px"></div>
+    </div>
+
+    <!-- ── Form State ── -->
+    <div id="state-form" class="state">
+      <div class="campaign-tag">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.86 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z"/></svg>
+        <span id="camp-tag-name">...</span>
+      </div>
+      <div class="card-title">سجّل بياناتك</div>
+      <div class="card-desc" id="form-desc">أدخل بياناتك وسيقوم فريقنا بالتواصل معك في أقرب وقت.</div>
+
+      <div class="error-banner" id="error-banner">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="flex-shrink:0;margin-top:1px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        <span id="error-text">حدث خطأ. حاول مرة أخرى.</span>
+      </div>
+
+      <form id="intake-form" onsubmit="return false">
+
+        <!-- Always: Name + Phone -->
+        <div class="section-label">البيانات الأساسية</div>
+
+        <div class="field" id="field-name">
+          <label>الاسم الكامل <span class="req">*</span></label>
+          <input type="text" id="inp-name" placeholder="مثال: محمد أحمد" autocomplete="name">
+          <div class="err-msg">هذا الحقل مطلوب</div>
+        </div>
+
+        <div class="field" id="field-phone">
+          <label>رقم التليفون <span class="req">*</span></label>
+          <input type="tel" id="inp-phone" placeholder="01xxxxxxxxx" autocomplete="tel" dir="ltr">
+          <div class="err-msg">أدخل رقماً صحيحاً</div>
+        </div>
+
+        <!-- Dynamic fields from column_config -->
+        <div id="dynamic-fields"></div>
+
+        <!-- Always: Notes -->
+        <hr class="divider">
+        <div class="field">
+          <label>ملاحظات إضافية <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>
+          <textarea id="inp-notes" placeholder="أي تفاصيل أو استفسارات تودّ مشاركتها..."></textarea>
+        </div>
+
+        <button type="button" class="btn-submit" id="btn-submit" onclick="submitForm()">
+          <div class="btn-progress" id="btn-progress"></div>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          <span id="btn-label">إرسال الطلب</span>
+        </button>
+
+      </form>
+    </div>
+
+    <!-- ── Success State ── -->
+    <div id="state-success" class="state">
+      <div class="success-box">
+        <div class="success-circle">
+          <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
+        <div class="success-title">تم إرسال طلبك بنجاح!</div>
+        <div class="success-sub" id="success-msg">شكراً لك. سيتواصل معك أحد ممثلينا في أقرب وقت ممكن.</div>
+      </div>
+    </div>
+
+    <!-- ── Not Found State ── -->
+    <div id="state-notfound" class="state">
+      <div class="notfound-box">
+        <div class="notfound-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        </div>
+        <div class="notfound-title">الرابط غير صحيح</div>
+        <div class="notfound-sub">هذا الرابط غير صالح أو انتهت صلاحيته.<br>تواصل مع المبيعات للحصول على الرابط الصحيح.</div>
+      </div>
+    </div>
+
+  </div><!-- /card -->
+
+  <div class="footer">مدعوم بواسطة Nations of Sky Portal</div>
+
+</div><!-- /wrapper -->
+
+<script>
+// ─── CONFIG ─────────────────────────────────────────────────
+var SB_URL = 'https://biwrdwxgfyhnltzddlwu.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpd3Jkd3hnZnlobmx0emRkbHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTczMTYsImV4cCI6MjA4OTc5MzMxNn0.EMOV5v3cGaDEqQJusnyrWTWdSPPwKeyuguPzxJvtKdQ';
+
+// حقول admin-only مش المفروض تطلع في الفورم العام
+var SKIP_KEYS = ['contract_id','customer','contract_date','actual_price',
+                 'contract_status','approval_status'];
+
+// ترجمة عربية للحقول الشائعة
+var AR_LABELS = {
+  project:      'المشروع',
+  unit:         'رقم الوحدة',
+  property_type:'نوع الوحدة',
+  payment_term: 'طريقة السداد',
+};
+
+// ─── STATE ──────────────────────────────────────────────────
+var campaignId   = null;
+var campaignData = null;
+var isSubmitting = false;
+
+// ─── INIT ────────────────────────────────────────────────────
+(function init(){
+  var params = new URLSearchParams(window.location.search);
+  campaignId = params.get('c') || params.get('campaign');
+
+  if (!campaignId) { showState('notfound'); return; }
+
+  sbGet('campaigns', 'id=eq.' + campaignId + '&select=id,name,column_config&limit=1')
+    .then(function(rows) {
+      if (!rows || !rows.length) { showState('notfound'); return; }
+      campaignData = rows[0];
+      buildForm(campaignData);
+      showState('form');
+    })
+    .catch(function() { showState('notfound'); });
+})();
+
+// ─── BUILD FORM DYNAMICALLY ───────────────────────────────────
+function buildForm(camp) {
+  // اسم الـ campaign في الـ tag
+  document.getElementById('camp-tag-name').textContent = camp.name || 'Campaign';
+  document.title = 'تسجيل الاهتمام — ' + (camp.name || '');
+
+  // dynamic fields من column_config
+  var cols = camp.column_config || [];
+  if (typeof cols === 'string') { try { cols = JSON.parse(cols); } catch(e) { cols = []; } }
+
+  var visibleCols = cols
+    .filter(function(c) { return c.visible && SKIP_KEYS.indexOf(c.key) === -1; })
+    .sort(function(a, b) { return a.order - b.order; });
+
+  if (!visibleCols.length) return;
+
+  var html = '<hr class="divider"><div class="section-label">تفاصيل الاهتمام</div>';
+  visibleCols.forEach(function(col) {
+    var label = AR_LABELS[col.key] || col.label;
+    html += '<div class="field">' +
+      '<label>' + escHtml(label) + ' <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>' +
+      '<input type="text" id="inp-' + escHtml(col.key) + '" ' +
+      'placeholder="' + escHtml(label) + '" data-col-key="' + escHtml(col.key) + '">' +
+      '</div>';
+  });
+
+  document.getElementById('dynamic-fields').innerHTML = html;
+}
+
+// ─── SUBMIT ──────────────────────────────────────────────────
+function submitForm() {
+  if (isSubmitting) return;
+  clearErrors();
+  hideBanner();
+
+  var name  = val('inp-name');
+  var phone = val('inp-phone');
+  var valid = true;
+
+  if (!name) { setErr('field-name'); valid = false; }
+  if (!phone || !/^0[0-9]{9,10}$/.test(phone.replace(/\s/g,''))) {
+    setErr('field-phone'); valid = false;
+  }
+  if (!valid) return;
+
+  isSubmitting = true;
+  setBtnLoading(true);
+
+  // جمع extra_data
+  var extraData = { name: name, phone: phone };
+  document.querySelectorAll('[data-col-key]').forEach(function(inp) {
+    if (inp.value.trim()) extraData[inp.getAttribute('data-col-key')] = inp.value.trim();
+  });
+  var notes = val('inp-notes');
+  if (notes) extraData.notes = notes;
+
+  // جيب الموظفين وعمل round-robin
+  getLeastLoadedEmployee()
+    .then(function(employee) {
+      var record = {
+        name               : name,
+        phone              : phone,
+        extra_data         : extraData,
+        status             : 'New',
+        campaign_id        : campaignId,
+        assigned_employee_id: employee ? employee.id : null
+      };
+      return sbInsert('clients', record).then(function() {
+        // notification للموظف
+        if (employee) {
+          sbInsert('notifications', {
+            employee_id : employee.id,
+            type        : 'new_clients',
+            message     : 'عميل جديد من رابط الفورم: ' + name,
+            read        : false
+          }).catch(function(){});
+        }
+        return employee;
+      });
+    })
+    .then(function() {
+      showState('success');
+    })
+    .catch(function(err) {
+      isSubmitting = false;
+      setBtnLoading(false);
+      showBanner(err && err.message ? err.message : 'حدث خطأ. يرجى المحاولة مرة أخرى.');
+    });
+}
+
+// ─── ROUND-ROBIN ─────────────────────────────────────────────
+function getLeastLoadedEmployee() {
+  return Promise.all([
+    sbGet('employees', 'is_active=eq.true&select=id,name'),
+    sbGet('clients', 'campaign_id=eq.' + campaignId + '&select=assigned_employee_id')
+  ]).then(function(results) {
+    var emps    = results[0] || [];
+    var clients = results[1] || [];
+
+    if (!emps.length) return null;
+
+    var counts = {};
+    emps.forEach(function(e) { counts[e.id] = 0; });
+    clients.forEach(function(c) {
+      if (c.assigned_employee_id && counts[c.assigned_employee_id] !== undefined)
+        counts[c.assigned_employee_id]++;
+    });
+
+    return emps.reduce(function(min, e) {
+      return counts[e.id] < counts[min.id] ? e : min;
+    });
+  }).catch(function() { return null; }); // fallback: بدون assign
+}
+
+// ─── SUPABASE REST ────────────────────────────────────────────
+function sbHeaders() {
+  return {
+    'apikey'       : SB_KEY,
+    'Authorization': 'Bearer ' + SB_KEY,
+    'Content-Type' : 'application/json'
+  };
+}
+
+function sbGet(table, query) {
+  return fetch(SB_URL + '/rest/v1/' + table + '?' + query, {
+    headers: sbHeaders()
+  }).then(function(r) {
+    if (!r.ok) throw new Error('Supabase GET error: ' + r.status);
+    return r.json();
+  });
+}
+
+function sbInsert(table, payload) {
+  return fetch(SB_URL + '/rest/v1/' + table, {
+    method : 'POST',
+    headers: Object.assign(sbHeaders(), { 'Prefer': 'return=minimal' }),
+    body   : JSON.stringify(payload)
+  }).then(function(r) {
+    if (r.status !== 201) return r.text().then(function(t) { throw new Error(t); });
+  });
+}
+
+// ─── UI HELPERS ───────────────────────────────────────────────
+function showState(id) {
+  ['loading','form','success','notfound'].forEach(function(s) {
+    var el = document.getElementById('state-' + s);
+    if (el) el.classList.toggle('active', s === id);
+  });
+}
+
+function val(id) {
+  var el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function setErr(fieldId) {
+  var el = document.getElementById(fieldId);
+  if (el) el.classList.add('has-err');
+}
+
+function clearErrors() {
+  document.querySelectorAll('.field.has-err').forEach(function(el) {
+    el.classList.remove('has-err');
+  });
+}
+
+function showBanner(msg) {
+  var b = document.getElementById('error-banner');
+  document.getElementById('error-text').textContent = msg;
+  b.classList.add('show');
+}
+
+function hideBanner() {
+  document.getElementById('error-banner').classList.remove('show');
+}
+
+function setBtnLoading(loading) {
+  var btn   = document.getElementById('btn-submit');
+  var label = document.getElementById('btn-label');
+  var prog  = document.getElementById('btn-progress');
+  btn.disabled = loading;
+  if (loading) {
+    label.innerHTML = '<span class="spinner"></span> جارٍ الإرسال...';
+    prog.style.width = '70%';
+  } else {
+    label.textContent = 'إرسال الطلب';
+    prog.style.width  = '0%';
+  }
+}
+
+function escHtml(str) {
+  return String(str || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
