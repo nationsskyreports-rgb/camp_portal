@@ -19,20 +19,47 @@ function renderCampaigns(){
     '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Closed</p><p class="text-2xl font-bold text-emerald-400">'+cc.filter(function(c){return c.status==='Closed';}).length+'</p></div></div>'+
     '<div class="card mb-6 fade-in"><div class="flex items-center gap-3"><span class="text-sm text-slate-400">Status:</span>'+sBtns+'</div></div>'+
     '<div class="card fade-in"><h3 class="text-sm font-bold text-white mb-4">Clients ('+cc.length+')</h3>'+
-    (cc.length?'<div class="tbl-wrap"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5">'+
-    '<th class="pb-3 pr-4">Client Name</th>'+
-    '<th class="pb-3 pr-4">Mobile</th>'+
-    '<th class="pb-3 pr-4">Mobile 2</th>'+
-    '<th class="pb-3 pr-4">Email</th>'+
-     cc.map(function(c){var e=empById(c.assigned_employee_id);var extra=c.extra_data||{};
-  return'<tr class="table-row border-b border-white/[0.03]">'+
-  '<td class="py-3 pr-4 text-slate-300">'+esc(c.name||extra.name||'-')+'</td>'+
-  '<td class="py-3 pr-4 text-slate-300">'+esc(c.phone||extra.phone||'-')+'</td>'+
-  '<td class="py-3 pr-4 text-slate-300">'+esc(extra.phone2||'-')+'</td>'+
-  '<td class="py-3 pr-4 text-slate-300">'+esc(extra.email||'-')+'</td>'+
-      '<td class="py-3 pr-4">'+(e?av(e.name,e.color||'#3b82f6',22)+'<span class="text-xs text-slate-300 ml-1">'+esc(e.name)+'</span>':'<span class="text-slate-500 text-xs">Unassigned</span>')+'</td>'+
-      '<td class="py-3">'+sBadge(c.status)+'</td></tr>';
-    }).join('')+'</tbody></table></div>':'<p class="text-slate-500 text-sm">No clients</p>')+'</div>';
+    (cc.length?(function(){
+      // Collect all extra_data keys, skip base fields already shown as columns
+      var SKIP_EX = ['name','phone','phone2','email'];
+      var extraKeysMap = {};
+      cc.forEach(function(c){
+        var ex = c.extra_data||{};
+        Object.keys(ex).forEach(function(k){ if(SKIP_EX.indexOf(k)===-1) extraKeysMap[k]=true; });
+      });
+      var extraKeys = Object.keys(extraKeysMap);
+      // Friendly labels
+      var KEY_LABELS = { project:'Project', unit:'Unit No.', property_type:'Type', payment_term:'Payment', notes:'Notes' };
+      function colLabel(k){ return KEY_LABELS[k]||(k.charAt(0).toUpperCase()+k.slice(1).replace(/_/g,' ')); }
+      var th = 'pb-3 pr-4 whitespace-nowrap';
+      var td = 'py-3 pr-4 text-slate-300';
+      return '<div class="tbl-wrap"><table class="w-full text-sm">'+
+        '<thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5">'+
+        '<th class="'+th+'">Client Name</th>'+
+        '<th class="'+th+'">Mobile</th>'+
+        '<th class="'+th+'">Mobile 2</th>'+
+        '<th class="'+th+'">Email</th>'+
+        extraKeys.map(function(k){ return '<th class="'+th+'">'+esc(colLabel(k))+'</th>'; }).join('')+
+        '<th class="'+th+'">Assigned To</th>'+
+        '<th class="'+th+'">Status</th>'+
+        '</tr></thead><tbody>'+
+        cc.map(function(c){
+          var e=empById(c.assigned_employee_id); var extra=c.extra_data||{};
+          return '<tr class="table-row border-b border-white/[0.03]">'+
+            '<td class="'+td+'">'+esc(c.name||extra.name||'-')+'</td>'+
+            '<td class="'+td+'">'+esc(c.phone||extra.phone||'-')+'</td>'+
+            '<td class="'+td+'">'+esc(extra.phone2||'-')+'</td>'+
+            '<td class="'+td+'">'+esc(extra.email||'-')+'</td>'+
+            extraKeys.map(function(k){
+              var v=extra[k]||'-';
+              return '<td class="'+td+'" style="max-width:180px"><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px" title="'+esc(v)+'">'+esc(v)+'</span></td>';
+            }).join('')+
+            '<td class="py-3 pr-4">'+(e?av(e.name,e.color||'#3b82f6',22)+'<span class="text-xs text-slate-300 ml-1">'+esc(e.name)+'</span>':'<span class="text-slate-500 text-xs">Unassigned</span>')+'</td>'+
+            '<td class="py-3">'+sBadge(c.status)+'</td>'+
+            '</tr>';
+        }).join('')+
+        '</tbody></table></div>';
+    })():'<p class="text-slate-500 text-sm">No clients</p>')+'</div>';
     lucide.createIcons();return;
   }
   m.innerHTML=hdr('Campaigns','Manage campaigns','<button class="btn btn-primary" onclick="showCampForm=!showCampForm;renderCampaigns()"><i data-lucide="plus" class="w-4 h-4"></i> New</button>')+
