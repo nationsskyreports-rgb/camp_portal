@@ -31,11 +31,12 @@
       --card-bg:   #ffffff;
       --page-bg:   #f3f4f6;
       --radius:    10px;
+      --whatsapp:  #25d366;
     }
 
     body {
       font-family: 'Segoe UI', system-ui, -apple-system, 'Cairo', Arial, sans-serif;
-      background: var(--page-bg);
+      background: var(--page-bg );
       min-height: 100vh;
       display: flex;
       align-items: flex-start;
@@ -188,6 +189,43 @@
     .btn-submit:active:not(:disabled) { transform: scale(.99); }
     .btn-submit:disabled { opacity: .65; cursor: not-allowed; }
     .btn-submit svg { width: 18px; height: 18px; fill: #fff; flex-shrink: 0; }
+
+    .btn-whatsapp {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .6rem;
+      background: var(--whatsapp);
+      color: #fff;
+      padding: .85rem 1.5rem;
+      border-radius: var(--radius);
+      text-decoration: none;
+      font-weight: 700;
+      margin-top: 1.5rem;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn-whatsapp:hover { opacity: .9; }
+    .btn-whatsapp:active { transform: scale(.98); }
+    .btn-whatsapp svg { width: 20px; height: 20px; fill: #fff; }
+
+    /* Privacy Checkbox */
+    .privacy-field {
+      display: flex;
+      align-items: flex-start;
+      gap: .75rem;
+      margin-top: 1.5rem;
+      cursor: pointer;
+    }
+    .privacy-field input {
+      width: 18px; height: 18px;
+      margin-top: .1rem;
+      cursor: pointer;
+    }
+    .privacy-field span {
+      font-size: .85rem;
+      line-height: 1.4;
+      color: var(--muted);
+    }
 
     .btn-progress {
       position: absolute; inset: 0;
@@ -360,6 +398,11 @@
           <textarea id="inp-notes"></textarea>
         </div>
 
+        <label class="privacy-field" id="field-privacy">
+          <input type="checkbox" id="inp-privacy">
+          <span id="lbl-privacy">أوافق على معالجة بياناتي الشخصية وفقاً لسياسة الخصوصية.</span>
+        </label>
+
         <button type="button" class="btn-submit" id="btn-submit" onclick="submitForm()">
           <div class="btn-progress" id="btn-progress"></div>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -377,17 +420,11 @@
         </div>
         <div class="success-title" id="success-title">تم إرسال طلبك بنجاح!</div>
         <div class="success-sub"   id="success-msg">شكراً لك. سيتواصل معك أحد ممثلينا في أقرب وقت ممكن.</div>
-      </div>
-    </div>
-
-    <!-- Not Found -->
-    <div id="state-notfound" class="state">
-      <div class="notfound-box">
-        <div class="notfound-icon">
-          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-        </div>
-        <div class="notfound-title" id="nf-title">الرابط غير صحيح</div>
-        <div class="notfound-sub"   id="nf-sub">هذا الرابط غير صالح أو انتهت صلاحيته.<br>تواصل مع المبيعات للحصول على الرابط الصحيح.</div>
+        
+        <a href="https://wa.me/20215555" target="_blank" class="btn-whatsapp" id="btn-wa">
+          <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          <span id="wa-label">تواصل معنا عبر واتساب</span>
+        </a>
       </div>
     </div>
 
@@ -436,7 +473,7 @@ var T = {
     lblBasic        : 'المعلومات الأساسية',
     lblName         : 'الاسم الكامل',
     lblPhone        : 'رقم التليفون الأساسي',
-    lblNewPhone     : 'رقم التليفون الجديد (لو عايز تغيّر رقمك الأساسي)',
+    lblNewPhone     : 'رقم التليفون الجديد (لو عايز تغيّر رقمك الأساسي )',
     lblPhone2       : 'رقم التليفون الإضافي',
     lblEmail        : 'البريد الإلكتروني الأساسي',
     lblEmail2       : 'البريد الإلكتروني الإضافي',
@@ -450,8 +487,12 @@ var T = {
     errEmail        : 'أدخل بريداً إلكترونياً صحيحاً',
     successTitle    : 'تم إرسال طلبك بنجاح!',
     successMsg      : 'شكراً لك. سيتواصل معك أحد ممثلينا في أقرب وقت ممكن.',
+    lblPrivacy      : 'أوافق على معالجة بياناتي الشخصية وفقاً لسياسة الخصوصية.',
+    waLabel         : 'تواصل معنا عبر واتساب',
+    errPrivacy      : 'يجب الموافقة على شروط الخصوصية للمتابعة',
     nfTitle         : 'الرابط غير صحيح',
-    nfSub           : 'هذا الرابط غير صالح أو انتهت صلاحيته.<br>تواصل مع المبيعات للحصول على الرابط الصحيح.',
+    nfSub           : 'هذا الرابط غير صالح أو انتهت صلاحيته.  
+تواصل مع المبيعات للحصول على الرابط الصحيح.',
     errNotFound     : 'الرقم ده مش موجود عندنا. لو لسه مسجلتش، اضغط على تبويب "تسجيل جديد" واملا معلوماتك الأول.',
     errGeneral      : 'حدث خطأ. يرجى المحاولة مرة أخرى.',
     footerTxt       : 'مدعوم بواسطة Nations of Sky Portal',
@@ -480,8 +521,12 @@ var T = {
     errEmail        : 'Please enter a valid email address',
     successTitle    : 'Request Submitted Successfully!',
     successMsg      : 'Thank you. One of our representatives will contact you as soon as possible.',
+    lblPrivacy      : 'I agree to the processing of my personal data according to the privacy policy.',
+    waLabel         : 'Contact us on WhatsApp',
+    errPrivacy      : 'You must agree to the privacy terms to continue',
     nfTitle         : 'Invalid Link',
-    nfSub           : 'This link is invalid or has expired.<br>Please contact sales to get the correct link.',
+    nfSub           : 'This link is invalid or has expired.  
+Please contact sales to get the correct link.',
     errNotFound     : 'This number is not registered. If you haven\'t signed up yet, go to "New Registration" and fill in your information first.',
     errGeneral      : 'An error occurred. Please try again.',
     footerTxt       : 'Powered by Nations of Sky Portal',
@@ -528,6 +573,8 @@ function setLang(lang) {
   document.getElementById('err-phone2').textContent   = t.errPhone;
   document.getElementById('err-email').textContent    = t.errEmail;
   document.getElementById('err-email2').textContent   = t.errEmail;
+  document.getElementById('lbl-privacy').textContent  = t.lblPrivacy;
+  document.getElementById('wa-label').textContent     = t.waLabel;
 
   document.getElementById('nf-title').textContent   = t.nfTitle;
   document.getElementById('nf-sub').innerHTML       = t.nfSub;
@@ -585,7 +632,7 @@ function buildDynamicFields(camp) {
     var label = labelMap[col.key] || col.label;
     var opts  = DROPDOWN_KEYS[col.key];
     if (opts) {
-      var arrowStyle = 'appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'%236b7280\'%3E%3Cpath d=\'M7 10l5 5 5-5z\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center;padding-left:2rem;';
+      var arrowStyle = 'appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'%236b7280\'%3E%3Cpath d=\'M7 10l5 5 5-5z\'/%3E%3C/svg%3E" );background-repeat:no-repeat;background-position:left 12px center;padding-left:2rem;';
       html += '<div class="field">' +
         '<label>' + escHtml(label) + ' <span style="color:var(--muted);font-weight:400">' + escHtml(t.lblOptional) + '</span></label>' +
         '<select id="inp-' + escHtml(col.key) + '" data-col-key="' + escHtml(col.key) + '" style="' + arrowStyle + '">' +
@@ -622,6 +669,10 @@ function submitForm() {
   if (!isValidPhone(phone2))                              { setErr('field-phone2');    valid = false; }
   if (!isValidEmail(email))                               { setErr('field-email');     valid = false; }
   if (email2 && !isValidEmail(email2))                    { setErr('field-email2');    valid = false; }
+  
+  var privacy = document.getElementById('inp-privacy').checked;
+  if (!privacy) { showBanner(t.errPrivacy); valid = false; }
+
   if (!valid) return;
 
   var finalPhone = newPhone || phone;
@@ -728,7 +779,8 @@ function val(id) {
   var el = document.getElementById(id); return el ? el.value.trim() : '';
 }
 function isValidPhone(p) {
-  return p && /^0[0-9]{9,10}$/.test(p.replace(/\s/g,''));
+  // Flexible validation for international and local numbers
+  return p && /^\+?[0-9\s-]{7,20}$/.test(p.replace(/\s/g,'').replace(/-/g,''));
 }
 function isValidEmail(e) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
