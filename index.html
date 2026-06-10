@@ -9,7 +9,7 @@
 <title>Campaign Portal</title>
 <link rel="icon" type="image/png" sizes="192x192" href="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-192.png">
 <link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-192.png">
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -113,7 +113,7 @@
 </div>
 
 <!-- COLUMN CONFIG MODAL -->
-<div id="col-config-modal" class="hidden modal-overlay" onclick="if(event.target===this)closeColConfig()">
+<div id="col-config-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeColConfig()">
   <div class="modal fade-in">
     <div class="modal-header">
       <h3 class="font-bold text-white">Configure Columns</h3>
