@@ -124,30 +124,71 @@ function distributeCampUnassigned(campId) {
     return { id: c.id, employee: actEmps[i % actEmps.length] };
   });
 
-  // Preview summary
+  // Build summary per employee
   var summary = {};
   actEmps.forEach(function(e) { summary[e.id] = { emp: e, count: 0 }; });
   updates.forEach(function(u) { summary[u.employee.id].count++; });
+  var summaryRows = Object.values(summary).filter(function(s){ return s.count > 0; });
 
-  var previewLines = Object.values(summary).filter(function(s){ return s.count > 0; }).map(function(s) {
-    return s.emp.name + ': ' + s.count + ' client' + (s.count !== 1 ? 's' : '');
-  }).join('\n');
+  // Build modal
+  var rows = summaryRows.map(function(s) {
+    var pct = Math.round((s.count / unassigned.length) * 100);
+    return '<div class="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">' +
+      av(s.emp.name, s.emp.color || '#3b82f6', 28) +
+      '<div class="flex-1 min-w-0">' +
+        '<p class="text-sm text-white font-medium">' + esc(s.emp.name) + '</p>' +
+        '<div class="w-full h-1.5 bg-white/5 rounded-full mt-1 overflow-hidden">' +
+          '<div class="h-full rounded-full bg-blue-500/70" style="width:' + pct + '%"></div>' +
+        '</div>' +
+      '</div>' +
+      '<span class="text-sm font-bold text-white ml-2">' + s.count + '</span>' +
+    '</div>';
+  }).join('');
 
-  if (!confirm('Distribute ' + unassigned.length + ' unassigned client(s) across ' + actEmps.length + ' active agent(s)?\n\n' + previewLines)) return;
+  var modal = document.createElement('div');
+  modal.id = 'dist-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px)';
+  modal.innerHTML =
+    '<div style="background:var(--card-bg,#0d1628);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px;width:100%;max-width:420px;box-shadow:0 24px 48px rgba(0,0,0,0.5)">' +
+      '<div class="flex items-center gap-3 mb-4">' +
+        '<div style="width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center">' +
+          '<i data-lucide="shuffle" style="width:18px;height:18px;color:#3b82f6"></i>' +
+        '</div>' +
+        '<div>' +
+          '<p class="font-semibold text-white text-sm">Distribute Unassigned Clients</p>' +
+          '<p class="text-xs text-slate-400">' + unassigned.length + ' client(s) → ' + actEmps.length + ' active agent(s)</p>' +
+        '</div>' +
+      '</div>' +
+      '<div class="mb-5">' + rows + '</div>' +
+      '<div class="flex gap-2 justify-end">' +
+        '<button onclick="document.getElementById(\'dist-modal\').remove()" class="btn btn-ghost">Cancel</button>' +
+        '<button onclick="confirmCampDistribute(\'' + campId + '\')" class="btn btn-primary"><i data-lucide="check" class="w-4 h-4"></i> Confirm</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(modal);
+  lucide.createIcons();
 
-  // Batch update
+  // Store updates for confirm step
+  window._pendingDistribute = { campId: campId, updates: updates };
+}
+
+function confirmCampDistribute(campId) {
+  var pending = window._pendingDistribute;
+  if (!pending || pending.campId !== campId) return;
+  var updates  = pending.updates;
   var campName = (campById(campId) || {}).name || 'Campaign';
+
+  document.getElementById('dist-modal').remove();
+  window._pendingDistribute = null;
+
   var promises = updates.map(function(u) {
     return sb.from('clients').update({ assigned_employee_id: u.employee.id }).eq('id', u.id);
   });
 
   Promise.all(promises)
     .then(function() {
-      // Notify each employee
       var notifMap = {};
-      updates.forEach(function(u) {
-        notifMap[u.employee.id] = (notifMap[u.employee.id] || 0) + 1;
-      });
+      updates.forEach(function(u) { notifMap[u.employee.id] = (notifMap[u.employee.id] || 0) + 1; });
       var notifPromises = Object.keys(notifMap).map(function(eid) {
         return notifyEmployee(eid, 'new_clients',
           'You have ' + notifMap[eid] + ' new client(s) assigned in ' + campName);
@@ -155,7 +196,7 @@ function distributeCampUnassigned(campId) {
       return Promise.all(notifPromises).catch(function(){});
     })
     .then(function() {
-      toast(unassigned.length + ' clients distributed successfully', 'success');
+      toast(updates.length + ' clients distributed successfully', 'success');
       fetchAll().then(renderCampaigns);
     })
     .catch(function(e) { toast(e.message, 'error'); });
