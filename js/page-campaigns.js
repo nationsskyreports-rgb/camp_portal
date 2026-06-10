@@ -49,26 +49,24 @@ function copyFormLinkBtn(campaignId) {
   return '<button ' +
     'class="btn btn-ghost btn-sm" ' +
     'style="padding:4px 10px;font-size:11px;display:flex;align-items:center;gap:4px" ' +
-    'title="نسخ رابط فورم العملاء" ' +
+    'title="Copy client intake form link" ' +
     'onclick="copyIntakeLink(\'' + campaignId + '\');event.stopPropagation()">' +
-    '<i data-lucide="link" class="w-3.5 h-3.5"></i> رابط الفورم' +
+    '<i data-lucide="link" class="w-3.5 h-3.5"></i> Form Link' +
     '</button>';
 }
- 
+
 function copyIntakeLink(campaignId) {
   var base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
   var url  = base + 'intake.html?c=' + campaignId;
   navigator.clipboard.writeText(url).then(function() {
-    toast('تم نسخ رابط الفورم!', 'success');
+    toast('Form link copied!', 'success');
   }).catch(function() {
-    // fallback لو clipboard API مش متاحة
     var inp = document.createElement('input');
     inp.value = url;
     document.body.appendChild(inp);
     inp.select();
     document.execCommand('copy');
     document.body.removeChild(inp);
-    toast('تم نسخ الرابط: ' + url, 'success');
+    toast('Link copied: ' + url, 'success');
   });
 }
- 
