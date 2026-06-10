@@ -44,10 +44,10 @@ function openColConfig(campId){
   colConfigCampaignId=campId||null;
   colConfigWorking=getCampaignCols(campId||(U.campaignId||null));
   renderColConfigList();
-  document.getElementById('col-config-modal').classList.remove('hidden');
+  document.getElementById('col-config-modal').style.display = 'flex';
   lucide.createIcons();
 }
-function closeColConfig(){document.getElementById('col-config-modal').classList.add('hidden');}
+function closeColConfig(){document.getElementById('col-config-modal').style.display = 'none';}
 
 function renderColConfigList(){
   var sorted=colConfigWorking.slice().sort(function(a,b){return a.order-b.order;});
