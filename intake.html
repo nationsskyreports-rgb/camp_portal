@@ -75,14 +75,14 @@
     .brand { text-align: center; margin-bottom: 1.5rem; }
     .brand-logo {
       width: 56px; height: 56px;
-      background: var(--blue);
+      background: none;
       border-radius: 16px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       margin-bottom: .75rem;
     }
-    .brand-logo svg { width: 28px; height: 28px; fill: #fff; }
+    .brand-logo img { width: 56px; height: 56px; border-radius: 16px; object-fit: cover; }
     .brand-title { font-size: 1.1rem; font-weight: 700; color: var(--text); }
     .brand-sub   { font-size: .85rem; color: var(--muted); margin-top: .2rem; }
 
@@ -111,31 +111,6 @@
 
     .card-title { font-size: 1.25rem; font-weight: 700; margin-bottom: .4rem; color: var(--text); }
     .card-desc  { font-size: .88rem; color: var(--muted); margin-bottom: 1.75rem; line-height: 1.6; }
-
-    /* Form Tabs */
-    .form-tabs {
-      display: flex;
-      border-bottom: 2px solid var(--border);
-      margin-bottom: 1.5rem;
-    }
-    .tab-btn {
-      flex: 1;
-      padding: .6rem .5rem;
-      background: none;
-      border: none;
-      border-bottom: 2.5px solid transparent;
-      margin-bottom: -2px;
-      font-size: .88rem;
-      font-weight: 600;
-      color: var(--muted);
-      cursor: pointer;
-      font-family: inherit;
-      transition: color .15s, border-color .15s;
-    }
-    .tab-btn.active {
-      color: var(--blue);
-      border-bottom-color: var(--blue);
-    }
 
     /* Form */
     .field { margin-bottom: 1.1rem; }
@@ -177,16 +152,6 @@
       display: none;
     }
     .field textarea { resize: vertical; min-height: 90px; }
-
-    .change-hint {
-      font-size: .78rem;
-      color: var(--muted);
-      margin-bottom: 1rem;
-      line-height: 1.5;
-      background: var(--blue-bg);
-      border-radius: 8px;
-      padding: .6rem .8rem;
-    }
 
     .divider { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0 1.25rem; }
     .section-label {
@@ -310,9 +275,9 @@
 
   <!-- Brand -->
   <div class="brand">
-   <div class="brand-logo" style="background:none;padding:0">
-  <img src="https://nationsskyreports-rgb.github.io/icon-512.png" alt="Nations of Sky" style="width:56px;height:56px;border-radius:16px;object-fit:cover">
-</div>
+    <div class="brand-logo">
+      <img src="https://nationsskyreports-rgb.github.io/icon-512.png" alt="Nations of Sky">
+    </div>
     <div class="brand-title">Nations of Sky</div>
     <div class="brand-sub" id="brand-sub">أهلاً بك! سجّل هنا وسيتواصل معك أحد مستشارينا قريباً</div>
   </div>
@@ -376,7 +341,7 @@
         </div>
 
         <div class="field" id="field-email">
-          <label id="lbl-email">البريد الإلكتروني <span class="req">*</span></label>
+          <label id="lbl-email">البريد الإلكتروني الأساسي <span class="req">*</span></label>
           <input type="email" id="inp-email" placeholder="example@email.com" autocomplete="email" dir="ltr">
           <div class="err-msg" id="err-email">أدخل بريداً إلكترونياً صحيحاً</div>
         </div>
@@ -439,7 +404,6 @@ var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 
 var SKIP_KEYS = ['contract_id','customer','contract_date','actual_price','contract_status','approval_status','name','phone','phone2','email','notes'];
 
-// NOS Projects dropdown options
 var NOS_PROJECTS = [
   'Jirian',
   'Sky Ridge Elite',
@@ -450,7 +414,6 @@ var NOS_PROJECTS = [
   'Sadaf'
 ];
 
-// Keys that render as <select> dropdowns in the intake form
 var DROPDOWN_KEYS = {
   project: NOS_PROJECTS
 };
@@ -468,8 +431,6 @@ var EN_LABELS = {
 var T = {
   ar: {
     brandSub        : 'أهلاً بك! سجّل هنا وسيتواصل معك أحد مستشارينا قريباً',
-    tabRegister     : 'تسجيل جديد',
-    tabChange       : 'تغيير رقم التليفون',
     formTitle       : 'سجّل هنا',
     formDesc        : 'أدخل معلوماتك وسيقوم فريقنا بالتواصل معك في أقرب وقت.',
     lblBasic        : 'المعلومات الأساسية',
@@ -487,17 +448,8 @@ var T = {
     errRequired     : 'هذا الحقل مطلوب',
     errPhone        : 'أدخل رقماً صحيحاً',
     errEmail        : 'أدخل بريداً إلكترونياً صحيحاً',
-    changeTitle     : 'تغيير رقم التليفون',
-    changeDesc      : 'أدخل رقمك القديم ثم الرقم الجديد اللي عايز تغيّر إليه.',
-    changeHint      : '💡 اكتب الرقم القديم المسجّل عندنا، وتحته الرقم الجديد اللي عايز تستبدله بيه.',
-    lblOldPhone     : 'الرقم القديم',
-    lblNewPhone     : 'الرقم الجديد',
-    btnChange       : 'تأكيد التغيير',
-    btnChanging     : 'جارٍ التغيير...',
     successTitle    : 'تم إرسال طلبك بنجاح!',
     successMsg      : 'شكراً لك. سيتواصل معك أحد ممثلينا في أقرب وقت ممكن.',
-    successChTitle  : 'تم تغيير الرقم بنجاح!',
-    successChMsg    : 'تم تحديث رقم التليفون الخاص بك. سيتواصل معك فريقنا إذا احتجنا لأي تأكيد.',
     nfTitle         : 'الرابط غير صحيح',
     nfSub           : 'هذا الرابط غير صالح أو انتهت صلاحيته.<br>تواصل مع المبيعات للحصول على الرابط الصحيح.',
     errNotFound     : 'الرقم ده مش موجود عندنا. لو لسه مسجلتش، اضغط على تبويب "تسجيل جديد" واملا معلوماتك الأول.',
@@ -509,8 +461,6 @@ var T = {
   },
   en: {
     brandSub        : 'Welcome! Register here and one of our consultants will reach out shortly.',
-    tabRegister     : 'New Registration',
-    tabChange       : 'Change Phone Number',
     formTitle       : 'Register Here',
     formDesc        : 'Fill in your information and our team will get in touch as soon as possible.',
     lblBasic        : 'Basic Information',
@@ -528,17 +478,8 @@ var T = {
     errRequired     : 'This field is required',
     errPhone        : 'Please enter a valid number',
     errEmail        : 'Please enter a valid email address',
-    changeTitle     : 'Change Phone Number',
-    changeDesc      : 'Enter your old registered number, then the new number you want to switch to.',
-    changeHint      : '💡 Enter the old number registered with us, then the new number you want to replace it with.',
-    lblOldPhone     : 'Old Number',
-    lblNewPhone     : 'New Number',
-    btnChange       : 'Confirm Change',
-    btnChanging     : 'Updating...',
     successTitle    : 'Request Submitted Successfully!',
     successMsg      : 'Thank you. One of our representatives will contact you as soon as possible.',
-    successChTitle  : 'Phone Number Updated!',
-    successChMsg    : 'Your phone number has been updated successfully. Our team will reach out if any confirmation is needed.',
     nfTitle         : 'Invalid Link',
     nfSub           : 'This link is invalid or has expired.<br>Please contact sales to get the correct link.',
     errNotFound     : 'This number is not registered. If you haven\'t signed up yet, go to "New Registration" and fill in your information first.',
@@ -550,12 +491,11 @@ var T = {
   }
 };
 
-// STATE
 var campaignId   = null;
 var campaignData = null;
 var isSubmitting = false;
 var currentLang  = 'ar';
-// LANG
+
 function setLang(lang) {
   currentLang = lang;
   var t = T[lang];
@@ -604,7 +544,6 @@ function setLabelText(id, text, required, optionalText) {
     (optionalText ? ' <span style="color:var(--muted);font-weight:400">' + escHtml(optionalText) + '</span>' : '');
 }
 
-// INIT
 (function init(){
   var params = new URLSearchParams(window.location.search);
   campaignId = params.get('c') || params.get('campaign');
@@ -624,7 +563,6 @@ function setLabelText(id, text, required, optionalText) {
   setLang('ar');
 })();
 
-// BUILD DYNAMIC FIELDS
 function buildDynamicFields(camp) {
   var cols = camp.column_config || [];
   if (typeof cols === 'string') { try { cols = JSON.parse(cols); } catch(e) { cols = []; } }
@@ -643,7 +581,6 @@ function buildDynamicFields(camp) {
     var label = labelMap[col.key] || col.label;
     var opts  = DROPDOWN_KEYS[col.key];
     if (opts) {
-      // Render as <select> dropdown
       var arrowStyle = 'appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'%236b7280\'%3E%3Cpath d=\'M7 10l5 5 5-5z\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center;padding-left:2rem;';
       html += '<div class="field">' +
         '<label>' + escHtml(label) + ' <span style="color:var(--muted);font-weight:400">' + escHtml(t.lblOptional) + '</span></label>' +
@@ -662,7 +599,6 @@ function buildDynamicFields(camp) {
   document.getElementById('dynamic-fields').innerHTML = html;
 }
 
-// SUBMIT FORM
 function submitForm() {
   if (isSubmitting) return;
   var t = T[currentLang];
@@ -684,7 +620,6 @@ function submitForm() {
   if (email2 && !isValidEmail(email2))                    { setErr('field-email2');    valid = false; }
   if (!valid) return;
 
-  // الرقم الفعلي اللي هيتحفظ — لو في رقم جديد يبقى هو الأساسي
   var finalPhone = newPhone || phone;
 
   isSubmitting = true;
@@ -735,8 +670,6 @@ function submitForm() {
     });
 }
 
-
-// ROUND-ROBIN
 function getLeastLoadedEmployee() {
   return Promise.all([
     sbGet('employees', 'is_active=eq.true&select=id,name'),
@@ -755,7 +688,6 @@ function getLeastLoadedEmployee() {
   }).catch(function() { return null; });
 }
 
-// SUPABASE REST
 function sbHeaders() {
   return { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
 }
@@ -782,7 +714,6 @@ function sbPatch(table, query, payload) {
   });
 }
 
-// UI HELPERS
 function showState(id) {
   ['loading','form','success','notfound'].forEach(function(s) {
     var el = document.getElementById('state-' + s);
