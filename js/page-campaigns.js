@@ -18,7 +18,13 @@ function renderCampaigns(){
     '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Contacted</p><p class="text-2xl font-bold text-violet-400">'+cc.filter(function(c){return c.status==='Contacted';}).length+'</p></div>'+
     '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Closed</p><p class="text-2xl font-bold text-emerald-400">'+cc.filter(function(c){return c.status==='Closed';}).length+'</p></div></div>'+
     '<div class="card mb-6 fade-in"><div class="flex items-center gap-3"><span class="text-sm text-slate-400">Status:</span>'+sBtns+'</div></div>'+
-    '<div class="card fade-in"><h3 class="text-sm font-bold text-white mb-4">Clients ('+cc.length+')</h3>'+
+    '<div class="card fade-in"><div class="flex items-center justify-between mb-4">'+
+    '<h3 class="text-sm font-bold text-white">Clients ('+cc.length+')</h3>'+
+    (cc.filter(function(c){return !c.assigned_employee_id;}).length?
+      '<button class="btn btn-primary btn-sm" onclick="distributeCampUnassigned(\''+vc.id+'\')">'+
+      '<i data-lucide="shuffle" class="w-4 h-4"></i> Distribute Unassigned ('+
+      cc.filter(function(c){return !c.assigned_employee_id;}).length+')</button>':'')+
+    '</div>'+
     (cc.length?(function(){
       // Collect all extra_data keys, skip base fields already shown as columns
       var SKIP_EX = ['name','phone','phone2','email'];
@@ -101,4 +107,56 @@ function copyIntakeLink(campaignId) {
     document.body.removeChild(inp);
     toast('Link copied: ' + url, 'success');
   });
+}
+
+// ── DISTRIBUTE UNASSIGNED CLIENTS ──
+function distributeCampUnassigned(campId) {
+  var actEmps = activeEmps();
+  if (!actEmps.length) { toast('No active employees', 'error'); return; }
+
+  var unassigned = S.clients.filter(function(c) {
+    return c.campaign_id === campId && !c.assigned_employee_id;
+  });
+  if (!unassigned.length) { toast('No unassigned clients', 'error'); return; }
+
+  // Round-robin distribution
+  var updates = unassigned.map(function(c, i) {
+    return { id: c.id, employee: actEmps[i % actEmps.length] };
+  });
+
+  // Preview summary
+  var summary = {};
+  actEmps.forEach(function(e) { summary[e.id] = { emp: e, count: 0 }; });
+  updates.forEach(function(u) { summary[u.employee.id].count++; });
+
+  var previewLines = Object.values(summary).filter(function(s){ return s.count > 0; }).map(function(s) {
+    return s.emp.name + ': ' + s.count + ' client' + (s.count !== 1 ? 's' : '');
+  }).join('\n');
+
+  if (!confirm('Distribute ' + unassigned.length + ' unassigned client(s) across ' + actEmps.length + ' active agent(s)?\n\n' + previewLines)) return;
+
+  // Batch update
+  var campName = (campById(campId) || {}).name || 'Campaign';
+  var promises = updates.map(function(u) {
+    return sb.from('clients').update({ assigned_employee_id: u.employee.id }).eq('id', u.id);
+  });
+
+  Promise.all(promises)
+    .then(function() {
+      // Notify each employee
+      var notifMap = {};
+      updates.forEach(function(u) {
+        notifMap[u.employee.id] = (notifMap[u.employee.id] || 0) + 1;
+      });
+      var notifPromises = Object.keys(notifMap).map(function(eid) {
+        return notifyEmployee(eid, 'new_clients',
+          'You have ' + notifMap[eid] + ' new client(s) assigned in ' + campName);
+      });
+      return Promise.all(notifPromises).catch(function(){});
+    })
+    .then(function() {
+      toast(unassigned.length + ' clients distributed successfully', 'success');
+      fetchAll().then(renderCampaigns);
+    })
+    .catch(function(e) { toast(e.message, 'error'); });
 }
