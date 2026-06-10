@@ -20,11 +20,16 @@ function renderCampaigns(){
     '<div class="card mb-6 fade-in"><div class="flex items-center gap-3"><span class="text-sm text-slate-400">Status:</span>'+sBtns+'</div></div>'+
     '<div class="card fade-in"><h3 class="text-sm font-bold text-white mb-4">Clients ('+cc.length+')</h3>'+
     (cc.length?'<div class="tbl-wrap"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5">'+
-    visCols.map(function(c){return'<th class="pb-3 pr-4">'+esc(c.label)+'</th>';}).join('')+
-    '<th class="pb-3 pr-4">Assigned To</th><th class="pb-3">Status</th></tr></thead><tbody>'+
-    cc.map(function(c){var e=empById(c.assigned_employee_id);var extra=c.extra_data||{};
-      return'<tr class="table-row border-b border-white/[0.03]">'+
-      visCols.map(function(col){return'<td class="py-3 pr-4 text-slate-300">'+esc(extra[col.key]||c[col.key]||'-')+'</td>';}).join('')+
+    '<th class="pb-3 pr-4">Client Name</th>'+
+    '<th class="pb-3 pr-4">Mobile</th>'+
+    '<th class="pb-3 pr-4">Mobile 2</th>'+
+    '<th class="pb-3 pr-4">Email</th>'+
+     cc.map(function(c){var e=empById(c.assigned_employee_id);var extra=c.extra_data||{};
+  return'<tr class="table-row border-b border-white/[0.03]">'+
+  '<td class="py-3 pr-4 text-slate-300">'+esc(c.name||extra.name||'-')+'</td>'+
+  '<td class="py-3 pr-4 text-slate-300">'+esc(c.phone||extra.phone||'-')+'</td>'+
+  '<td class="py-3 pr-4 text-slate-300">'+esc(extra.phone2||'-')+'</td>'+
+  '<td class="py-3 pr-4 text-slate-300">'+esc(extra.email||'-')+'</td>'+
       '<td class="py-3 pr-4">'+(e?av(e.name,e.color||'#3b82f6',22)+'<span class="text-xs text-slate-300 ml-1">'+esc(e.name)+'</span>':'<span class="text-slate-500 text-xs">Unassigned</span>')+'</td>'+
       '<td class="py-3">'+sBadge(c.status)+'</td></tr>';
     }).join('')+'</tbody></table></div>':'<p class="text-slate-500 text-sm">No clients</p>')+'</div>';
