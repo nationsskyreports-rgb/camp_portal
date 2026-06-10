@@ -338,19 +338,13 @@
         <span id="camp-tag-name">...</span>
       </div>
 
-      <!-- Tabs -->
-      <div class="form-tabs">
-        <button class="tab-btn active" id="tab-register" onclick="switchTab('register')">تسجيل جديد</button>
-        <button class="tab-btn"        id="tab-change"   onclick="switchTab('change')">تغيير رقم التليفون</button>
-      </div>
-
-      <!-- Error Banner (shared) -->
+      <!-- Error Banner -->
       <div class="error-banner" id="error-banner">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="flex-shrink:0;margin-top:1px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
         <span id="error-text"></span>
       </div>
 
-      <!-- TAB: Register -->
+      <!-- Single Form -->
       <div id="panel-register">
         <div class="card-title" id="form-title">سجّل بياناتك</div>
         <div class="card-desc"  id="form-desc">أدخل بياناتك وسيقوم فريقنا بالتواصل معك في أقرب وقت.</div>
@@ -369,13 +363,18 @@
           <div class="err-msg" id="err-phone">أدخل رقماً صحيحاً</div>
         </div>
 
+        <div class="field" id="field-new-phone">
+          <label id="lbl-new-phone">رقم التليفون الجديد <span style="color:var(--muted);font-weight:400" id="lbl-new-phone-opt">(اختياري — لو عايز تغيّر رقمك)</span></label>
+          <input type="tel" id="inp-new-phone" placeholder="01xxxxxxxxx" dir="ltr">
+          <div class="err-msg" id="err-new-phone">أدخل رقماً صحيحاً</div>
+        </div>
+
         <div class="field" id="field-phone2">
           <label id="lbl-phone2">رقم التليفون الإضافي <span class="req">*</span></label>
           <input type="tel" id="inp-phone2" placeholder="01xxxxxxxxx" autocomplete="tel" dir="ltr">
           <div class="err-msg" id="err-phone2">أدخل رقماً صحيحاً</div>
         </div>
 
-        <!-- EMAIL FIELD -->
         <div class="field" id="field-email">
           <label id="lbl-email">البريد الإلكتروني <span class="req">*</span></label>
           <input type="email" id="inp-email" placeholder="example@email.com" autocomplete="email" dir="ltr">
@@ -394,34 +393,6 @@
           <div class="btn-progress" id="btn-progress"></div>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
           <span id="btn-label">إرسال الطلب</span>
-        </button>
-      </div>
-
-      <!-- TAB: Change Phone -->
-      <div id="panel-change" style="display:none">
-        <div class="card-title" id="change-title">تغيير رقم التليفون</div>
-        <div class="card-desc"  id="change-desc">أدخل رقمك القديم ثم الرقم الجديد اللي عايز تغيّر إليه.</div>
-
-        <div class="change-hint" id="change-hint">
-          💡 اكتب الرقم القديم المسجّل عندنا، وتحته الرقم الجديد اللي عايز تستبدله بيه.
-        </div>
-
-        <div class="field" id="field-old-phone">
-          <label id="lbl-old-phone">الرقم القديم <span class="req">*</span></label>
-          <input type="tel" id="inp-old-phone" placeholder="01xxxxxxxxx" dir="ltr">
-          <div class="err-msg" id="err-old-phone">أدخل رقماً صحيحاً</div>
-        </div>
-
-        <div class="field" id="field-new-phone">
-          <label id="lbl-new-phone">الرقم الجديد <span class="req">*</span></label>
-          <input type="tel" id="inp-new-phone" placeholder="01xxxxxxxxx" dir="ltr">
-          <div class="err-msg" id="err-new-phone">أدخل رقماً صحيحاً</div>
-        </div>
-
-        <button type="button" class="btn-submit" id="btn-change" onclick="submitChange()">
-          <div class="btn-progress" id="btn-progress-change"></div>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
-          <span id="btn-change-label">تأكيد التغيير</span>
         </button>
       </div>
 
@@ -498,6 +469,7 @@ var T = {
     lblBasic        : 'البيانات الأساسية',
     lblName         : 'الاسم الكامل',
     lblPhone        : 'رقم التليفون الأساسي',
+    lblNewPhone     : 'رقم التليفون الجديد',
     lblPhone2       : 'رقم التليفون الإضافي',
     lblEmail        : 'البريد الإلكتروني',
     lblOptional     : '(اختياري)',
@@ -521,7 +493,7 @@ var T = {
     successChMsg    : 'تم تحديث رقم التليفون الخاص بك. سيتواصل معك فريقنا إذا احتجنا لأي تأكيد.',
     nfTitle         : 'الرابط غير صحيح',
     nfSub           : 'هذا الرابط غير صالح أو انتهت صلاحيته.<br>تواصل مع المبيعات للحصول على الرابط الصحيح.',
-    errNotFound     : 'الرقم القديم غير موجود في النظام.',
+    errNotFound     : 'الرقم ده مش موجود عندنا. لو لسه مسجلتش، اضغط على تبويب "تسجيل جديد" واملا بياناتك الأول.',
     errGeneral      : 'حدث خطأ. يرجى المحاولة مرة أخرى.',
     footerTxt       : 'مدعوم بواسطة Nations of Sky Portal',
     namePlaceholder : 'مثال: محمد أحمد',
@@ -537,6 +509,7 @@ var T = {
     lblBasic        : 'Basic Information',
     lblName         : 'Full Name',
     lblPhone        : 'Primary Phone Number',
+    lblNewPhone     : 'New Phone Number',
     lblPhone2       : 'Secondary Phone Number',
     lblEmail        : 'Email Address',
     lblOptional     : '(optional)',
@@ -560,7 +533,7 @@ var T = {
     successChMsg    : 'Your phone number has been updated successfully. Our team will reach out if any confirmation is needed.',
     nfTitle         : 'Invalid Link',
     nfSub           : 'This link is invalid or has expired.<br>Please contact sales to get the correct link.',
-    errNotFound     : 'The old number was not found in our system.',
+    errNotFound     : 'This number is not registered. If you haven\'t signed up yet, go to "New Registration" and fill in your details first.',
     errGeneral      : 'An error occurred. Please try again.',
     footerTxt       : 'Powered by Nations of Sky Portal',
     namePlaceholder : 'e.g. John Smith',
@@ -574,8 +547,6 @@ var campaignId   = null;
 var campaignData = null;
 var isSubmitting = false;
 var currentLang  = 'ar';
-var currentTab   = 'register';
-
 // LANG
 function setLang(lang) {
   currentLang = lang;
@@ -588,38 +559,25 @@ function setLang(lang) {
   document.getElementById('btn-en').classList.toggle('active', lang === 'en');
 
   document.getElementById('brand-sub').textContent = t.brandSub;
-
-  document.getElementById('tab-register').textContent = t.tabRegister;
-  document.getElementById('tab-change').textContent   = t.tabChange;
-
   document.getElementById('form-title').textContent = t.formTitle;
   document.getElementById('form-desc').textContent  = t.formDesc;
   document.getElementById('lbl-basic').textContent  = t.lblBasic;
 
-  setLabelText('lbl-name',   t.lblName,   true);
-  setLabelText('lbl-phone',  t.lblPhone,  true);
-  setLabelText('lbl-phone2', t.lblPhone2, true);
-  setLabelText('lbl-email',  t.lblEmail,  true);
-  setLabelText('lbl-notes',  t.lblNotes,  false, t.lblOptional);
+  setLabelText('lbl-name',      t.lblName,     true);
+  setLabelText('lbl-phone',     t.lblPhone,    true);
+  setLabelText('lbl-new-phone', t.lblNewPhone, false, t.lblOptional);
+  setLabelText('lbl-phone2',    t.lblPhone2,   true);
+  setLabelText('lbl-email',     t.lblEmail,    true);
+  setLabelText('lbl-notes',     t.lblNotes,    false, t.lblOptional);
 
   document.getElementById('inp-name').placeholder  = t.namePlaceholder;
   document.getElementById('btn-label').textContent = t.btnSubmit;
 
-  document.getElementById('err-name').textContent   = t.errRequired;
-  document.getElementById('err-phone').textContent  = t.errPhone;
-  document.getElementById('err-phone2').textContent = t.errPhone;
-  document.getElementById('err-email').textContent  = t.errEmail;
-
-  document.getElementById('change-title').textContent = t.changeTitle;
-  document.getElementById('change-desc').textContent  = t.changeDesc;
-  document.getElementById('change-hint').textContent  = t.changeHint;
-
-  setLabelText('lbl-old-phone', t.lblOldPhone, true);
-  setLabelText('lbl-new-phone', t.lblNewPhone, true);
-
-  document.getElementById('btn-change-label').textContent = t.btnChange;
-  document.getElementById('err-old-phone').textContent    = t.errPhone;
-  document.getElementById('err-new-phone').textContent    = t.errPhone;
+  document.getElementById('err-name').textContent     = t.errRequired;
+  document.getElementById('err-phone').textContent    = t.errPhone;
+  document.getElementById('err-new-phone').textContent = t.errPhone;
+  document.getElementById('err-phone2').textContent   = t.errPhone;
+  document.getElementById('err-email').textContent    = t.errEmail;
 
   document.getElementById('nf-title').textContent   = t.nfTitle;
   document.getElementById('nf-sub').innerHTML       = t.nfSub;
@@ -634,17 +592,6 @@ function setLabelText(id, text, required, optionalText) {
   el.innerHTML = escHtml(text) +
     (required     ? ' <span class="req">*</span>' : '') +
     (optionalText ? ' <span style="color:var(--muted);font-weight:400">' + escHtml(optionalText) + '</span>' : '');
-}
-
-// TAB SWITCH
-function switchTab(tab) {
-  currentTab = tab;
-  hideBanner();
-  clearErrors();
-  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
-  document.getElementById('tab-change').classList.toggle('active',   tab === 'change');
-  document.getElementById('panel-register').style.display = tab === 'register' ? '' : 'none';
-  document.getElementById('panel-change').style.display   = tab === 'change'   ? '' : 'none';
 }
 
 // INIT
@@ -705,30 +652,36 @@ function buildDynamicFields(camp) {
   document.getElementById('dynamic-fields').innerHTML = html;
 }
 
-// SUBMIT REGISTER
+// SUBMIT FORM
 function submitForm() {
   if (isSubmitting) return;
   var t = T[currentLang];
   clearErrors(); hideBanner();
 
-  var name   = val('inp-name');
-  var phone  = val('inp-phone');
-  var phone2 = val('inp-phone2');
-  var email  = val('inp-email');
-  var valid  = true;
+  var name     = val('inp-name');
+  var phone    = val('inp-phone');
+  var newPhone = val('inp-new-phone');
+  var phone2   = val('inp-phone2');
+  var email    = val('inp-email');
+  var valid    = true;
 
-  if (!name)                               { setErr('field-name');   valid = false; }
-  if (!isValidPhone(phone))                { setErr('field-phone');  valid = false; }
-  if (!isValidPhone(phone2))               { setErr('field-phone2'); valid = false; }
-  if (!isValidEmail(email))                { setErr('field-email');  valid = false; }
+  if (!name)                                              { setErr('field-name');      valid = false; }
+  if (!isValidPhone(phone))                               { setErr('field-phone');     valid = false; }
+  if (newPhone && !isValidPhone(newPhone))                { setErr('field-new-phone'); valid = false; }
+  if (!isValidPhone(phone2))                              { setErr('field-phone2');    valid = false; }
+  if (!isValidEmail(email))                               { setErr('field-email');     valid = false; }
   if (!valid) return;
+
+  // الرقم الفعلي اللي هيتحفظ — لو في رقم جديد يبقى هو الأساسي
+  var finalPhone = newPhone || phone;
 
   isSubmitting = true;
   setBtnLoading(true, 'btn-submit', 'btn-label', 'btn-progress', t.btnSending);
 
-  var extraData = { name: name, phone: phone };
-  if (phone2) extraData.phone2 = phone2;
-  if (email)  extraData.email  = email;
+  var extraData = { name: name, phone: finalPhone };
+  if (newPhone) extraData.old_phone = phone;
+  if (phone2)   extraData.phone2    = phone2;
+  if (email)    extraData.email     = email;
 
   document.querySelectorAll('[data-col-key]').forEach(function(inp) {
     if (inp.value.trim()) extraData[inp.getAttribute('data-col-key')] = inp.value.trim();
@@ -740,7 +693,7 @@ function submitForm() {
     .then(function(employee) {
       var record = {
         name                 : name,
-        phone                : phone,
+        phone                : finalPhone,
         extra_data           : extraData,
         status               : 'New',
         campaign_id          : campaignId,
@@ -769,70 +722,6 @@ function submitForm() {
     });
 }
 
-// SUBMIT CHANGE PHONE
-function submitChange() {
-  if (isSubmitting) return;
-  var t = T[currentLang];
-  clearErrors(); hideBanner();
-
-  var oldPhone = val('inp-old-phone');
-  var newPhone = val('inp-new-phone');
-  var valid    = true;
-
-  if (!isValidPhone(oldPhone)) { setErr('field-old-phone'); valid = false; }
-  if (!isValidPhone(newPhone)) { setErr('field-new-phone'); valid = false; }
-  if (!valid) return;
-
-  isSubmitting = true;
-  setBtnLoading(true, 'btn-change', 'btn-change-label', 'btn-progress-change', t.btnChanging);
-
-  // Try to find existing client by old phone (primary or secondary)
-  sbGet('clients', 'phone=eq.' + encodeURIComponent(oldPhone) + '&campaign_id=eq.' + campaignId + '&select=id,name,extra_data&limit=1')
-    .then(function(rows) {
-      if (!rows || !rows.length) {
-        // Check phone2 in extra_data
-        return sbGet('clients', 'campaign_id=eq.' + campaignId + '&select=id,name,extra_data')
-          .then(function(all) {
-            var found = null;
-            (all || []).forEach(function(r) {
-              if (r.extra_data && r.extra_data.phone2 === oldPhone) found = r;
-            });
-            return found; // null if not found — will create new record
-          });
-      }
-      return rows[0];
-    })
-    .then(function(client) {
-      if (client) {
-        // Found — update existing record
-        var updatedExtra = Object.assign({}, client.extra_data || {}, { phone: newPhone });
-        return sbPatch('clients', 'id=eq.' + client.id, { phone: newPhone, extra_data: updatedExtra });
-      } else {
-        // Not found — create new record with new phone
-        return getLeastLoadedEmployee().then(function(employee) {
-          var record = {
-            name                 : oldPhone, // use old phone as placeholder name
-            phone                : newPhone,
-            extra_data           : { phone: newPhone, old_phone: oldPhone },
-            status               : 'New',
-            campaign_id          : campaignId,
-            assigned_employee_id : employee ? employee.id : null
-          };
-          return sbInsert('clients', record);
-        });
-      }
-    })
-    .then(function() {
-      document.getElementById('success-title').textContent = t.successChTitle;
-      document.getElementById('success-msg').textContent   = t.successChMsg;
-      showState('success');
-    })
-    .catch(function(err) {
-      isSubmitting = false;
-      setBtnLoading(false, 'btn-change', 'btn-change-label', 'btn-progress-change', t.btnChange);
-      showBanner(err && err.message ? err.message : t.errGeneral);
-    });
-}
 
 // ROUND-ROBIN
 function getLeastLoadedEmployee() {
