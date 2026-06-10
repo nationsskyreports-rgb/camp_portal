@@ -14,6 +14,7 @@
   <meta name="twitter:title"      content="Nations of Sky — سجّل هنا الآن">
   <meta name="twitter:description" content="فريقنا متاح لمساعدتك. سجّل معلوماتك وسيتواصل معك أحد مستشارينا في أقرب وقت.">
   <meta name="twitter:image"      content="https://nationsskyreports-rgb.github.io/icon-512.png">
+  <link rel="icon" type="image/png" href="icon-512.png">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -517,7 +518,7 @@ var T = {
     successTitle    : 'تم إرسال طلبك بنجاح!',
     successMsg      : 'شكراً لك. سيتواصل معك أحد ممثلينا في أقرب وقت ممكن.',
     lblPrivacy      : 'أوافق على معالجة بياناتي الشخصية وفقاً لسياسة الخصوصية.',
-    waText          : 'أو تواصل معنا مباشرة عبر واتساب',
+    waText          : 'لو حابب تتواصل معانا مباشرة عبر واتساب',
     waLabel         : 'تواصل معنا عبر واتساب',
     errPrivacy      : 'يجب الموافقة على شروط الخصوصية للمتابعة',
     nfTitle         : 'الرابط غير صحيح',
@@ -551,7 +552,7 @@ var T = {
     successTitle    : 'Request Submitted Successfully!',
     successMsg      : 'Thank you. One of our representatives will contact you as soon as possible.',
     lblPrivacy      : 'I agree to the processing of my personal data according to the privacy policy.',
-    waText          : 'Or contact us directly via WhatsApp',
+    waText          : 'If you would like to contact us directly via WhatsApp',
     waLabel         : 'Contact us on WhatsApp',
     errPrivacy      : 'You must agree to the privacy terms to continue',
     nfTitle         : 'Invalid Link',
@@ -638,7 +639,7 @@ function setLabelText(id, text, required, optionalText) {
       if (tagNameEl) tagNameEl.textContent = campaignData.name || '';
       if (tagEl && campaignData.name) tagEl.style.display = 'inline-flex';
       
-      document.title = (currentLang === 'ar' ? 'تسجيل الاهتمام' : 'Register Interest') + ' — ' + (campaignData.name || '');
+      document.title = 'Nations OF Sky Form — ' + (campaignData.name || '');
       buildDynamicFields(campaignData);
       showState('form');
     })
