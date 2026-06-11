@@ -122,8 +122,9 @@
     <div class="modal-body">
       <p class="text-xs text-slate-400 mb-4">Drag to reorder · Toggle visibility · Double-click label to rename</p>
       <div id="col-config-list" class="space-y-2 mb-6"></div>
-      <div class="flex gap-2">
+      <div class="flex gap-2 flex-wrap">
         <button class="btn btn-primary flex-1" onclick="saveColConfig()"><i data-lucide="save" class="w-4 h-4"></i> Save Config</button>
+        <button class="btn btn-ghost" onclick="addFormFieldsToConfig()" title="Add intake form fields to this config"><i data-lucide="file-input" class="w-4 h-4"></i> Add Form Fields</button>
         <button class="btn btn-ghost" onclick="addCustomColumn()"><i data-lucide="plus" class="w-4 h-4"></i> Add Column</button>
         <button class="btn btn-ghost" onclick="closeColConfig()">Cancel</button>
       </div>
