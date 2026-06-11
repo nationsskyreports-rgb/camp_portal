@@ -70,7 +70,8 @@ function renderPage(){
       team:renderTeam,'my-clients':renderMyClients,
       'ask-question':renderAskQuestion,'my-questions':renderMyQuestions,
       notifications:renderNotifPage,cleanup:renderCleanup,
-      'form-tracking':renderFormTracking
+      'form-tracking':renderFormTracking,
+      'team-qa':renderTeamQA
     };
     if(fn[S.currentPage])fn[S.currentPage]();
     else renderDashboard();
