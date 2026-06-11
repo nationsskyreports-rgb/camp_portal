@@ -116,10 +116,13 @@ function renderUpload(){
   '<div class="flex flex-wrap gap-2 mb-5 p-3 rounded-lg bg-white/[0.02] border border-white/5">'+
   '<span class="text-xs text-slate-500 self-center mr-1">Columns:</span>'+cols.map(function(c){return'<span class="badge badge-new text-[11px]">'+esc(c.label)+'</span>';}).join('')+'</div>'+
   '<div class="flex gap-2 mb-4 border-b border-white/10 pb-2">'+tabBtn('paste','clipboard','Paste from Excel')+tabBtn('excel','file-spreadsheet','Upload File')+tabBtn('manual','table','Manual Entry')+'</div>'+
-  (U.uploadTab==='paste'?'<div class="space-y-3"><p class="text-xs text-slate-400 mb-2">Copy from Excel — columns should match: <strong class="text-slate-300">'+cols.map(function(c){return c.label;}).join(', ')+'</strong></p><textarea id="paste-area" class="input font-mono text-xs" rows="10" placeholder="Paste tab-separated rows here..."></textarea><button class="btn btn-primary" onclick="parsePaste()"><i data-lucide="clipboard-check" class="w-4 h-4"></i> Parse & Preview</button></div>':'')+
-  (U.uploadTab==='excel'?'<div class="space-y-3"><p class="text-xs text-slate-400">Upload .xlsx, .xls or .csv — first row = headers matching column config</p><div class="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:border-blue-500/40 transition-colors" ondrop="handleExcelDrop(event)" ondragover="event.preventDefault()"><i data-lucide="file-spreadsheet" class="w-10 h-10 text-slate-600 mx-auto mb-3"></i><p class="text-slate-400 text-sm mb-3">Drag & drop file here</p><label class="btn btn-ghost cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i> Browse<input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleExcelFile(this)"></label></div>'+(U.rows.length?'<p class="text-emerald-400 text-sm font-medium">✓ '+U.rows.length+' rows loaded</p>':'')+'</div>':'')+
+  (U.uploadTab==='paste'?'<div class="space-y-3"><p class="text-xs text-slate-400 mb-2">الصق من Excel — <strong class="text-slate-300">السطر الأول لازم يكون الهيدرز</strong> والسيستم هيتعرف على الأعمدة تلقائياً</p><textarea id="paste-area" class="input font-mono text-xs" rows="10" placeholder="Paste tab-separated rows here..."></textarea><button class="btn btn-primary" onclick="parsePaste()"><i data-lucide="clipboard-check" class="w-4 h-4"></i> Parse & Preview</button></div>':'')+
+  (U.uploadTab==='excel'?'<div class="space-y-3"><p class="text-xs text-slate-400">ارفع ملف .xlsx أو .csv — <strong class="text-slate-300">السيستم هيتعرف على الهيدرز تلقائياً</strong> من السطر الأول</p><div class="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:border-blue-500/40 transition-colors" ondrop="handleExcelDrop(event)" ondragover="event.preventDefault()"><i data-lucide="file-spreadsheet" class="w-10 h-10 text-slate-600 mx-auto mb-3"></i><p class="text-slate-400 text-sm mb-3">Drag & drop file here</p><label class="btn btn-ghost cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i> Browse<input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleExcelFile(this)"></label></div>'+(U.rows.length?'<p class="text-emerald-400 text-sm font-medium">✓ '+U.rows.length+' rows loaded</p>':'')+'</div>':'')+
   manualHtml+
-  (U.rows.length?'<div class="mt-4 pt-4 border-t border-white/10"><button class="btn btn-primary" onclick="previewDistribute()"><i data-lucide="shuffle" class="w-4 h-4"></i> Preview Distribution ('+U.rows.length+' rows)</button></div>':'')+'</div>';
+  (U.rows.length?'<div class="mt-4 pt-4 border-t border-white/10 flex gap-2 flex-wrap">'+
+  '<button class="btn btn-primary" onclick="previewDistribute()"><i data-lucide="shuffle" class="w-4 h-4"></i> توزيع على الأجينتس ('+U.rows.length+' صف)</button>'+
+  '<button class="btn btn-ghost" onclick="saveWithoutDistribution()"><i data-lucide="save" class="w-4 h-4"></i> حفظ بدون توزيع</button>'+
+'</div>':'')+'</div>';
   lucide.createIcons();
 }
 function addUploadRows(n){var cols=getCurrentUploadCols();for(var i=0;i<n;i++){var r={};cols.forEach(function(c){r[c.key]='';});U.rows.push(r);}renderUpload();}
@@ -203,6 +206,26 @@ function readExcelFile(file){
     };reader.readAsArrayBuffer(file);
   } else {toast('XLSX library not loaded','error');}
 }
+function saveWithoutDistribution(){
+  if(!U.rows.length){toast('لا توجد بيانات للحفظ','error');return;}
+  if(!U.campaignId){toast('اختر campaign أولاً','error');return;}
+  var cols=U.detectedCols||getCurrentUploadCols();
+  var campName=(campById(U.campaignId)||{}).name||'Campaign';
+  var rows=[];
+  U.rows.forEach(function(c){
+    var extraData={};cols.forEach(function(col){extraData[col.key]=c[col.key]||'';});
+    var name=c['customer']||c['Customer']||c[cols[0]?cols[0].key:'']||c['name']||Object.values(c)[0]||'';
+    var phone=c['phone']||c['Phone']||'';
+    rows.push({name:name.trim(),phone:phone||null,extra_data:extraData,status:'New',assigned_employee_id:null,campaign_id:U.campaignId});
+  });
+  sb.from('clients').insert(rows).then(function(result){
+    if(result.error){toast(result.error.message,'error');return;}
+    toast(rows.length+' عميل اتحفظوا بدون توزيع ✓','success');
+    U={campaignId:U.campaignId,rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,isNOSSheet:false};
+    fetchAll().then(renderUpload);
+  });
+}
+
 function previewDistribute(){
   var firstKey=getCurrentUploadCols()[0]?getCurrentUploadCols()[0].key:'';
   var valid=U.rows.filter(function(r){return firstKey?r[firstKey]&&r[firstKey].trim():true;});
