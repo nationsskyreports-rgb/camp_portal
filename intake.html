@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nations of Sky — تواصل معنا</title>
+  <title>Client Data Update Form - استمارة تحديث بيانات العميل</title>
   <meta property="og:type"        content="website">
   <meta property="og:site_name"   content="Nations of Sky">
-  <meta property="og:title"       content="Nations of Sky — سجّل هنا الآن">
+  <meta property="og:title"       content="Client Data Update Form - استمارة تحديث بيانات العميل">
   <meta property="og:description" content="فريقنا متاح لمساعدتك. سجّل معلوماتك وسيتواصل معك أحد مستشارينا في أقرب وقت.">
   <meta property="og:image"       content="https://nationsskyreports-rgb.github.io/icon-512.png">
   <meta property="og:url"         content="https://nationsskyreports-rgb.github.io/intake.html">
   <meta name="twitter:card"       content="summary_large_image">
-  <meta name="twitter:title"      content="Nations of Sky — سجّل هنا الآن">
+  <meta name="twitter:title"      content="Client Data Update Form - استمارة تحديث بيانات العميل">
   <meta name="twitter:description" content="فريقنا متاح لمساعدتك. سجّل معلوماتك وسيتواصل معك أحد مستشارينا في أقرب وقت.">
   <meta name="twitter:image"      content="https://nationsskyreports-rgb.github.io/icon-512.png">
   <link rel="icon" type="image/png" href="icon-512.png">
@@ -362,6 +362,24 @@
       color: #b91c1c;
     }
     .notfound-inline.show { display: block; }
+
+    /* ── Communication Channel ── */
+    .channel-options { display: flex; flex-direction: column; gap: .6rem; margin-bottom: .5rem; }
+    .channel-item {
+      display: flex; align-items: center; gap: .75rem;
+      padding: .55rem .85rem;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      cursor: pointer; transition: border-color .12s, background .12s;
+    }
+    .channel-item:hover { border-color: #93c5fd; background: #f8fbff; }
+    .channel-item input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--blue); flex-shrink: 0; }
+    .channel-item span { font-size: .88rem; color: var(--text); }
+    .channel-item:has(input:checked) { border-color: var(--blue); background: var(--blue-bg); }
+    /* ── Acknowledgment ── */
+    .acknowledgment-box { background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
+    .ack-title { font-size: .85rem; font-weight: 700; color: var(--text); margin-bottom: .75rem; }
+    .ack-text-en { font-size: .82rem; color: var(--muted); line-height: 1.6; margin-bottom: .6rem; }
+    .ack-text-ar { font-size: .82rem; color: var(--muted); line-height: 1.6; direction: rtl; }
     @media (max-width: 500px) {
       body { padding: 1rem .75rem 3rem; }
       .card { padding: 1.5rem; }
@@ -481,10 +499,39 @@
           <textarea id="inp-notes"></textarea>
         </div>
 
-        <label class="privacy-field" id="field-privacy">
-          <input type="checkbox" id="inp-privacy">
-          <span id="lbl-privacy">أوافق على معالجة بياناتي الشخصية وفقاً لسياسة الخصوصية.</span>
-        </label>
+        <!-- Preferred Communication Channel -->
+        <hr class="divider">
+        <div class="section-label" id="lbl-channel-section">Preferred Communication Channel | وسيلة التواصل المفضلة</div>
+        <div class="channel-options" id="channel-options">
+          <label class="channel-item">
+            <input type="checkbox" id="ch-call" value="Mobile Call">
+            <span>Mobile Call | مكالمة هاتفية</span>
+          </label>
+          <label class="channel-item">
+            <input type="checkbox" id="ch-wa" value="WhatsApp">
+            <span>WhatsApp | واتساب</span>
+          </label>
+          <label class="channel-item">
+            <input type="checkbox" id="ch-email" value="Email">
+            <span>Email | البريد الإلكتروني</span>
+          </label>
+          <label class="channel-item">
+            <input type="checkbox" id="ch-sms" value="SMS">
+            <span>SMS | رسالة نصية</span>
+          </label>
+        </div>
+
+        <!-- Client Acknowledgment -->
+        <hr class="divider">
+        <div class="acknowledgment-box" id="field-ack">
+          <div class="ack-title">Client Acknowledgment | إقرار العميل</div>
+          <div class="ack-text-en">I confirm that the above information is accurate and up to date. I understand that all future communications, service requests, and updates related to my account will be handled through the contact channels registered above.</div>
+          <div class="ack-text-ar">أقر بأن البيانات المذكورة أعلاه صحيحة ومحدثة، وأتفهم أن جميع المراسلات المستقبلية وطلبات الخدمة والتحديثات الخاصة بحسابي سيتم تنفيذها من خلال قنوات الاتصال المسجلة أعلاه.</div>
+          <label class="privacy-field" style="margin-top:1rem">
+            <input type="checkbox" id="inp-privacy">
+            <span id="lbl-privacy">I agree to the above acknowledgment | أوافق على الإقرار أعلاه</span>
+          </label>
+        </div>
 
         <button type="button" class="btn-submit" id="btn-submit" onclick="submitForm()">
           <div class="btn-progress" id="btn-progress"></div>
@@ -568,8 +615,8 @@ var EN_LABELS = {
 var T = {
   ar: {
     brandSub        : 'أهلاً بك! سجّل هنا وسيتواصل معك أحد مستشارينا قريباً',
-    formTitle       : 'سجّل هنا',
-    formDesc        : 'أدخل معلوماتك وسيقوم فريقنا بالتواصل معك في أقرب وقت.',
+    formTitle       : 'Client Data Update Form | استمارة تحديث بيانات العميل',
+    formDesc        : 'يرجى تحديث بياناتك الشخصية وبيانات التواصل للتأكد من صحة سجلاتنا.',
     lblBasic        : 'المعلومات الأساسية',
     lblName         : 'الاسم الكامل',
     lblPhone        : 'رقم التليفون الأساسي',
@@ -602,8 +649,8 @@ var T = {
   },
   en: {
     brandSub        : 'Welcome! Register here and one of our consultants will reach out shortly.',
-    formTitle       : 'Register Here',
-    formDesc        : 'Fill in your information and our team will get in touch as soon as possible.',
+    formTitle       : 'Client Data Update Form | استمارة تحديث بيانات العميل',
+    formDesc        : 'Please update your personal and contact information to ensure our records are accurate.',
     lblBasic        : 'Basic Information',
     lblName         : 'Full Name',
     lblPhone        : 'Primary Phone Number',
@@ -960,6 +1007,13 @@ function submitForm() {
   });
   var notesVal = val('inp-notes');
   if (notesVal) extraData.notes = notesVal;
+  // Collect preferred channels
+  var channels = [];
+  ['ch-call','ch-wa','ch-email','ch-sms'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el && el.checked) channels.push(el.value);
+  });
+  if(channels.length) extraData.preferred_channel = channels.join(', ');
 
   // If existing client matched & units selected → UPDATE those records
   if (selectedIds.length > 0 && matchedClients.length > 0) {
