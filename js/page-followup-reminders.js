@@ -1,271 +1,270 @@
 // ============================================================
-// FOLLOW-UP REMINDERS SYSTEM
+// FOLLOW-UP REMINDERS — Agent & Admin views
+// Uses the `reminders` table exclusively
 // ============================================================
 
-var followupFilter = { employee: '', status: '', campaign: '' };
-var followupEditId = null;
+var fuFilter = { employee:'', campaign:'', status:'' }; // admin filters
+var fuSearch = '';
 
-// ── Get all follow-up reminders ──
-function getAllFollowupReminders() {
-  var reminders = [];
-  S.clients.forEach(function(c) {
-    if (c.next_followup_date) {
-      var isOverdue = new Date(c.next_followup_date) < new Date();
-      var daysUntil = Math.ceil((new Date(c.next_followup_date) - new Date()) / (1000 * 60 * 60 * 24));
-      reminders.push({
-        clientId: c.id,
-        clientName: c.name,
-        clientPhone: c.phone,
-        campaignId: c.campaign_id,
-        employeeId: c.assigned_employee_id,
-        nextFollowupDate: c.next_followup_date,
-        followupNote: c.followup_note || '',
-        isOverdue: isOverdue,
-        daysUntil: daysUntil,
-        status: c.status
+function setFuSearch(v){ fuSearch=v; renderFollowupReminders(); restoreSearchFocus('fu-search'); }
+
+// ── Helpers ───────────────────────────────────────────────────
+function fuClientReminders(clientId){
+  return (S.reminders||[]).filter(function(r){ return r.client_id === clientId; });
+}
+
+function fuMyReminders(){
+  if(S.role === 'admin') return S.reminders||[];
+  return (S.reminders||[]).filter(function(r){ return r.employee_id === S.employee.id; });
+}
+
+// ── OPEN Follow-up modal from client card ─────────────────────
+function openFollowupModal(clientId, ev){
+  if(ev) ev.stopPropagation();
+  var c = clientById(clientId);
+  if(!c) return;
+
+  var existing = fuClientReminders(clientId).filter(function(r){ return !r.done; });
+
+  var old = document.getElementById('fu-modal');
+  if(old) old.remove();
+
+  // default: tomorrow 10am
+  var def = new Date(); def.setDate(def.getDate()+1); def.setHours(10,0,0,0);
+  var defVal = def.toISOString().slice(0,16);
+
+  var existingHtml = '';
+  if(existing.length){
+    existingHtml = '<div style="margin-bottom:1rem">' +
+      '<p style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Current follow-ups</p>' +
+      existing.map(function(r){
+        var dt = new Date(r.remind_at);
+        var isOverdue = dt < new Date();
+        var dtStr = dt.toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+        return '<div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;background:rgba(255,255,255,.04);margin-bottom:6px;border:1px solid rgba(255,255,255,.06)">'+
+          '<i data-lucide="'+(isOverdue?'alert-circle':'alarm-clock')+'" style="width:14px;height:14px;color:'+(isOverdue?'#f87171':'#fbbf24')+';flex-shrink:0"></i>'+
+          '<div style="flex:1;min-width:0">'+
+            '<p style="font-size:12px;color:#e2e8f0;font-weight:500">'+dtStr+(isOverdue?'<span style="color:#f87171;margin-right:6px;font-size:10px"> overdue</span>':'')+'</p>'+
+            (r.note?'<p style="font-size:11px;color:#94a3b8">'+esc(r.note)+'</p>':'')+
+          '</div>'+
+          '<button onclick="markFuDone(\''+r.id+'\',\''+clientId+'\')" '+
+            'style="background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:#6ee7b7;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;flex-shrink:0" '+
+            'title="Mark done"><i data-lucide="check" style="width:11px;height:11px"></i></button>'+
+        '</div>';
+      }).join('')+
+    '</div>';
+  }
+
+  var overlay = document.createElement('div');
+  overlay.id = 'fu-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem';
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+  overlay.innerHTML =
+    '<div style="background:#0d1628;border:1px solid rgba(59,130,246,.15);border-radius:16px;max-width:440px;width:100%;padding:1.5rem;max-height:85vh;overflow-y:auto" onclick="event.stopPropagation()">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">'+
+        '<div>'+
+          '<h3 style="font-size:15px;font-weight:700;color:#fff">Follow-up</h3>'+
+          '<p style="font-size:12px;color:#64748b;margin-top:2px">'+esc(c.name||'')+'</p>'+
+        '</div>'+
+        '<button onclick="document.getElementById(\'fu-modal\').remove()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:20px;line-height:1;padding:4px">×</button>'+
+      '</div>'+
+      existingHtml+
+      '<p style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Set new follow-up</p>'+
+      '<label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px">Date & Time *</label>'+
+      '<input type="datetime-local" id="fu-when" class="input" value="'+defVal+'" style="margin-bottom:12px">'+
+      '<label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px">Note</label>'+
+      '<input type="text" id="fu-note" class="input" placeholder="e.g. Ask about payment confirmation" style="margin-bottom:16px">'+
+      '<div style="display:flex;gap:8px">'+
+        '<button class="btn btn-primary flex-1" onclick="saveFuReminder(\''+clientId+'\')">'+
+          '<i data-lucide="alarm-clock" class="w-4 h-4"></i> Set Follow-up</button>'+
+        '<button class="btn btn-ghost" onclick="document.getElementById(\'fu-modal\').remove()">Cancel</button>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+  lucide.createIcons();
+}
+
+function saveFuReminder(clientId){
+  var when = document.getElementById('fu-when').value;
+  var note = (document.getElementById('fu-note').value||'').trim();
+  if(!when){ toast('Pick a date & time','error'); return; }
+
+  var empId = S.role==='employee' ? S.employee.id : null;
+  // If admin is setting it, assign to client's agent
+  if(!empId){
+    var c = clientById(clientId);
+    empId = c ? c.assigned_employee_id : null;
+  }
+
+  sb.from('reminders').insert({
+    client_id   : clientId,
+    employee_id : empId,
+    remind_at   : new Date(when).toISOString(),
+    note        : note || null,
+    done        : false
+  }).then(function(r){
+    if(r.error){ toast(r.error.message,'error'); return; }
+    toast('Follow-up set ✓','success');
+    document.getElementById('fu-modal').remove();
+    fetchAll().then(function(){
+      if(S.currentPage==='followup-reminders') renderFollowupReminders();
+      else if(S.currentPage==='my-clients') renderMyClients();
+    });
+  });
+}
+
+function markFuDone(reminderId, clientId){
+  sb.from('reminders').update({done:true}).eq('id',reminderId).then(function(r){
+    if(r.error){ toast(r.error.message,'error'); return; }
+    toast('Follow-up completed ✓','success');
+    fetchAll().then(function(){
+      var old = document.getElementById('fu-modal');
+      if(old) old.remove();
+      if(S.currentPage==='followup-reminders') renderFollowupReminders();
+      else if(S.currentPage==='my-clients') renderMyClients();
+    });
+  });
+}
+
+// ── MAIN RENDER ───────────────────────────────────────────────
+function renderFollowupReminders(){
+  var m = document.getElementById('main-content');
+  var now = Date.now();
+
+  var mine = fuMyReminders().filter(function(r){ return !r.done; });
+
+  // Admin filters
+  if(S.role==='admin'){
+    if(fuFilter.employee) mine = mine.filter(function(r){ return r.employee_id === fuFilter.employee; });
+    if(fuFilter.campaign){
+      mine = mine.filter(function(r){
+        var c = clientById(r.client_id);
+        return c && c.campaign_id === fuFilter.campaign;
       });
     }
-  });
-  return reminders.sort(function(a, b) {
-    if (a.isOverdue && !b.isOverdue) return -1;
-    if (!a.isOverdue && b.isOverdue) return 1;
-    return new Date(a.nextFollowupDate) - new Date(b.nextFollowupDate);
-  });
-}
-
-// ── Set next follow-up date for a client ──
-async function setFollowupDate(clientId, dateStr, noteStr) {
-  try {
-    var res = await sb.from('clients').update({
-      next_followup_date: dateStr,
-      followup_note: noteStr || ''
-    }).eq('id', clientId);
-    if (res.error) throw res.error;
-    toast('Follow-up date set successfully', 'success');
-    fetchAll().then(function() {
-      if (S.currentPage === 'followup-reminders') renderFollowupReminders();
-      else if (S.currentPage === 'my-clients') renderMyClients();
-    });
-  } catch (e) {
-    toast(e.message, 'error');
   }
-}
-
-// ── Mark follow-up as completed ──
-async function completeFollowup(clientId) {
-  try {
-    var res = await sb.from('clients').update({
-      next_followup_date: null,
-      followup_note: ''
-    }).eq('id', clientId);
-    if (res.error) throw res.error;
-    toast('Follow-up marked as completed', 'success');
-    fetchAll().then(function() {
-      if (S.currentPage === 'followup-reminders') renderFollowupReminders();
+  if(fuSearch){
+    var q = fuSearch.toLowerCase();
+    mine = mine.filter(function(r){
+      var c = clientById(r.client_id);
+      return (r.note||'').toLowerCase().indexOf(q) > -1 ||
+             (c && clientMatchesSearch(c, fuSearch));
     });
-  } catch (e) {
-    toast(e.message, 'error');
-  }
-}
-
-// ── Render Follow-up Reminders Page ──
-function renderFollowupReminders() {
-  var m = document.getElementById('main-content');
-  var reminders = getAllFollowupReminders();
-
-  // Apply filters
-  var filtered = reminders.filter(function(r) {
-    if (followupFilter.employee && r.employeeId !== followupFilter.employee) return false;
-    if (followupFilter.campaign && r.campaignId !== followupFilter.campaign) return false;
-    if (followupFilter.status === 'overdue' && !r.isOverdue) return false;
-    if (followupFilter.status === 'upcoming' && r.isOverdue) return false;
-    return true;
-  });
-
-  var html = '<div class="space-y-6 pb-6">' +
-    // Header
-    '<div>' +
-    '<h1 class="text-3xl font-bold text-white mb-2" style="font-family:\'Syne\',sans-serif">Follow-up Reminders</h1>' +
-    '<p class="text-slate-400 text-sm">Manage and track client follow-up schedules</p>' +
-    '</div>' +
-
-    // Stats
-    '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">' +
-    buildFollowupStatCard('Total Reminders', reminders.length, '#3b82f6', 'bell') +
-    buildFollowupStatCard('Overdue', reminders.filter(function(r) { return r.isOverdue; }).length, '#ef4444', 'alert-circle') +
-    buildFollowupStatCard('Due This Week', reminders.filter(function(r) { return !r.isOverdue && r.daysUntil <= 7; }).length, '#f59e0b', 'calendar') +
-    '</div>' +
-
-    // Filters
-    '<div class="card">' +
-    '<div class="flex items-center gap-2 mb-4">' +
-    '<i data-lucide="filter" class="w-5 h-5 text-slate-400"></i>' +
-    '<h3 class="font-semibold text-white">Filters</h3>' +
-    '</div>' +
-    '<div class="grid grid-cols-1 md:grid-cols-3 gap-3">' +
-    '<select id="followup-status-filter" class="input" onchange="followupFilter.status=this.value;renderFollowupReminders()">' +
-    '<option value="">All Status</option>' +
-    '<option value="overdue" ' + (followupFilter.status === 'overdue' ? 'selected' : '') + '>Overdue Only</option>' +
-    '<option value="upcoming" ' + (followupFilter.status === 'upcoming' ? 'selected' : '') + '>Upcoming Only</option>' +
-    '</select>' +
-    '<select id="followup-emp-filter" class="input" onchange="followupFilter.employee=this.value;renderFollowupReminders()">' +
-    '<option value="">All Employees</option>' +
-    S.employees.map(function(e) {
-      return '<option value="' + e.id + '" ' + (followupFilter.employee === e.id ? 'selected' : '') + '>' + esc(e.name) + '</option>';
-    }).join('') +
-    '</select>' +
-    '<select id="followup-camp-filter" class="input" onchange="followupFilter.campaign=this.value;renderFollowupReminders()">' +
-    '<option value="">All Campaigns</option>' +
-    S.campaigns.map(function(c) {
-      return '<option value="' + c.id + '" ' + (followupFilter.campaign === c.id ? 'selected' : '') + '>' + esc(c.name) + '</option>';
-    }).join('') +
-    '</select>' +
-    '</div>' +
-    '</div>';
-
-  // Reminders List
-  if (filtered.length === 0) {
-    html += '<div class="card text-center py-12">' +
-      '<i data-lucide="inbox" class="w-12 h-12 text-slate-500 mx-auto mb-3 opacity-50"></i>' +
-      '<p class="text-slate-400">No follow-up reminders found</p>' +
-      '</div>';
-  } else {
-    html += '<div class="space-y-3">';
-    filtered.forEach(function(r) {
-      var emp = empById(r.employeeId);
-      var camp = campById(r.campaignId);
-      var dateObj = new Date(r.nextFollowupDate);
-      var dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      var timeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
-      var statusClass = r.isOverdue ? 'bg-red-500/10 border-red-500/20' : 'bg-blue-500/10 border-blue-500/20';
-      var statusIcon = r.isOverdue ? 'alert-circle' : 'clock';
-      var statusColor = r.isOverdue ? 'text-red-400' : 'text-blue-400';
-
-      html += '<div class="card ' + statusClass + ' border-l-4 ' + (r.isOverdue ? 'border-l-red-500' : 'border-l-blue-500') + '">' +
-        '<div class="flex items-start justify-between gap-4 flex-wrap">' +
-        '<div class="flex-1 min-w-0">' +
-        '<div class="flex items-center gap-2 mb-2">' +
-        '<i data-lucide="' + statusIcon + '" class="w-5 h-5 ' + statusColor + '"></i>' +
-        '<h3 class="text-sm font-bold text-white">' + esc(r.clientName) + '</h3>' +
-        '</div>' +
-        '<div class="grid grid-cols-2 gap-2 text-xs text-slate-400 mb-2">' +
-        '<div><span class="text-slate-500">Phone:</span> ' + (r.clientPhone ? esc(r.clientPhone) : 'N/A') + '</div>' +
-        '<div><span class="text-slate-500">Agent:</span> ' + (emp ? esc(emp.name) : 'Unassigned') + '</div>' +
-        '<div><span class="text-slate-500">Campaign:</span> ' + (camp ? esc(camp.name) : 'N/A') + '</div>' +
-        '<div><span class="text-slate-500">Status:</span> ' + esc(r.status) + '</div>' +
-        '</div>' +
-        '<div class="flex items-center gap-2 mb-2">' +
-        '<i data-lucide="calendar" class="w-4 h-4 text-slate-500"></i>' +
-        '<span class="text-sm font-semibold text-white">' + dateStr + ' at ' + timeStr + '</span>' +
-        (r.isOverdue ? '<span class="text-xs px-2 py-1 rounded bg-red-500/20 text-red-300 font-bold">' + Math.abs(r.daysUntil) + ' days overdue</span>' : '') +
-        '</div>' +
-        (r.followupNote ? '<div class="text-xs text-slate-300 bg-white/5 p-2 rounded mb-2"><span class="text-slate-500">Note:</span> ' + esc(r.followupNote) + '</div>' : '') +
-        '</div>' +
-        '<div class="flex gap-2 flex-wrap justify-end">' +
-        '<button class="btn btn-primary btn-sm" onclick="editFollowupReminder(\'' + r.clientId + '\')">' +
-        '<i data-lucide="edit" class="w-4 h-4"></i> Edit' +
-        '</button>' +
-        '<button class="btn btn-success btn-sm" onclick="completeFollowup(\'' + r.clientId + '\')">' +
-        '<i data-lucide="check" class="w-4 h-4"></i> Complete' +
-        '</button>' +
-        '</div>' +
-        '</div>' +
-        '</div>';
-    });
-    html += '</div>';
   }
 
-  html += '</div>';
-  m.innerHTML = html;
+  // categorize
+  var overdue  = mine.filter(function(r){ return new Date(r.remind_at) < new Date(); })
+                     .sort(function(a,b){ return new Date(a.remind_at)-new Date(b.remind_at); });
+  var todayEnd = new Date(); todayEnd.setHours(23,59,59,999);
+  var today    = mine.filter(function(r){ var t=new Date(r.remind_at); return t>=new Date() && t<=todayEnd; })
+                     .sort(function(a,b){ return new Date(a.remind_at)-new Date(b.remind_at); });
+  var weekEnd  = new Date(Date.now()+7*86400000);
+  var thisWeek = mine.filter(function(r){ var t=new Date(r.remind_at); return t>todayEnd && t<=weekEnd; })
+                     .sort(function(a,b){ return new Date(a.remind_at)-new Date(b.remind_at); });
+  var later    = mine.filter(function(r){ return new Date(r.remind_at)>weekEnd; })
+                     .sort(function(a,b){ return new Date(a.remind_at)-new Date(b.remind_at); });
+
+  // total done (for stats)
+  var totalAll  = fuMyReminders();
+  var doneCount = totalAll.filter(function(r){ return r.done; }).length;
+
+  var campOpts = '<option value="">All Campaigns</option>'+
+    S.campaigns.map(function(c){ return '<option value="'+c.id+'" '+(fuFilter.campaign===c.id?'selected':'')+'>'+esc(c.name)+'</option>'; }).join('');
+  var empOpts  = '<option value="">All Agents</option>'+
+    S.employees.filter(function(e){ return e.is_active; }).map(function(e){ return '<option value="'+e.id+'" '+(fuFilter.employee===e.id?'selected':'')+'>'+esc(e.name)+'</option>'; }).join('');
+
+  m.innerHTML = hdr('Follow-up Reminders','Track and manage all client follow-ups',
+      '<button class="btn btn-primary btn-sm" onclick="renderFollowupReminders()"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh</button>')+
+
+    // ── Stats ──
+    '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5 fade-in">'+
+      fuStatCard('Total Pending', mine.length,  '#3b82f6','alarm-clock')+
+      fuStatCard('Overdue',       overdue.length, overdue.length>0?'#ef4444':'#10b981','alert-circle')+
+      fuStatCard('Today',         today.length,   '#f59e0b','calendar')+
+      fuStatCard('Completed',     doneCount,      '#10b981','check-circle')+
+    '</div>'+
+
+    // ── Filters ──
+    '<div class="card mb-4 fade-in" style="padding:.75rem 1rem">'+
+      '<div class="flex items-center gap-3 flex-wrap">'+
+        searchBox('fu-search', fuSearch, 'setFuSearch', 'Search client name, phone, note...')+
+        (S.role==='admin'?
+          '<select class="input" style="max-width:180px" onchange="fuFilter.employee=this.value;renderFollowupReminders()">'+empOpts+'</select>'+
+          '<select class="input" style="max-width:180px" onchange="fuFilter.campaign=this.value;renderFollowupReminders()">'+campOpts+'</select>'
+        : '')+
+      '</div>'+
+    '</div>'+
+
+    // ── Grouped lists ──
+    fuGroup('🔴 Overdue', overdue, '#ef4444', true)+
+    fuGroup('📅 Today',   today,   '#f59e0b', false)+
+    fuGroup('📆 This Week',thisWeek,'#3b82f6', false)+
+    fuGroup('🗓️ Upcoming', later,   '#8b5cf6', false)+
+
+    (mine.length===0 ?
+      '<div class="card text-center py-14 fade-in">'+
+        '<i data-lucide="check-circle" style="width:40px;height:40px;color:#10b981;margin:0 auto 12px;display:block"></i>'+
+        '<p class="text-slate-300 font-semibold">All clear!</p>'+
+        '<p class="text-slate-500 text-sm mt-1">No pending follow-ups</p>'+
+      '</div>'
+    : '');
+
   lucide.createIcons();
 }
 
-// ── Build Follow-up Stat Card ──
-function buildFollowupStatCard(label, value, color, icon) {
-  return '<div class="card border-l-4" style="border-left-color:' + color + '">' +
-    '<div class="flex items-start justify-between">' +
-    '<div>' +
-    '<p class="text-slate-400 text-xs font-medium mb-1">' + label + '</p>' +
-    '<p class="text-3xl font-bold text-white">' + value + '</p>' +
-    '</div>' +
-    '<i data-lucide="' + icon + '" class="w-8 h-8" style="color:' + color + ';opacity:0.6"></i>' +
-    '</div>' +
-    '</div>';
+function fuGroup(title, reminders, color, alwaysShow){
+  if(!reminders.length && !alwaysShow) return '';
+  return '<div class="mb-4 fade-in">'+
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+
+      '<h3 style="font-size:13px;font-weight:700;color:'+color+'">'+title+' ('+reminders.length+')</h3>'+
+    '</div>'+
+    (reminders.length ? '<div class="space-y-2">'+reminders.map(fuCard).join('')+'</div>'
+      : '<p style="font-size:12px;color:#475569;padding:8px 0">None</p>')+
+  '</div>';
 }
 
-// ── Edit follow-up reminder ──
-function editFollowupReminder(clientId) {
-  followupEditId = clientId;
-  var client = clientById(clientId);
-  if (!client) return;
+function fuCard(r){
+  var c    = clientById(r.client_id);
+  var emp  = empById(r.employee_id);
+  var camp = c ? campById(c.campaign_id) : null;
+  var dt   = new Date(r.remind_at);
+  var isOverdue = dt < new Date();
+  var dtStr = dt.toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  var ex   = (c&&c.extra_data)||{};
 
-  var currentDate = client.next_followup_date ? new Date(client.next_followup_date).toISOString().split('T')[0] : '';
-  var currentTime = client.next_followup_date ? new Date(client.next_followup_date).toTimeString().split(' ')[0].substring(0, 5) : '09:00';
-  var currentNote = client.followup_note || '';
-
-  var modal = '<div class="modal-overlay" id="followup-edit-modal" onclick="if(event.target===this)closeFollowupEdit()">' +
-    '<div class="modal fade-in">' +
-    '<div class="modal-header">' +
-    '<h3 class="font-bold text-white">Edit Follow-up Reminder</h3>' +
-    '<button onclick="closeFollowupEdit()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>' +
-    '</div>' +
-    '<div class="modal-body space-y-4">' +
-    '<div>' +
-    '<p class="text-sm font-semibold text-white mb-2">Client: ' + esc(client.name) + '</p>' +
-    '</div>' +
-    '<div>' +
-    '<label class="text-xs text-slate-400 font-medium mb-2 block">Follow-up Date *</label>' +
-    '<input type="date" id="followup-date-input" class="input" value="' + currentDate + '">' +
-    '</div>' +
-    '<div>' +
-    '<label class="text-xs text-slate-400 font-medium mb-2 block">Follow-up Time *</label>' +
-    '<input type="time" id="followup-time-input" class="input" value="' + currentTime + '">' +
-    '</div>' +
-    '<div>' +
-    '<label class="text-xs text-slate-400 font-medium mb-2 block">Note (Optional)</label>' +
-    '<textarea id="followup-note-input" class="input" placeholder="Add a note for this follow-up..." style="min-height:80px">' + esc(currentNote) + '</textarea>' +
-    '</div>' +
-    '</div>' +
-    '<div class="modal-footer">' +
-    '<button class="btn btn-ghost" onclick="closeFollowupEdit()">Cancel</button>' +
-    '<button class="btn btn-primary" onclick="saveFollowupEdit(\'' + clientId + '\')"><i data-lucide="save" class="w-4 h-4"></i> Save</button>' +
-    '</div>' +
-    '</div>' +
-    '</div>';
-
-  document.body.insertAdjacentHTML('beforeend', modal);
-  lucide.createIcons();
+  return '<div class="card" style="border-color:rgba(255,255,255,'+(isOverdue?'.12':'.06')+')" >'+
+    '<div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">'+
+      '<div style="flex:1;min-width:200px">'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'+
+          '<i data-lucide="'+(isOverdue?'alert-circle':'alarm-clock')+'" style="width:14px;height:14px;color:'+(isOverdue?'#f87171':'#fbbf24')+'"></i>'+
+          '<span style="font-size:13px;font-weight:700;color:#fff">'+(c?esc(c.name||ex.name||ex.customer||'-'):'Unknown client')+'</span>'+
+          (camp?'<span style="font-size:10px;color:#a78bfa;background:rgba(139,92,246,.12);padding:2px 8px;border-radius:4px">'+esc(camp.name)+'</span>':'')+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:12px;color:#94a3b8;margin-bottom:6px">'+
+          (c&&c.phone?'<div>📞 '+esc(c.phone)+'</div>':'')+
+          (ex.unit?'<div>🏠 '+esc(ex.unit)+'</div>':'')+
+          (emp?'<div>👤 '+esc(emp.name)+'</div>':'')+
+          (c?'<div style="color:'+(isOverdue?'#f87171':'#fbbf24')+'">⏰ '+dtStr+'</div>':'')+
+        '</div>'+
+        (r.note?'<div style="background:rgba(255,255,255,.04);border-radius:8px;padding:6px 10px;font-size:12px;color:#cbd5e1">'+esc(r.note)+'</div>':'')+
+      '</div>'+
+      '<div style="display:flex;gap:6px;flex-direction:column;flex-shrink:0">'+
+        '<button class="btn btn-sm" style="background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:#6ee7b7" '+
+          'onclick="markFuDone(\''+r.id+'\',\''+(c?c.id:'')+'\')">'+
+          '<i data-lucide="check" class="w-3.5 h-3.5"></i> Done</button>'+
+        (c?'<button class="btn btn-ghost btn-sm" onclick="expandedClientId=\''+c.id+'\';navigateTo(\'my-clients\')">'+
+          '<i data-lucide="external-link" class="w-3.5 h-3.5"></i> Client</button>':'.')+
+      '</div>'+
+    '</div>'+
+  '</div>';
 }
 
-// ── Save follow-up edit ──
-function saveFollowupEdit(clientId) {
-  var dateInput = document.getElementById('followup-date-input');
-  var timeInput = document.getElementById('followup-time-input');
-  var noteInput = document.getElementById('followup-note-input');
-
-  if (!dateInput.value || !timeInput.value) {
-    toast('Please select both date and time', 'info');
-    return;
-  }
-
-  var dateStr = dateInput.value + 'T' + timeInput.value + ':00';
-  var noteStr = noteInput.value.trim();
-
-  closeFollowupEdit();
-  setFollowupDate(clientId, dateStr, noteStr);
-}
-
-// ── Close follow-up edit modal ──
-function closeFollowupEdit() {
-  var modal = document.getElementById('followup-edit-modal');
-  if (modal) modal.remove();
-  followupEditId = null;
-}
-
-// ── Escape HTML ──
-function esc(str) {
-  var div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+function fuStatCard(label, val, color, icon){
+  return '<div class="card text-center" style="padding:14px;cursor:default">'+
+    '<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:4px">'+
+      '<i data-lucide="'+icon+'" style="width:14px;height:14px;color:'+color+'"></i>'+
+      '<p class="text-xs text-slate-400">'+label+'</p>'+
+    '</div>'+
+    '<p class="text-2xl font-bold" style="color:'+color+'">'+val+'</p>'+
+  '</div>';
 }
