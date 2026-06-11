@@ -118,3 +118,41 @@ function hdr(title,desc,actions){
     (actions?'<div class="flex gap-2" style="flex-wrap:wrap;align-items:center;flex-shrink:0">'+actions+'</div>':'')+
   '</div>';
 }
+
+
+// ── Global client search helper ──────────────────────────────
+function clientMatchesSearch(c, q){
+  if (!q) return true;
+  q = q.toLowerCase().trim();
+  if (!q) return true;
+  if ((c.name||'').toLowerCase().indexOf(q) > -1) return true;
+  if ((c.phone||'').toLowerCase().indexOf(q) > -1) return true;
+  // strip non-digits for phone-like queries
+  var qDigits = q.replace(/\D/g,'');
+  if (qDigits.length >= 4 && (c.phone||'').replace(/\D/g,'').indexOf(qDigits) > -1) return true;
+  var ex = c.extra_data || {};
+  return Object.keys(ex).some(function(k){
+    var v = String(ex[k]||'').toLowerCase();
+    if (v.indexOf(q) > -1) return true;
+    if (qDigits.length >= 4 && v.replace(/\D/g,'').indexOf(qDigits) > -1) return true;
+    return false;
+  });
+}
+
+// Search input builder — keeps focus across re-renders
+function searchBox(id, value, onInputFn, placeholder){
+  return '<div style="position:relative;max-width:280px;flex:1;min-width:180px">'+
+    '<i data-lucide="search" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:#64748b;pointer-events:none"></i>'+
+    '<input id="'+id+'" class="input" style="padding-right:34px" placeholder="'+(placeholder||'Search...')+'" '+
+    'value="'+escHtmlAttr(value||'')+'" oninput="'+onInputFn+'(this.value)">'+
+  '</div>';
+}
+
+function restoreSearchFocus(id){
+  var el = document.getElementById(id);
+  if (el && el.value) {
+    var len = el.value.length;
+    el.focus();
+    try { el.setSelectionRange(len, len); } catch(e){}
+  }
+}
