@@ -331,6 +331,44 @@ function buildRedistributePanel() {
 // ── Render ─────────────────────────────────────────────────────
 var selectedClients = {};
 
+
+function buildFormResponseSection(extra) {
+  var submittedAt = extra.form_submitted_at
+    ? new Date(extra.form_submitted_at).toLocaleString('en-GB', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+    : '';
+
+  // Fields that came from the form (not from the original sheet upload)
+  var FORM_FIELDS = [
+    {key:'name',              label:'Full Name'},
+    {key:'phone',             label:'Primary Phone'},
+    {key:'old_phone',         label:'Previous Phone'},
+    {key:'phone2',            label:'Secondary Phone'},
+    {key:'email',             label:'Email'},
+    {key:'email2',            label:'Secondary Email'},
+    {key:'preferred_channel', label:'Preferred Channel'},
+    {key:'notes',             label:'Notes'},
+  ];
+
+  var rows = FORM_FIELDS
+    .filter(function(f) { return extra[f.key] && extra[f.key].toString().trim(); })
+    .map(function(f) {
+      return '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0;border-bottom:0.5px solid rgba(255,255,255,.06);gap:12px">' +
+        '<span style="font-size:11px;color:#64748b;flex-shrink:0">' + esc(f.label) + '</span>' +
+        '<span style="font-size:11px;color:#6ee7b7;font-weight:500;text-align:right;word-break:break-all">' + esc(extra[f.key]) + '</span>' +
+      '</div>';
+    });
+
+  if (!rows.length) return '';
+
+  return '<div style="background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:.85rem 1rem">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">' +
+      '<p style="font-size:11px;font-weight:600;color:#6ee7b7;text-transform:uppercase;letter-spacing:.05em">Form Response</p>' +
+      (submittedAt ? '<span style="font-size:10px;color:#64748b">' + submittedAt + '</span>' : '') +
+    '</div>' +
+    rows.join('') +
+  '</div>';
+}
+
 function buildBulkBar(cls) {
   var selCount = Object.keys(selectedClients).length;
   if (!cls.length) return '';
@@ -560,6 +598,7 @@ function renderClientCard(c) {
     statsBar + '</div></div>' +
     '<div class="flex items-center gap-2 flex-shrink-0">' +
     assignBadge + sBadge(c.status) +
+    (extra.form_submitted ? '<span class="badge" style="background:#064e3b;color:#6ee7b7;font-size:10px;margin-right:2px"><i data-lucide=\"check\" style=\"width:10px;height:10px;vertical-align:-1px\"></i> Form</span>' : '') +
     '<i data-lucide="' + (isExp ? 'chevron-up' : 'chevron-down') + '" class="w-4 h-4 text-slate-400"></i>' +
     '</div></div>' +
 
@@ -579,6 +618,9 @@ function renderClientCard(c) {
           }).join('') + '</select>'
         : '<p class="text-sm text-white">' + esc(c.status||'-') + '</p>') +
       '</div></div>' +
+
+      // ── Form Response Section ──
+      (extra.form_submitted ? buildFormResponseSection(extra) : '') +
 
       // ── Assign / Reassign / Unassign section (admin only) ──
       buildAssignActions(c, displayName) +
