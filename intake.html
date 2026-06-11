@@ -3,973 +3,441 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nations of Sky — تواصل معنا</title>
-  <meta property="og:type"        content="website">
-  <meta property="og:site_name"   content="Nations of Sky">
-  <meta property="og:title"       content="Nations of Sky — سجّل هنا الآن">
-  <meta property="og:description" content="فريقنا متاح لمساعدتك. سجّل معلوماتك وسيتواصل معك أحد مستشارينا في أقرب وقت.">
-  <meta property="og:image"       content="https://nationsskyreports-rgb.github.io/icon-512.png">
-  <meta property="og:url"         content="https://nationsskyreports-rgb.github.io/intake.html">
-  <meta name="twitter:card"       content="summary_large_image">
-  <meta name="twitter:title"      content="Nations of Sky — سجّل هنا الآن">
-  <meta name="twitter:description" content="فريقنا متاح لمساعدتك. سجّل معلوماتك وسيتواصل معك أحد مستشارينا في أقرب وقت.">
-  <meta name="twitter:image"      content="https://nationsskyreports-rgb.github.io/icon-512.png">
-  <link rel="icon" type="image/png" href="icon-512.png">
+  <title>تسجيل البيانات — Nations of Sky</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --blue:      #3b82f6;
-      --blue-dark: #2563eb;
-      --blue-bg:   #eff6ff;
-      --green:     #10b981;
-      --green-bg:  #ecfdf5;
-      --red:       #ef4444;
-      --red-bg:    #fef2f2;
-      --border:    #e5e7eb;
-      --text:      #111827;
-      --muted:     #6b7280;
-      --card-bg:   #ffffff;
-      --page-bg:   #f3f4f6;
-      --radius:    10px;
-      --whatsapp:  #25d366;
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --blue:#3b82f6;--blue-dk:#2563eb;--blue-bg:#eff6ff;
+      --green:#10b981;--green-bg:#ecfdf5;
+      --red:#ef4444;--red-bg:#fef2f2;
+      --amber:#f59e0b;--amber-bg:#fffbeb;
+      --border:#e5e7eb;--text:#111827;--muted:#6b7280;
+      --card:#ffffff;--page:#f3f4f6;--radius:10px;
     }
-
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, 'Cairo', Arial, sans-serif;
-      background: var(--page-bg );
-      min-height: 100vh;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 2rem 1rem 4rem;
-      color: var(--text);
-    }
-
-    .wrapper { width: 100%; max-width: 480px; }
-
-    /* Lang Toggle */
-    .lang-toggle {
-      display: flex;
-      justify-content: center;
-      gap: .5rem;
-      margin-bottom: 1.25rem;
-    }
-    .lang-btn {
-      padding: .4rem 1.1rem;
-      border-radius: 8px;
-      border: 1.5px solid var(--border);
-      background: #fff;
-      font-size: .82rem;
-      font-weight: 600;
-      cursor: pointer;
-      color: var(--muted);
-      transition: all .15s;
-      font-family: inherit;
-    }
-    .lang-btn.active {
-      background: var(--blue);
-      border-color: var(--blue);
-      color: #fff;
-    }
-
-    /* Brand Header */
-    .brand { text-align: center; margin-bottom: 1.5rem; }
-    .brand-logo {
-      width: 56px; height: 56px;
-      background: none;
-      border-radius: 16px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: .75rem;
-    }
-    .brand-logo img { width: 56px; height: 56px; border-radius: 16px; object-fit: cover; }
-    .brand-title { font-size: 1.1rem; font-weight: 700; color: var(--text); }
-    .brand-sub   { font-size: .85rem; color: var(--muted); margin-top: .2rem; }
-
-    /* Card */
-    .card {
-      background: var(--card-bg);
-      border-radius: 16px;
-      border: 1px solid var(--border);
-      padding: 2rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
-    }
-
-    .campaign-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: .4rem;
-      background: var(--blue-bg);
-      color: var(--blue-dark);
-      border-radius: 6px;
-      font-size: .78rem;
-      font-weight: 600;
-      padding: .3rem .7rem;
-      margin-bottom: 1.25rem;
-    }
-    .campaign-tag svg { width: 13px; height: 13px; fill: var(--blue); }
-
-    .card-title { font-size: 1.25rem; font-weight: 700; margin-bottom: .4rem; color: var(--text); }
-    .card-desc  { font-size: .88rem; color: var(--muted); margin-bottom: 1.75rem; line-height: 1.6; }
-
-    /* Form */
-    .field { margin-bottom: 1.1rem; }
-    .field label {
-      display: block;
-      font-size: .82rem;
-      font-weight: 600;
-      margin-bottom: .4rem;
-      color: #374151;
-    }
-    .field label .req { color: var(--red); margin-right: .15rem; margin-left: .15rem; }
-    .field input,
-    .field select,
-    .field textarea {
-      width: 100%;
-      padding: .65rem .9rem;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      font-size: .9rem;
-      font-family: inherit;
-      color: var(--text);
-      background: #fff;
-      transition: border-color .15s, box-shadow .15s;
-      outline: none;
-    }
-    .field input:focus,
-    .field select:focus,
-    .field textarea:focus {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(59,130,246,.12);
-    }
-    .field.has-err .err-msg { display: block; }
-    .field.has-err input,
-    .field.has-err select { border-color: var(--red); }
-    .field .err-msg {
-      font-size: .78rem;
-      color: var(--red);
-      margin-top: .3rem;
-      display: none;
-    }
-    .field textarea { resize: vertical; min-height: 90px; }
-
-    .divider { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0 1.25rem; }
-    .section-label {
-      font-size: .75rem;
-      font-weight: 700;
-      color: var(--muted);
-      letter-spacing: .05em;
-      text-transform: uppercase;
-      margin-bottom: 1rem;
-    }
-
-    /* Submit Button */
-    .btn-submit {
-      width: 100%;
-      padding: .85rem;
-      background: var(--blue);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius);
-      font-size: .95rem;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
-      transition: background .15s, transform .1s, opacity .15s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: .5rem;
-      margin-top: 1.5rem;
-      position: relative;
-      overflow: hidden;
-    }
-    .btn-submit:hover:not(:disabled) { background: var(--blue-dark); }
-    .btn-submit:active:not(:disabled) { transform: scale(.99); }
-    .btn-submit:disabled { opacity: .65; cursor: not-allowed; }
-    .btn-submit svg { width: 18px; height: 18px; fill: #fff; flex-shrink: 0; }
-
-    .whatsapp-container {
-      margin-top: 1.5rem;
-      text-align: center;
-    }
-    .whatsapp-text {
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-bottom: 0.75rem;
-    }
-    .btn-whatsapp {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: .6rem;
-      background: var(--whatsapp);
-      color: #fff;
-      padding: .75rem 1.25rem;
-      border-radius: var(--radius);
-      text-decoration: none;
-      font-weight: 700;
-      font-size: 0.9rem;
-      transition: opacity .15s, transform .1s;
-      width: 100%;
-    }
-    .btn-whatsapp:hover { opacity: .9; }
-    .btn-whatsapp:active { transform: scale(.98); }
-    .btn-whatsapp svg { width: 18px; height: 18px; fill: #fff; }
-
-    /* Privacy Checkbox */
-    .privacy-field {
-      display: flex;
-      align-items: flex-start;
-      gap: .75rem;
-      margin-top: 1.5rem;
-      cursor: pointer;
-    }
-    .privacy-field input {
-      width: 18px; height: 18px;
-      margin-top: .1rem;
-      cursor: pointer;
-    }
-    .privacy-field span {
-      font-size: .85rem;
-      line-height: 1.4;
-      color: var(--muted);
-    }
-
-    .btn-progress {
-      position: absolute; inset: 0;
-      background: rgba(255,255,255,.18);
-      width: 0%; transition: width .4s ease;
-      pointer-events: none;
-    }
-
-    .spinner {
-      width: 18px; height: 18px;
-      border: 2.5px solid rgba(255,255,255,.35);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      flex-shrink: 0;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* States */
-    .state { display: none; }
-    .state.active { display: block; }
-
-    .skeleton {
-      height: 14px; border-radius: 6px;
-      background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.4s infinite;
-      margin-bottom: .6rem;
-    }
-    @keyframes shimmer { to { background-position: -200% 0; } }
-
-    .success-box { text-align: center; padding: 1rem 0 .5rem; }
-    .success-circle {
-      width: 72px; height: 72px;
-      background: var(--green-bg);
-      border-radius: 50%;
-      display: inline-flex; align-items: center; justify-content: center;
-      margin-bottom: 1.25rem;
-      animation: popIn .4s cubic-bezier(.34,1.56,.64,1) both;
-    }
-    @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    .success-circle svg { width: 36px; height: 36px; fill: var(--green); }
-    .success-title { font-size: 1.2rem; font-weight: 700; margin-bottom: .5rem; }
-    .success-sub   { font-size: .9rem; color: var(--muted); line-height: 1.6; }
-
-    .error-banner {
-      background: var(--red-bg);
-      border: 1px solid #fecaca;
-      border-radius: var(--radius);
-      padding: .75rem 1rem;
-      font-size: .85rem;
-      color: #b91c1c;
-      margin-bottom: 1rem;
-      display: none;
-    }
-    .error-banner.show { display: flex; align-items: flex-start; gap: .5rem; }
-
-    .footer { text-align: center; margin-top: 1.5rem; font-size: .78rem; color: #9ca3af; }
-
-    .notfound-box { text-align: center; padding: 1rem 0; }
-    .notfound-icon {
-      width: 64px; height: 64px;
-      background: #fef2f2; border-radius: 50%;
-      display: inline-flex; align-items: center; justify-content: center;
-      margin-bottom: 1rem;
-    }
-    .notfound-icon svg { width: 30px; height: 30px; fill: var(--red); }
-    .notfound-title { font-size: 1.1rem; font-weight: 700; margin-bottom: .4rem; }
-    .notfound-sub   { font-size: .88rem; color: var(--muted); }
-
-    @media (max-width: 500px) {
-      body { padding: 1rem .75rem 3rem; }
-      .card { padding: 1.5rem; }
-    }
+    body{font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;background:var(--page);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem 4rem;color:var(--text)}
+    .wrap{width:100%;max-width:480px}
+    .brand{text-align:center;margin-bottom:1.5rem}
+    .brand-name{font-size:1rem;font-weight:700;color:var(--text)}
+    .brand-sub{font-size:.8rem;color:var(--muted);margin-top:.15rem}
+    .card{background:var(--card);border-radius:16px;border:1px solid var(--border);padding:1.75rem}
+    .step{display:none}.step.active{display:block}
+    /* ── Form elements ── */
+    .field{margin-bottom:1rem}
+    .field label{display:block;font-size:.82rem;font-weight:600;margin-bottom:.4rem;color:#374151}
+    .field label .req{color:var(--red);margin-right:.15rem}
+    .field input,.field select,.field textarea{width:100%;padding:.65rem .9rem;border:1.5px solid var(--border);border-radius:var(--radius);font-size:.9rem;font-family:inherit;color:var(--text);background:#fff;outline:none;transition:border-color .15s,box-shadow .15s}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+    .field.err input,.field.err select{border-color:var(--red)}
+    .field .errmsg{font-size:.78rem;color:var(--red);margin-top:.3rem;display:none}
+    .field.err .errmsg{display:block}
+    .field textarea{resize:vertical;min-height:80px}
+    /* ── Buttons ── */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;padding:.7rem 1.2rem;border-radius:var(--radius);font-size:.88rem;font-weight:600;font-family:inherit;cursor:pointer;transition:background .15s,transform .1s;border:none}
+    .btn:active{transform:scale(.99)}
+    .btn-primary{background:var(--blue);color:#fff;width:100%;margin-top:1.25rem}
+    .btn-primary:hover{background:var(--blue-dk)}
+    .btn-primary:disabled{opacity:.6;cursor:not-allowed}
+    .btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);margin-top:.6rem;width:100%}
+    .btn-ghost:hover{background:#f9fafb}
+    /* ── Spinner ── */
+    .spinner{width:17px;height:17px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    /* ── Titles ── */
+    .step-title{font-size:1.15rem;font-weight:700;margin-bottom:.35rem}
+    .step-desc{font-size:.86rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
+    /* ── Unit checkboxes ── */
+    .project-group{margin-bottom:1.25rem}
+    .project-label{font-size:.72rem;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:.5rem}
+    .unit-item{display:flex;align-items:center;gap:.75rem;padding:.65rem .85rem;border:1.5px solid var(--border);border-radius:var(--radius);margin-bottom:.45rem;cursor:pointer;transition:border-color .15s,background .15s}
+    .unit-item:hover{border-color:#93c5fd;background:#f8fbff}
+    .unit-item.selected{border-color:var(--blue);background:var(--blue-bg)}
+    .unit-item input[type=checkbox]{width:16px;height:16px;accent-color:var(--blue);flex-shrink:0;cursor:pointer}
+    .unit-code{font-size:.82rem;font-weight:600;color:var(--text);flex:1}
+    .unit-contract{font-size:.75rem;color:var(--muted)}
+    /* ── Name confirm banner ── */
+    .name-banner{display:flex;align-items:center;gap:.75rem;padding:.85rem 1rem;background:var(--green-bg);border:1px solid #a7f3d0;border-radius:var(--radius);margin-bottom:1.25rem}
+    .name-banner svg{width:20px;height:20px;fill:var(--green);flex-shrink:0}
+    .name-banner-text{font-size:.88rem;color:#065f46}
+    .name-banner-name{font-weight:700;display:block;font-size:.95rem;color:#064e3b;margin-top:.1rem}
+    /* ── Not found / error banner ── */
+    .alert{display:none;align-items:flex-start;gap:.6rem;padding:.75rem 1rem;border-radius:var(--radius);margin-bottom:1rem;font-size:.85rem}
+    .alert.show{display:flex}
+    .alert-red{background:var(--red-bg);border:1px solid #fecaca;color:#b91c1c}
+    .alert-amber{background:var(--amber-bg);border:1px solid #fde68a;color:#92400e}
+    .alert svg{width:16px;height:16px;fill:currentColor;flex-shrink:0;margin-top:1px}
+    /* ── Success ── */
+    .success-wrap{text-align:center;padding:.75rem 0 .5rem}
+    .success-circle{width:70px;height:70px;background:var(--green-bg);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:1.1rem;animation:pop .4s cubic-bezier(.34,1.56,.64,1) both}
+    @keyframes pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+    .success-circle svg{width:34px;height:34px;fill:var(--green)}
+    .success-title{font-size:1.15rem;font-weight:700;margin-bottom:.4rem}
+    .success-sub{font-size:.88rem;color:var(--muted);line-height:1.6}
+    /* ── Section divider ── */
+    hr.div{border:none;border-top:1px solid var(--border);margin:1.25rem 0}
+    .section-lbl{font-size:.72rem;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:.85rem}
+    /* ── Skeleton ── */
+    .skel{height:13px;border-radius:5px;background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;animation:shim 1.4s infinite;margin-bottom:.6rem}
+    @keyframes shim{to{background-position:-200% 0}}
+    .footer{text-align:center;margin-top:1.25rem;font-size:.76rem;color:#9ca3af}
+    @media(max-width:500px){body{padding:1rem .75rem 3rem}.card{padding:1.25rem}}
   </style>
 </head>
 <body>
-<div class="wrapper">
-
-  <!-- Lang Toggle -->
-  <div class="lang-toggle">
-    <button class="lang-btn active" id="btn-ar" onclick="setLang('ar')">العربية</button>
-    <button class="lang-btn"        id="btn-en" onclick="setLang('en')">English</button>
-  </div>
-
-  <!-- Brand -->
+<div class="wrap">
   <div class="brand">
-    <div class="brand-logo">
-      <img src="icon-512.png" alt="Nations of Sky">
-    </div>
-    <div class="brand-title">Nations of Sky</div>
-    <div class="brand-sub" id="brand-sub">أهلاً بك! سجّل هنا وسيتواصل معك أحد مستشارينا قريباً</div>
+    <img src="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-192.png" alt="Nations of Sky" style="height:64px;width:auto;margin-bottom:.5rem;object-fit:contain">
+    <div class="brand-name">Nations of Sky</div>
+    <div class="brand-sub">بوابة العملاء</div>
   </div>
 
-  <!-- Card -->
   <div class="card">
 
-    <!-- Loading -->
-    <div id="state-loading" class="state active">
-      <div class="skeleton" style="width:35%;margin-bottom:1rem"></div>
-      <div class="skeleton" style="width:70%;height:20px;margin-bottom:.5rem"></div>
-      <div class="skeleton" style="width:50%;height:12px;margin-bottom:2rem"></div>
-      <div class="skeleton" style="height:44px;margin-bottom:1rem"></div>
-      <div class="skeleton" style="height:44px;margin-bottom:1rem"></div>
-      <div class="skeleton" style="height:44px;margin-bottom:1rem"></div>
-      <div class="skeleton" style="height:44px"></div>
+    <!-- STEP: loading skeleton -->
+    <div class="step active" id="s-init">
+      <div class="skel" style="width:40%;height:18px;margin-bottom:1rem"></div>
+      <div class="skel" style="width:70%"></div>
+      <div class="skel" style="width:50%;margin-bottom:1.5rem"></div>
+      <div class="skel" style="height:44px;margin-bottom:.75rem"></div>
+      <div class="skel" style="height:44px"></div>
     </div>
 
-    <!-- Form -->
-    <div id="state-form" class="state">
-      <div class="campaign-tag" id="camp-tag" style="display: none;">
+    <!-- STEP 1: Phone input -->
+    <div class="step" id="s-phone">
+      <div class="step-title">سجّل بياناتك</div>
+      <div class="step-desc">ادخل رقم تليفونك المسجل عندنا وهنوريلك وحداتك</div>
+      <div class="alert alert-red" id="alert-notfound">
         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-        <span id="camp-tag-name"></span>
-      </div>
-
-      <!-- Error Banner -->
-      <div class="error-banner" id="error-banner">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="flex-shrink:0;margin-top:1px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-        <span id="error-text"></span>
-      </div>
-
-      <!-- Single Form -->
-      <div id="panel-register">
-        <div class="card-title" id="form-title">سجّل هنا</div>
-        <div class="card-desc"  id="form-desc">أدخل معلوماتك وسيقوم فريقنا بالتواصل معك في أقرب وقت.</div>
-
-        <div class="section-label" id="lbl-basic">المعلومات الأساسية</div>
-
-        <div class="field" id="field-name">
-          <label id="lbl-name">الاسم الكامل <span class="req">*</span></label>
-          <input type="text" id="inp-name" autocomplete="name">
-          <div class="err-msg" id="err-name">هذا الحقل مطلوب</div>
-        </div>
-
-        <div class="field" id="field-phone">
-          <label id="lbl-phone">رقم التليفون الأساسي <span class="req">*</span></label>
-          <input type="tel" id="inp-phone" placeholder="+20 1xx xxxx xxxx" autocomplete="tel" dir="ltr">
-          <div class="err-msg" id="err-phone">أدخل رقماً صحيحاً</div>
-        </div>
-
-        <div class="field" id="field-new-phone">
-          <label id="lbl-new-phone">رقم التليفون الجديد (لو عايز تغيّر رقمك الأساسي) <span style="color:var(--muted);font-weight:400" id="lbl-new-phone-opt">(اختياري)</span></label>
-          <input type="tel" id="inp-new-phone" placeholder="+20 1xx xxxx xxxx" dir="ltr">
-          <div class="err-msg" id="err-new-phone">أدخل رقماً صحيحاً</div>
-        </div>
-
-        <div class="field" id="field-phone2">
-          <label id="lbl-phone2">رقم التليفون الإضافي <span style="color:var(--muted);font-weight:400" id="lbl-phone2-opt">(اختياري)</span></label>
-          <input type="tel" id="inp-phone2" placeholder="+20 1xx xxxx xxxx" autocomplete="tel" dir="ltr">
-          <div class="err-msg" id="err-phone2">أدخل رقماً صحيحاً</div>
-        </div>
-
-        <div class="field" id="field-email">
-          <label id="lbl-email">البريد الإلكتروني الأساسي <span class="req">*</span></label>
-          <input type="email" id="inp-email" placeholder="example@email.com" autocomplete="email" dir="ltr">
-          <div class="err-msg" id="err-email">أدخل بريداً إلكترونياً صحيحاً</div>
-        </div>
-
-        <div class="field" id="field-email2">
-          <label id="lbl-email2">البريد الإلكتروني الإضافي <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>
-          <input type="email" id="inp-email2" placeholder="example2@email.com" dir="ltr">
-          <div class="err-msg" id="err-email2">أدخل بريداً إلكترونياً صحيحاً</div>
-        </div>
-
-        <div id="dynamic-fields"></div>
-
-        <hr class="divider">
-        <div class="field">
-          <label id="lbl-notes">ملاحظات إضافية <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>
-          <textarea id="inp-notes"></textarea>
-        </div>
-
-        <label class="privacy-field" id="field-privacy">
-          <input type="checkbox" id="inp-privacy">
-          <span id="lbl-privacy">أوافق على معالجة بياناتي الشخصية وفقاً لسياسة الخصوصية.</span>
-        </label>
-
-        <button type="button" class="btn-submit" id="btn-submit" onclick="submitForm()">
-          <div class="btn-progress" id="btn-progress"></div>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-          <span id="btn-label">إرسال الطلب</span>
-        </button>
-
-        <div class="whatsapp-container">
-          <div class="whatsapp-text" id="wa-text">أو تواصل معنا مباشرة عبر واتساب</div>
-          <a href="https://wa.me/20215555" target="_blank" class="btn-whatsapp" id="btn-wa-form">
-            <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            <span id="wa-label-form">تواصل معنا عبر واتساب</span>
-          </a>
+        <div>
+          <div style="font-weight:700">الرقم ده مش مسجل عندنا</div>
+          <div style="margin-top:2px;font-size:.82rem">تأكد من الرقم أو تواصل مع فريق المبيعات</div>
         </div>
       </div>
+      <div class="field" id="field-phone">
+        <label>رقم التليفون <span class="req">*</span></label>
+        <input type="tel" id="inp-phone" placeholder="01XXXXXXXXX" dir="ltr" autocomplete="tel"
+               oninput="hideAlert()">
+        <div class="errmsg">ادخل رقم صح</div>
+      </div>
+      <button class="btn btn-primary" id="btn-search" onclick="searchPhone()">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <span id="btn-search-lbl">بحث عن وحداتي</span>
+      </button>
+    </div>
 
-    </div><!-- /state-form -->
+    <!-- STEP 2: Select units -->
+    <div class="step" id="s-units">
+      <div class="name-banner">
+        <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        <div class="name-banner-text">
+          أهلاً بك!
+          <span class="name-banner-name" id="found-name"></span>
+        </div>
+      </div>
+      <div class="step-title">اختار وحدتك</div>
+      <div class="step-desc">علّم على الوحدة أو الوحدات اللي عايز تملا البيانات عنها</div>
+      <div class="alert alert-amber" id="alert-nosel" style="margin-bottom:.75rem">
+        <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+        <span>اختار وحدة واحدة على الأقل</span>
+      </div>
+      <div id="units-container"></div>
+      <button class="btn btn-primary" onclick="goToForm()">
+        متابعة
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+      </button>
+      <button class="btn btn-ghost" onclick="goBack()">← رقم تاني</button>
+    </div>
 
-    <!-- Success -->
-    <div id="state-success" class="state">
-      <div class="success-box">
+    <!-- STEP 3: Form questions -->
+    <div class="step" id="s-form">
+      <div class="step-title">بيانات إضافية</div>
+      <div class="step-desc">أجب على الأسئلة دي عشان نقدر نخدمك أحسن</div>
+      <div class="alert alert-red" id="alert-formerr">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        <span id="formerr-msg">في حقول مطلوبة ناقصة</span>
+      </div>
+      <div id="form-fields"></div>
+      <button class="btn btn-primary" id="btn-submit" onclick="submitForm()">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        <span id="btn-submit-lbl">إرسال البيانات</span>
+      </button>
+      <button class="btn btn-ghost" onclick="showStep('s-units')">← الوحدات</button>
+    </div>
+
+    <!-- STEP: success -->
+    <div class="step" id="s-success">
+      <div class="success-wrap">
         <div class="success-circle">
           <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
         </div>
-        <div class="success-title" id="success-title">تم إرسال طلبك بنجاح!</div>
-        <div class="success-sub"   id="success-msg">شكراً لك. سيتواصل معك أحد ممثلينا في أقرب وقت ممكن.</div>
-        
-        <a href="https://wa.me/20215555" target="_blank" class="btn-whatsapp" id="btn-wa" style="margin-top: 1.5rem;">
-          <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-          <span id="wa-label">تواصل معنا عبر واتساب</span>
-        </a>
+        <div class="success-title">تم استلام بياناتك!</div>
+        <div class="success-sub" id="success-msg">شكراً لك. سيتواصل معك أحد ممثلينا قريباً.</div>
       </div>
     </div>
 
-    <!-- Not Found -->
-    <div id="state-notfound" class="state">
-      <div class="notfound-box">
-        <div class="notfound-icon">
-          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    <!-- STEP: campaign not found -->
+    <div class="step" id="s-invalid">
+      <div class="success-wrap">
+        <div class="success-circle" style="background:var(--red-bg)">
+          <svg viewBox="0 0 24 24" style="fill:var(--red)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
         </div>
-        <div class="notfound-title" id="nf-title">الرابط غير صحيح</div>
-        <div class="notfound-sub"   id="nf-sub">هذا الرابط غير صالح أو انتهت صلاحيته. تواصل مع المبيعات للحصول على الرابط الصحيح.</div>
+        <div class="success-title">رابط غير صحيح</div>
+        <div class="success-sub">هذا الرابط غير صالح. تواصل مع فريق المبيعات للحصول على الرابط الصحيح.</div>
       </div>
     </div>
 
-  </div><!-- /card -->
-
-  <div class="footer" id="footer-txt">مدعوم بواسطة Nations of Sky Portal</div>
-
-</div><!-- /wrapper -->
+  </div>
+  <div class="footer">Nations of Sky Portal</div>
+</div>
 
 <script>
-// CONFIG
+// ─── CONFIG ──────────────────────────────────────────────────
 var SB_URL = 'https://biwrdwxgfyhnltzddlwu.supabase.co';
 var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpd3Jkd3hnZnlobmx0emRkbHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTczMTYsImV4cCI6MjA4OTc5MzMxNn0.EMOV5v3cGaDEqQJusnyrWTWdSPPwKeyuguPzxJvtKdQ';
 
-var SKIP_KEYS = ['contract_id','customer','contract_date','actual_price','contract_status','approval_status','name','phone','phone2','email','notes','unit'];
+// ─── STATE ───────────────────────────────────────────────────
+var campaignId   = null;
+var campaignData = null;
+var allClients   = [];      // all clients in this campaign
+var matchedClients = [];    // clients matching the entered phone
+var selectedIds  = [];      // IDs the user ticked
+var formConfig   = [];      // active form questions
 
-var NOS_PROJECTS = [
-  'Jirian',
-  'Sky Ridge Elite',
-  'Sky Ridge Executives',
-  'Zomra',
-  'ISLA',
-  'Upviews',
-  'Sadaf'
-];
-
-var DROPDOWN_KEYS = {
-  project: NOS_PROJECTS
-};
-
-var AR_LABELS = {
-  project:'المشروع',
-  property_type:'نوع الوحدة', payment_term:'طريقة السداد'
-};
-var EN_LABELS = {
-  project:'Project',
-  property_type:'Property Type', payment_term:'Payment Method'
-};
-
-// TRANSLATIONS
-var T = {
-  ar: {
-    brandSub        : 'أهلاً بك! سجّل هنا وسيتواصل معك أحد مستشارينا قريباً',
-    formTitle       : 'سجّل هنا',
-    formDesc        : 'أدخل معلوماتك وسيقوم فريقنا بالتواصل معك في أقرب وقت.',
-    lblBasic        : 'المعلومات الأساسية',
-    lblName         : 'الاسم الكامل',
-    lblPhone        : 'رقم التليفون الأساسي',
-    lblNewPhone     : 'رقم التليفون الجديد (لو عايز تغيّر رقمك الأساسي )',
-    lblPhone2       : 'رقم التليفون الإضافي',
-    lblEmail        : 'البريد الإلكتروني الأساسي',
-    lblEmail2       : 'البريد الإلكتروني الإضافي',
-    lblOptional     : '(اختياري)',
-    lblNotes        : 'ملاحظات إضافية',
-    lblDetails      : 'تفاصيل الاهتمام',
-    btnSubmit       : 'إرسال الطلب',
-    btnSending      : 'جارٍ الإرسال...',
-    errRequired     : 'هذا الحقل مطلوب',
-    errPhone        : 'أدخل رقماً صحيحاً (مثال: +201234567890)',
-    errEmail        : 'أدخل بريداً إلكترونياً صحيحاً',
-    successTitle    : 'تم إرسال طلبك بنجاح!',
-    successMsg      : 'شكراً لك. سيتواصل معك أحد ممثلينا في أقرب وقت ممكن.',
-    lblPrivacy      : 'أوافق على معالجة بياناتي الشخصية وفقاً لسياسة الخصوصية.',
-    waText          : 'لو حابب تتواصل معانا مباشرة عبر واتساب',
-    waLabel         : 'تواصل معنا عبر واتساب',
-    errPrivacy      : 'يجب الموافقة على شروط الخصوصية للمتابعة',
-    nfTitle         : 'الرابط غير صحيح',
-    nfSub           : 'هذا الرابط غير صالح أو انتهت صلاحيته. تواصل مع المبيعات للحصول على الرابط الصحيح.',
-    errNotFound     : 'الرقم ده مش موجود عندنا. لو لسه مسجلتش، اضغط على تبويب "تسجيل جديد" واملا معلوماتك الأول.',
-    errGeneral      : 'حدث خطأ. يرجى المحاولة مرة أخرى.',
-    footerTxt       : 'مدعوم بواسطة Nations of Sky Portal',
-    namePlaceholder : 'مثال: محمد أحمد',
-    dir             : 'rtl',
-    lang            : 'ar'
-  },
-  en: {
-    brandSub        : 'Welcome! Register here and one of our consultants will reach out shortly.',
-    formTitle       : 'Register Here',
-    formDesc        : 'Fill in your information and our team will get in touch as soon as possible.',
-    lblBasic        : 'Basic Information',
-    lblName         : 'Full Name',
-    lblPhone        : 'Primary Phone Number',
-    lblNewPhone     : 'New Phone Number (if you want to change your primary number)',
-    lblPhone2       : 'Secondary Phone Number',
-    lblEmail        : 'Primary Email Address',
-    lblEmail2       : 'Secondary Email Address',
-    lblOptional     : '(Optional)',
-    lblNotes        : 'Additional Notes',
-    lblDetails      : 'Interest Details',
-    btnSubmit       : 'Submit Request',
-    btnSending      : 'Sending...',
-    errRequired     : 'This field is required',
-    errPhone        : 'Please enter a valid number (e.g. +201234567890)',
-    errEmail        : 'Please enter a valid email address',
-    successTitle    : 'Request Submitted Successfully!',
-    successMsg      : 'Thank you. One of our representatives will contact you as soon as possible.',
-    lblPrivacy      : 'I agree to the processing of my personal data according to the privacy policy.',
-    waText          : 'If you would like to contact us directly via WhatsApp',
-    waLabel         : 'Contact us on WhatsApp',
-    errPrivacy      : 'You must agree to the privacy terms to continue',
-    nfTitle         : 'Invalid Link',
-    nfSub           : 'This link is invalid or has expired. Please contact sales to get the correct link.',
-    errNotFound     : 'This number is not registered. If you haven\'t signed up yet, go to "New Registration" and fill in your information first.',
-    errGeneral      : 'An error occurred. Please try again.',
-    footerTxt       : 'Powered by Nations of Sky Portal',
-    namePlaceholder : 'e.g. John Smith',
-    dir             : 'ltr',
-    lang            : 'en'
-  }
-};
-
-var campaignId    = null;
-var campaignData  = null;
-var isSubmitting  = false;
-var currentLang   = 'ar';
-
-// ── Anti-Duplicate: track submitted phones in this session ──
-var submittedPhones = {};
-
-// ── Rate Limiting: cooldown after successful submit ──
-var RATE_LIMIT_MS  = 60000; // 60 seconds cooldown
-var lastSubmitTime = 0;
-
-// ── Auto-save Draft key ──
-var DRAFT_KEY = 'intake_draft_' + (new URLSearchParams(window.location.search).get('c') || 'x');
-
-function setLang(lang) {
-  currentLang = lang;
-  var t = T[lang];
-
-  document.documentElement.setAttribute('lang', lang);
-  document.documentElement.setAttribute('dir', t.dir);
-
-  document.getElementById('btn-ar').classList.toggle('active', lang === 'ar');
-  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
-
-  document.getElementById('brand-sub').textContent = t.brandSub;
-  document.getElementById('form-title').textContent = t.formTitle;
-  document.getElementById('form-desc').textContent  = t.formDesc;
-  document.getElementById('lbl-basic').textContent  = t.lblBasic;
-
-  setLabelText('lbl-name',      t.lblName,     true);
-  setLabelText('lbl-phone',     t.lblPhone,    true);
-  setLabelText('lbl-new-phone', t.lblNewPhone, false, t.lblOptional);
-  setLabelText('lbl-phone2',    t.lblPhone2,   false, t.lblOptional);
-  setLabelText('lbl-email',     t.lblEmail,    true);
-  setLabelText('lbl-email2',    t.lblEmail2,   false, t.lblOptional);
-  setLabelText('lbl-notes',     t.lblNotes,    false, t.lblOptional);
-
-  document.getElementById('inp-name').placeholder  = t.namePlaceholder;
-  document.getElementById('btn-label').textContent = t.btnSubmit;
-
-  document.getElementById('err-name').textContent     = t.errRequired;
-  document.getElementById('err-phone').textContent    = t.errPhone;
-  document.getElementById('err-new-phone').textContent = t.errPhone;
-  document.getElementById('err-phone2').textContent   = t.errPhone;
-  document.getElementById('err-email').textContent    = t.errEmail;
-  document.getElementById('err-email2').textContent   = t.errEmail;
-  document.getElementById('lbl-privacy').textContent  = t.lblPrivacy;
-  
-  // WhatsApp elements
-  if(document.getElementById('wa-text')) document.getElementById('wa-text').textContent = t.waText;
-  if(document.getElementById('wa-label-form')) document.getElementById('wa-label-form').textContent = t.waLabel;
-  if(document.getElementById('wa-label')) document.getElementById('wa-label').textContent = t.waLabel;
-
-  if(document.getElementById('nf-title')) document.getElementById('nf-title').textContent = t.nfTitle;
-  if(document.getElementById('nf-sub')) document.getElementById('nf-sub').innerHTML = t.nfSub;
-  document.getElementById('footer-txt').textContent = t.footerTxt;
-
-  if (campaignData) buildDynamicFields(campaignData);
-}
-
-function setLabelText(id, text, required, optionalText) {
-  var el = document.getElementById(id);
-  if (!el) return;
-  el.innerHTML = escHtml(text) +
-    (required     ? ' <span class="req">*</span>' : '') +
-    (optionalText ? ' <span style="color:var(--muted);font-weight:400">' + escHtml(optionalText) + '</span>' : '');
-}
-
+// ─── INIT ────────────────────────────────────────────────────
 (function init(){
-  var params = new URLSearchParams(window.location.search);
-  campaignId = params.get('c') || params.get('campaign');
-  if (!campaignId) { showState('notfound'); return; }
+  var p = new URLSearchParams(window.location.search);
+  campaignId = p.get('c') || p.get('campaign');
+  if(!campaignId){ showStep('s-invalid'); return; }
 
-  sbGet('campaigns', 'id=eq.' + campaignId + '&select=id,name,column_config&limit=1')
-    .then(function(rows) {
-      if (!rows || !rows.length) { showState('notfound'); return; }
+  sbGet('campaigns','id=eq.'+campaignId+'&select=id,name,column_config&limit=1')
+    .then(function(rows){
+      if(!rows||!rows.length){ showStep('s-invalid'); return; }
       campaignData = rows[0];
-      var tagNameEl = document.getElementById('camp-tag-name');
-      var tagEl = document.getElementById('camp-tag');
-      if (tagNameEl) tagNameEl.textContent = campaignData.name || '';
-      if (tagEl && campaignData.name) tagEl.style.display = 'inline-flex';
-      
-      document.title = 'Nations OF Sky Form — ' + (campaignData.name || '');
-      buildDynamicFields(campaignData);
-      showState('form');
-      loadDraft();
-      attachDraftListeners();
+      // Extract form questions from column_config
+      var cfg = campaignData.column_config || [];
+      formConfig = cfg.filter(function(c){return c.show_in_form;})
+                      .sort(function(a,b){return(a.form_order||0)-(b.form_order||0);});
+      showStep('s-phone');
     })
-    .catch(function() { showState('notfound'); });
-
-  setLang('ar');
+    .catch(function(){ showStep('s-invalid'); });
 })();
 
-function buildDynamicFields(camp) {
-  var cols = camp.column_config || [];
-  if (typeof cols === 'string') { try { cols = JSON.parse(cols); } catch(e) { cols = []; } }
+// ─── PHONE SEARCH ────────────────────────────────────────────
+function searchPhone(){
+  var raw = document.getElementById('inp-phone').value.trim();
+  if(!raw){ markErr('field-phone'); return; }
+  clearErr('field-phone'); hideAlert('alert-notfound');
 
-  var visibleCols = cols
-    .filter(function(c) { return c.visible && SKIP_KEYS.indexOf(c.key) === -1; })
-    .sort(function(a,b) { return a.order - b.order; });
+  setBtnLoading('btn-search','btn-search-lbl',true,'جارٍ البحث...');
 
-  if (!visibleCols.length) { document.getElementById('dynamic-fields').innerHTML = ''; return; }
+  sbGet('clients','campaign_id=eq.'+campaignId+'&select=id,name,phone,extra_data&limit=1000')
+    .then(function(clients){
+      allClients = clients||[];
+      var normalized = digitsOnly(raw);
 
-  var t        = T[currentLang];
-  var labelMap = currentLang === 'ar' ? AR_LABELS : EN_LABELS;
+      matchedClients = allClients.filter(function(c){
+        return phoneMatch(c.phone, normalized) ||
+               phoneMatch((c.extra_data||{}).phone_2, normalized) ||
+               phoneMatch((c.extra_data||{}).phone_3, normalized) ||
+               phoneMatch((c.extra_data||{}).phone_4, normalized);
+      });
 
-  var html = '<hr class="divider"><div class="section-label">' + escHtml(t.lblDetails) + '</div>';
-  visibleCols.forEach(function(col) {
-    var label = labelMap[col.key] || col.label;
-    var opts  = DROPDOWN_KEYS[col.key];
-    if (opts) {
-      var arrowStyle = 'appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'%236b7280\'%3E%3Cpath d=\'M7 10l5 5 5-5z\'/%3E%3C/svg%3E" );background-repeat:no-repeat;background-position:left 12px center;padding-left:2rem;';
-      html += '<div class="field">' +
-        '<label>' + escHtml(label) + ' <span style="color:var(--muted);font-weight:400">' + escHtml(t.lblOptional) + '</span></label>' +
-        '<select id="inp-' + escHtml(col.key) + '" data-col-key="' + escHtml(col.key) + '" style="' + arrowStyle + '">' +
-        '<option value="">' + escHtml(label) + '...</option>' +
-        opts.map(function(o){ return '<option value="' + escHtml(o) + '">' + escHtml(o) + '</option>'; }).join('') +
-        '</select>' +
-        '</div>';
+      setBtnLoading('btn-search','btn-search-lbl',false,'بحث عن وحداتي');
+
+      if(!matchedClients.length){
+        showAlert('alert-notfound');
+        return;
+      }
+      renderUnits();
+      showStep('s-units');
+    })
+    .catch(function(){
+      setBtnLoading('btn-search','btn-search-lbl',false,'بحث عن وحداتي');
+      showAlert('alert-notfound');
+    });
+}
+
+// ─── RENDER UNITS ────────────────────────────────────────────
+function renderUnits(){
+  // اسم العميل من أول match
+  var clientName = matchedClients[0].name ||
+                   (matchedClients[0].extra_data||{}).customer || '—';
+  document.getElementById('found-name').textContent = clientName;
+
+  // Group by project
+  var byProject = {};
+  matchedClients.forEach(function(c){
+    var proj = (c.extra_data||{}).project || 'وحدات أخرى';
+    if(!byProject[proj]) byProject[proj]=[];
+    byProject[proj].push(c);
+  });
+
+  var html = '';
+  Object.keys(byProject).forEach(function(proj){
+    html += '<div class="project-group">';
+    html += '<div class="project-label">'+esc(proj)+'</div>';
+    byProject[proj].forEach(function(c){
+      var unit = (c.extra_data||{}).unit || c.id;
+      var contract = (c.extra_data||{}).contract_number || '';
+      html += '<label class="unit-item" id="ui-'+c.id+'" onclick="toggleUnit(\''+c.id+'\')">';
+      html += '<input type="checkbox" id="chk-'+c.id+'" value="'+c.id+'" onchange="toggleUnit(\''+c.id+'\')" onclick="event.stopPropagation()">';
+      html += '<div style="flex:1"><div class="unit-code">'+esc(unit)+'</div>';
+      if(contract) html += '<div class="unit-contract">'+esc(contract)+'</div>';
+      html += '</div></label>';
+    });
+    html += '</div>';
+  });
+
+  document.getElementById('units-container').innerHTML = html;
+  selectedIds = matchedClients.map(function(c){return c.id;});
+  // mark all as selected by default
+  selectedIds.forEach(function(id){
+    var chk = document.getElementById('chk-'+id);
+    var item = document.getElementById('ui-'+id);
+    if(chk) chk.checked = true;
+    if(item) item.classList.add('selected');
+  });
+}
+
+function toggleUnit(id){
+  var chk  = document.getElementById('chk-'+id);
+  var item = document.getElementById('ui-'+id);
+  if(!chk) return;
+  var checked = chk.checked;
+  item.classList.toggle('selected', checked);
+  if(checked){ if(selectedIds.indexOf(id)===-1) selectedIds.push(id); }
+  else { selectedIds = selectedIds.filter(function(x){return x!==id;}); }
+  hideAlert('alert-nosel');
+}
+
+// ─── GO TO FORM ───────────────────────────────────────────────
+function goToForm(){
+  hideAlert('alert-nosel');
+  if(!selectedIds.length){ showAlert('alert-nosel'); return; }
+
+  // لو مفيش أسئلة إضافية → submit مباشرة
+  if(!formConfig.length){ submitForm(); return; }
+
+  // Build form fields
+  var html = '';
+  formConfig.forEach(function(f){
+    var req = f.form_required;
+    var lbl = f.form_label || f.label;
+    html += '<div class="field" id="ff-'+esc(f.key)+'">';
+    html += '<label>'+esc(lbl)+(req?'<span class="req"> *</span>':'')+'</label>';
+    html += '<input type="text" id="fv-'+esc(f.key)+'" placeholder="'+esc(lbl)+'" data-key="'+esc(f.key)+'" data-req="'+(req?'1':'0')+'">';
+    html += '<div class="errmsg">هذا الحقل مطلوب</div>';
+    html += '</div>';
+  });
+  // Notes always at end
+  html += '<hr class="div"><div class="field"><label>ملاحظات <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>';
+  html += '<textarea id="fv-notes" placeholder="أي تفاصيل إضافية..."></textarea></div>';
+
+  document.getElementById('form-fields').innerHTML = html;
+  showStep('s-form');
+}
+
+// ─── SUBMIT ──────────────────────────────────────────────────
+function submitForm(){
+  hideAlert('alert-formerr');
+
+  // Collect form values
+  var formData = {};
+  var valid = true;
+
+  formConfig.forEach(function(f){
+    var inp = document.getElementById('fv-'+f.key);
+    if(!inp) return;
+    var val = inp.value.trim();
+    if(f.form_required && !val){
+      document.getElementById('ff-'+f.key).classList.add('err');
+      valid = false;
     } else {
-      html += '<div class="field">' +
-        '<label>' + escHtml(label) + ' <span style="color:var(--muted);font-weight:400">' + escHtml(t.lblOptional) + '</span></label>' +
-        '<input type="text" id="inp-' + escHtml(col.key) + '" placeholder="' + escHtml(label) + '" data-col-key="' + escHtml(col.key) + '">' +
-        '</div>';
+      document.getElementById('ff-'+f.key).classList.remove('err');
+      if(val) formData[f.key] = val;
     }
   });
-  document.getElementById('dynamic-fields').innerHTML = html;
-  // re-attach draft save listener for newly added dynamic fields
-  var dynArea = document.getElementById('dynamic-fields');
-  if (dynArea) dynArea.addEventListener('input', saveDraft);
-}
 
-// ── Auto-save Draft helpers ──────────────────────────────────
-function saveDraft() {
-  try {
-    var draft = {
-      name   : val('inp-name'),
-      phone  : val('inp-phone'),
-      phone2 : val('inp-phone2'),
-      email  : val('inp-email'),
-      email2 : val('inp-email2'),
-      notes  : val('inp-notes')
-    };
-    // also save dynamic fields
-    document.querySelectorAll('[data-col-key]').forEach(function(inp) {
-      draft['_col_' + inp.getAttribute('data-col-key')] = inp.value.trim();
+  var notes = document.getElementById('fv-notes');
+  if(notes && notes.value.trim()) formData['notes'] = notes.value.trim();
+
+  if(!valid){ showAlert('alert-formerr'); return; }
+
+  setBtnLoading('btn-submit','btn-submit-lbl',true,'جارٍ الإرسال...');
+
+  // Update each selected record
+  var updates = selectedIds.map(function(id){
+    var client = matchedClients.find(function(c){return c.id===id;});
+    var existingExtra = (client&&client.extra_data)||{};
+    var newExtra = Object.assign({}, existingExtra, formData, {
+      form_submitted: true,
+      form_submitted_at: new Date().toISOString()
     });
-    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-  } catch(e) {}
-}
-
-function loadDraft() {
-  try {
-    var raw = sessionStorage.getItem(DRAFT_KEY);
-    if (!raw) return;
-    var draft = JSON.parse(raw);
-    if (draft.name)   { var el = document.getElementById('inp-name');   if (el) el.value = draft.name; }
-    if (draft.phone)  { var el = document.getElementById('inp-phone');  if (el) el.value = draft.phone; }
-    if (draft.phone2) { var el = document.getElementById('inp-phone2'); if (el) el.value = draft.phone2; }
-    if (draft.email)  { var el = document.getElementById('inp-email');  if (el) el.value = draft.email; }
-    if (draft.email2) { var el = document.getElementById('inp-email2'); if (el) el.value = draft.email2; }
-    if (draft.notes)  { var el = document.getElementById('inp-notes');  if (el) el.value = draft.notes; }
-    // restore dynamic fields
-    Object.keys(draft).forEach(function(k) {
-      if (k.indexOf('_col_') === 0) {
-        var key = k.replace('_col_', '');
-        var inp = document.querySelector('[data-col-key="' + key + '"]');
-        if (inp && draft[k]) inp.value = draft[k];
-      }
-    });
-  } catch(e) {}
-}
-
-function clearDraft() {
-  try { sessionStorage.removeItem(DRAFT_KEY); } catch(e) {}
-}
-
-// Attach auto-save on input change (called after form is shown)
-function attachDraftListeners() {
-  var fields = ['inp-name','inp-phone','inp-phone2','inp-email','inp-email2','inp-notes','inp-new-phone'];
-  fields.forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.addEventListener('input', saveDraft);
+    return sbPatch('clients','id=eq.'+id, {extra_data: newExtra});
   });
-  // dynamic fields via event delegation
-  var dynArea = document.getElementById('dynamic-fields');
-  if (dynArea) dynArea.addEventListener('input', saveDraft);
-}
 
-function submitForm() {
-  if (isSubmitting) return;
-  var t = T[currentLang];
-  clearErrors(); hideBanner();
-
-  var name     = val('inp-name');
-  var phone    = val('inp-phone');
-  var newPhone = val('inp-new-phone');
-  var phone2   = val('inp-phone2');
-  var email    = val('inp-email');
-  var email2   = val('inp-email2');
-  var valid    = true;
-
-  if (!name)                               { setErr('field-name');      valid = false; }
-  if (!isValidPhone(phone))                { setErr('field-phone');     valid = false; }
-  if (newPhone && !isValidPhone(newPhone)) { setErr('field-new-phone'); valid = false; }
-  if (phone2 && !isValidPhone(phone2))     { setErr('field-phone2');    valid = false; }
-  if (!isValidEmail(email))                { setErr('field-email');     valid = false; }
-  if (email2 && !isValidEmail(email2))     { setErr('field-email2');    valid = false; }
-
-  var privacy = document.getElementById('inp-privacy').checked;
-  if (!privacy) { showBanner(t.errPrivacy); valid = false; }
-
-  if (!valid) return;
-
-  // ── Rate Limiting ──
-  var now = Date.now();
-  if (lastSubmitTime && (now - lastSubmitTime) < RATE_LIMIT_MS) {
-    var secsLeft = Math.ceil((RATE_LIMIT_MS - (now - lastSubmitTime)) / 1000);
-    showBanner(
-      currentLang === 'ar'
-        ? 'يرجى الانتظار ' + secsLeft + ' ثانية قبل الإرسال مرة أخرى.'
-        : 'Please wait ' + secsLeft + ' seconds before submitting again.'
-    );
-    return;
-  }
-
-  var finalPhone = newPhone || phone;
-  var phoneKey   = campaignId + '_' + finalPhone.replace(/\s/g,'');
-
-  // ── Anti-Duplicate ──
-  if (submittedPhones[phoneKey]) {
-    showBanner(
-      currentLang === 'ar'
-        ? 'هذا الرقم مسجّل بالفعل. سيتواصل معك فريقنا قريباً.'
-        : 'This number is already registered. Our team will contact you shortly.'
-    );
-    return;
-  }
-
-  isSubmitting = true;
-  setBtnLoading(true, 'btn-submit', 'btn-label', 'btn-progress', t.btnSending);
-
-  var extraData = { name: name, phone: finalPhone };
-  if (newPhone) extraData.old_phone = phone;
-  if (phone2)   extraData.phone2    = phone2;
-  if (email)    extraData.email     = email;
-  if (email2)   extraData.email2    = email2;
-
-  document.querySelectorAll('[data-col-key]').forEach(function(inp) {
-    if (inp.value.trim()) extraData[inp.getAttribute('data-col-key')] = inp.value.trim();
-  });
-  var notes = val('inp-notes');
-  if (notes) extraData.notes = notes;
-
-  // ── Anti-Duplicate: check DB too ──
-  sbGet('clients', 'phone=eq.' + encodeURIComponent(finalPhone) + '&campaign_id=eq.' + campaignId + '&select=id&limit=1')
-    .then(function(existing) {
-      if (existing && existing.length) {
-        // Already registered in DB
-        submittedPhones[phoneKey] = true;
-        isSubmitting = false;
-        setBtnLoading(false, 'btn-submit', 'btn-label', 'btn-progress', t.btnSubmit);
-        showBanner(
-          currentLang === 'ar'
-            ? 'هذا الرقم مسجّل بالفعل في هذه الحملة. سيتواصل معك فريقنا قريباً.'
-            : 'This number is already registered in this campaign. Our team will contact you shortly.'
-        );
-        return Promise.reject('duplicate');
-      }
-      return getLeastLoadedEmployee();
+  Promise.all(updates)
+    .then(function(){
+      showStep('s-success');
     })
-    .then(function(employee) {
-      var record = {
-        name                 : name,
-        phone                : finalPhone,
-        extra_data           : extraData,
-        status               : 'New',
-        campaign_id          : campaignId,
-        assigned_employee_id : employee ? employee.id : null
-      };
-      return sbInsert('clients', record).then(function() {
-        if (employee) {
-          sbInsert('notifications', {
-            employee_id : employee.id,
-            type        : 'new_clients',
-            message     : (currentLang === 'ar' ? 'عميل جديد من رابط الفورم: ' : 'New client from form link: ') + name,
-            read        : false
-          }).catch(function(){});
-        }
-      });
-    })
-    .then(function() {
-      // ── Success: update rate limit + mark phone + clear draft ──
-      lastSubmitTime           = Date.now();
-      submittedPhones[phoneKey] = true;
-      clearDraft();
-
-      document.getElementById('success-title').textContent = t.successTitle;
-      document.getElementById('success-msg').textContent   = t.successMsg;
-      showState('success');
-    })
-    .catch(function(err) {
-      if (err === 'duplicate') return; // already handled
-      isSubmitting = false;
-      setBtnLoading(false, 'btn-submit', 'btn-label', 'btn-progress', t.btnSubmit);
-      showBanner(err && err.message ? err.message : t.errGeneral);
+    .catch(function(){
+      setBtnLoading('btn-submit','btn-submit-lbl',false,'إرسال البيانات');
+      document.getElementById('formerr-msg').textContent = 'حدث خطأ. يرجى المحاولة مرة أخرى.';
+      showAlert('alert-formerr');
     });
 }
 
-function getLeastLoadedEmployee() {
-  return Promise.all([
-    sbGet('employees', 'is_active=eq.true&select=id,name'),
-    sbGet('clients',   'campaign_id=eq.' + campaignId + '&select=assigned_employee_id')
-  ]).then(function(results) {
-    var emps    = results[0] || [];
-    var clients = results[1] || [];
-    if (!emps.length) return null;
-    var counts = {};
-    emps.forEach(function(e) { counts[e.id] = 0; });
-    clients.forEach(function(c) {
-      if (c.assigned_employee_id && counts[c.assigned_employee_id] !== undefined)
-        counts[c.assigned_employee_id]++;
-    });
-    return emps.reduce(function(min, e) { return counts[e.id] < counts[min.id] ? e : min; });
-  }).catch(function() { return null; });
+// ─── NAVIGATION ──────────────────────────────────────────────
+function goBack(){
+  hideAlert('alert-notfound');
+  showStep('s-phone');
 }
 
-function sbHeaders() {
-  return { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
+// ─── SUPABASE ────────────────────────────────────────────────
+function sbHeaders(){
+  return {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
 }
-function sbGet(table, query) {
-  return fetch(SB_URL + '/rest/v1/' + table + '?' + query, { headers: sbHeaders() })
-    .then(function(r) { if (!r.ok) throw new Error('GET error ' + r.status); return r.json(); });
+function sbGet(table,query){
+  return fetch(SB_URL+'/rest/v1/'+table+'?'+query,{headers:sbHeaders()})
+    .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();});
 }
-function sbInsert(table, payload) {
-  return fetch(SB_URL + '/rest/v1/' + table, {
-    method  : 'POST',
-    headers : Object.assign(sbHeaders(), { 'Prefer': 'return=minimal' }),
-    body    : JSON.stringify(payload)
-  }).then(function(r) {
-    if (r.status !== 201) return r.text().then(function(t) { throw new Error(t); });
-  });
-}
-function sbPatch(table, query, payload) {
-  return fetch(SB_URL + '/rest/v1/' + table + '?' + query, {
-    method  : 'PATCH',
-    headers : Object.assign(sbHeaders(), { 'Prefer': 'return=minimal' }),
-    body    : JSON.stringify(payload)
-  }).then(function(r) {
-    if (!r.ok) return r.text().then(function(t) { throw new Error(t); });
-  });
+function sbPatch(table,query,payload){
+  return fetch(SB_URL+'/rest/v1/'+table+'?'+query,{
+    method:'PATCH',
+    headers:Object.assign(sbHeaders(),{'Prefer':'return=minimal'}),
+    body:JSON.stringify(payload)
+  }).then(function(r){if(r.status>299)throw new Error(r.status);});
 }
 
-function showState(id) {
-  ['loading','form','success','notfound'].forEach(function(s) {
-    var el = document.getElementById('state-' + s);
-    if (el) el.classList.toggle('active', s === id);
-  });
+// ─── PHONE NORMALIZATION ─────────────────────────────────────
+function digitsOnly(s){ return String(s||'').replace(/\D/g,''); }
+function phoneMatch(stored,inputDigits){
+  var s=digitsOnly(stored);
+  if(!s||!inputDigits||s.length<7||inputDigits.length<7) return false;
+  return s.slice(-9)===inputDigits.slice(-9);
 }
-function val(id) {
-  var el = document.getElementById(id); return el ? el.value.trim() : '';
+
+// ─── UI HELPERS ──────────────────────────────────────────────
+function showStep(id){
+  document.querySelectorAll('.step').forEach(function(el){el.classList.remove('active');});
+  var el=document.getElementById(id);
+  if(el) el.classList.add('active');
 }
-function isValidPhone(p) {
-  // Enhanced validation for international numbers
-  // Matches + and digits, spaces, dashes, parentheses. Length 7 to 20.
-  var clean = p.replace(/[\s\-\(\)]/g, '');
-  return clean && /^\+?[0-9]{7,20}$/.test(clean);
-}
-function isValidEmail(e) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
-}
-function setErr(fieldId) {
-  var el = document.getElementById(fieldId); if (el) el.classList.add('has-err');
-}
-function clearErrors() {
-  document.querySelectorAll('.field.has-err').forEach(function(el) { el.classList.remove('has-err'); });
-}
-function showBanner(msg) {
-  var b = document.getElementById('error-banner');
-  document.getElementById('error-text').textContent = msg;
-  b.classList.add('show');
-}
-function hideBanner() {
-  document.getElementById('error-banner').classList.remove('show');
-}
-function setBtnLoading(loading, btnId, labelId, progId, labelText) {
-  var btn  = document.getElementById(btnId);
-  var lbl  = document.getElementById(labelId);
-  var prog = document.getElementById(progId);
-  if (!btn) return;
-  btn.disabled = loading;
-  if (loading) {
-    lbl.innerHTML   = '<span class="spinner"></span> ' + escHtml(labelText);
-    prog.style.width = '70%';
-  } else {
-    lbl.textContent  = labelText;
-    prog.style.width = '0%';
-  }
-}
-function escHtml(str) {
-  return String(str || '')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function showAlert(id){ var el=document.getElementById(id);if(el)el.classList.add('show'); }
+function hideAlert(id){ if(id){var el=document.getElementById(id);if(el)el.classList.remove('show');}else{document.querySelectorAll('.alert').forEach(function(el){el.classList.remove('show');});} }
+function markErr(id){ var el=document.getElementById(id);if(el)el.classList.add('err'); }
+function clearErr(id){ var el=document.getElementById(id);if(el)el.classList.remove('err'); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function setBtnLoading(btnId,lblId,loading,txt){
+  var btn=document.getElementById(btnId);
+  var lbl=document.getElementById(lblId);
+  if(!btn)return;
+  btn.disabled=loading;
+  if(lbl) lbl.textContent=txt;
+  var spin=btn.querySelector('.spinner');
+  if(loading&&!spin){
+    var s=document.createElement('span');s.className='spinner';
+    btn.insertBefore(s,btn.firstChild);
+  } else if(!loading&&spin){ spin.remove(); }
 }
 </script>
 </body>
