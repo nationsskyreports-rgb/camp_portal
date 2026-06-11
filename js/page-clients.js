@@ -659,6 +659,12 @@ function renderClientCard(c) {
     '<div class="flex items-center gap-2 flex-shrink-0">' +
     assignBadge + sBadge(c.status) +
     (extra.form_submitted ? '<span class="badge" style="background:#064e3b;color:#6ee7b7;font-size:10px;margin-right:2px"><i data-lucide=\"check\" style=\"width:10px;height:10px;vertical-align:-1px\"></i> Form</span>' : '') +
+    (function(){
+      var fu=(S.reminders||[]).filter(function(r){return r.client_id===c.id&&!r.done;});
+      if(!fu.length) return '';
+      var over=fu.some(function(r){return new Date(r.remind_at)<new Date();});
+      return '<span class="badge" style="font-size:10px;margin-right:2px;background:'+(over?'rgba(239,68,68,.12)':'rgba(251,191,36,.1)')+';color:'+(over?'#fca5a5':'#fbbf24')+'">⏰'+fu.length+'</span>';
+    })() +
     '<i data-lucide="' + (isExp ? 'chevron-up' : 'chevron-down') + '" class="w-4 h-4 text-slate-400"></i>' +
     '</div></div>' +
 
@@ -685,6 +691,22 @@ function renderClientCard(c) {
 
       // ── Form Response Section ──
       (extra.form_submitted ? buildFormResponseSection(extra) : '') +
+
+      // ── Follow-up button ──
+      '<div style="margin-bottom:8px">'+
+      (function(){
+        var fu=(S.reminders||[]).filter(function(r){return r.client_id===c.id&&!r.done;});
+        var over=fu.some(function(r){return new Date(r.remind_at)<new Date();});
+        return '<button class="btn btn-sm" '+
+          'style="'+(over?'background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#fca5a5':
+            fu.length?'background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);color:#fbbf24':
+            'background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#94a3b8')+'" '+
+          'onclick="openFollowupModal(\''+c.id+'\',event)">'+
+          '<i data-lucide="alarm-clock" class="w-3.5 h-3.5"></i> '+
+          (over?'Follow-up overdue!':fu.length?'Follow-up ('+fu.length+')':'Set Follow-up')+
+        '</button>';
+      })()+
+      '</div>'+
 
       // ── Assign / Reassign / Unassign section (admin only) ──
       buildAssignActions(c, displayName) +
