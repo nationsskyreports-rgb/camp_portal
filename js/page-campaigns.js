@@ -27,7 +27,9 @@ function renderCampaigns(){
     '</div>'+
     (cc.length?(function(){
       // Collect all extra_data keys, skip base fields already shown as columns
-      var SKIP_EX = ['name','phone','phone2','email'];
+      var SKIP_EX = ['name','phone','phone2','email',
+        // form metadata — shown in Form popup, not as columns
+        'email2','old_phone','notes','preferred_channel','form_submitted','form_submitted_at'];
       var extraKeysMap = {};
       cc.forEach(function(c){
         var ex = c.extra_data||{};
@@ -45,6 +47,7 @@ function renderCampaigns(){
         '<th class="'+th+'">Mobile</th>'+
         '<th class="'+th+'">Mobile 2</th>'+
         '<th class="'+th+'">Email</th>'+
+        '<th class="'+th+'">Form</th>'+
         extraKeys.map(function(k){ return '<th class="'+th+'">'+esc(colLabel(k))+'</th>'; }).join('')+
         '<th class="'+th+'">Assigned To</th>'+
         '<th class="'+th+'">Status</th>'+
@@ -56,6 +59,9 @@ function renderCampaigns(){
             '<td class="'+td+'">'+esc(c.phone||extra.phone||'-')+'</td>'+
             '<td class="'+td+'">'+esc(extra.phone2||'-')+'</td>'+
             '<td class="'+td+'">'+esc(extra.email||'-')+'</td>'+
+            '<td class="'+td+'">'+(extra.form_submitted
+              ? '<button class="btn btn-sm" style="background:rgba(16,185,129,.12);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);padding:2px 10px;font-size:11px" onclick="showFormResponse(\''+c.id+'\')"><i data-lucide="check" style="width:11px;height:11px"></i> View</button>'
+              : '<span class="text-slate-600 text-xs">-</span>')+'</td>'+
             extraKeys.map(function(k){
               var v=extra[k]||'-';
               return '<td class="'+td+'" style="max-width:180px"><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px" title="'+esc(v)+'">'+esc(v)+'</span></td>';
@@ -73,6 +79,54 @@ function renderCampaigns(){
   '<div class="space-y-3 fade-in">'+(S.campaigns.length?S.campaigns.map(function(c){var cc=S.clients.filter(function(cl){return cl.campaign_id===c.id;}).length;return'<div class="card card-hover cursor-pointer" onclick="selectedCampId=\''+c.id+'\';renderCampaigns()"><div class="flex items-center justify-between"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400"><i data-lucide="target" class="w-5 h-5"></i></div><div><p class="font-semibold text-white">'+esc(c.name)+'</p><p class="text-xs text-slate-500">'+esc(c.type)+'</p></div></div><div class="flex items-center gap-4"><span class="text-sm text-slate-400">'+cc+' clients</span>'+sBadge(c.status)+copyFormLinkBtn(c.id)+'</div></div></div>';}).join(''):'<div class="card text-center py-12"><p class="text-slate-500">No campaigns yet</p></div>')+'</div>';
   lucide.createIcons();
 }
+
+// ── Form Response Popup ──────────────────────────────────────
+function showFormResponse(clientId) {
+  var c = S.clients.find(function(x){ return x.id === clientId; });
+  if (!c) return;
+  var extra = c.extra_data || {};
+  var submittedAt = extra.form_submitted_at
+    ? new Date(extra.form_submitted_at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+    : '';
+  var FIELDS = [
+    {key:'name',              label:'Full Name'},
+    {key:'phone',             label:'Primary Phone'},
+    {key:'old_phone',         label:'Previous Phone'},
+    {key:'phone2',            label:'Secondary Phone'},
+    {key:'email',             label:'Email'},
+    {key:'email2',            label:'Secondary Email'},
+    {key:'preferred_channel', label:'Preferred Channel'},
+    {key:'notes',             label:'Notes'}
+  ];
+  var rows = FIELDS
+    .filter(function(f){ return extra[f.key] && String(extra[f.key]).trim(); })
+    .map(function(f){
+      return '<div style="display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">'+
+        '<span style="font-size:12px;color:#64748b;flex-shrink:0">'+esc(f.label)+'</span>'+
+        '<span style="font-size:12px;color:#6ee7b7;font-weight:500;text-align:right;word-break:break-word">'+esc(String(extra[f.key]))+'</span>'+
+      '</div>';
+    }).join('');
+
+  // remove old modal if any
+  var old = document.getElementById('form-resp-modal');
+  if (old) old.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'form-resp-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem';
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+  overlay.innerHTML =
+    '<div style="background:#0f172a;border:1px solid rgba(255,255,255,.1);border-radius:14px;max-width:440px;width:100%;padding:1.5rem;max-height:80vh;overflow-y:auto">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">'+
+        '<h3 style="font-size:15px;font-weight:700;color:#fff">Form Response</h3>'+
+        '<button onclick="document.getElementById(\'form-resp-modal\').remove()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:18px;padding:4px">✕</button>'+
+      '</div>'+
+      '<p style="font-size:12px;color:#64748b;margin-bottom:1rem">'+esc(c.name||'')+(submittedAt?' · '+submittedAt:'')+'</p>'+
+      (rows || '<p style="font-size:12px;color:#64748b">No form data</p>')+
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
 function createCamp(){
   var n=document.getElementById('cn').value.trim();var t=document.getElementById('ct').value.trim();var s=document.getElementById('cs').value;var e=document.getElementById('ce').value;
   if(!n){toast('Name required','error');return;}
