@@ -1102,7 +1102,27 @@ function doUpdateExisting(extraData, t) {
     return sbPatch('clients', 'id=eq.' + id, { extra_data: merged });
   });
 
+  // After updates, fetch assigned employees and notify them
   Promise.all(updates)
+    .then(function() {
+      // Collect unique assigned employees from matched clients
+      var empIds = {};
+      selectedIds.forEach(function(id) {
+        var client = matchedClients.find(function(c){ return c.id === id; });
+        if (client && client.assigned_employee_id) empIds[client.assigned_employee_id] = true;
+      });
+      // Send notification to each assigned employee
+      var notifName = matchedClients[0] ? (matchedClients[0].name || 'A client') : 'A client';
+      var notifPromises = Object.keys(empIds).map(function(empId) {
+        return sbInsert('notifications', {
+          employee_id : empId,
+          type        : 'data_updated',
+          message     : notifName + ' has updated their contact data via the form',
+          read        : false
+        });
+      });
+      return Promise.all(notifPromises).catch(function(){});
+    })
     .then(function() {
       clearDraft();
       document.getElementById('success-title').textContent = t.successTitle;
