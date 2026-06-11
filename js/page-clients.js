@@ -464,6 +464,13 @@ function bulkAssign(employeeId) {
 }
 
 
+
+function setClientSearch(v){
+  clientSearch = v;
+  renderMyClients();
+  restoreSearchFocus('client-search');
+}
+
 function renderMyClients() {
   var m   = document.getElementById('main-content');
   var all = myClients();
@@ -509,6 +516,7 @@ function renderMyClients() {
     hdr(S.role === 'admin' ? 'All Clients' : 'My Clients', all.length + ' total') +
     buildRedistributePanel() +
     '<div class="mb-4 fade-in" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+      searchBox('client-search', clientSearch, 'setClientSearch', 'Search name, phone, unit, contract...') +
       '<select class="input" style="max-width:220px" onchange="empClientFilter=this.value||\'\';renderMyClients()">' + campOpts + '</select>' +
       (S.role==='admin' ?
         '<div style="display:flex;gap:5px">' +
