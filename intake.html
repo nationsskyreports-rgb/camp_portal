@@ -842,25 +842,20 @@ function phonesMatch(stored, inputD) {
 function lookupPhone() {
   var raw = val('inp-phone');
   if (!raw || !campaignId) return;
-  var normalized = digitsOnly(raw);
-  if (normalized.length < 7) return;
+  if (digitsOnly(raw).length < 7) return;
 
-  sbGet('clients', 'campaign_id=eq.' + campaignId + '&select=id,name,phone,extra_data&limit=1000')
+  sbRpc('lookup_client_by_phone', { p_campaign_id: campaignId, p_phone: raw })
     .then(function(clients) {
-      matchedClients = (clients || []).filter(function(c) {
-        return phonesMatch(c.phone, normalized) ||
-               phonesMatch((c.extra_data || {}).phone_2,  normalized) ||
-               phonesMatch((c.extra_data || {}).phone_3,  normalized) ||
-               phonesMatch((c.extra_data || {}).phone_4,  normalized);
-      });
+      matchedClients = clients || [];
+      var panel  = document.getElementById('phone-lookup-panel');
+      var notice = document.getElementById('phone-notfound-notice');
       if (matchedClients.length) {
         renderLookupUnits();
-        document.getElementById('phone-lookup-panel').style.display = 'block';
-        document.getElementById('phone-notfound-notice').classList.remove('show');
+        panel.style.display = 'block';
+        notice.classList.remove('show');
       } else {
-        document.getElementById('phone-lookup-panel').style.display = 'none';
-        var notice = document.getElementById('phone-notfound-notice');
-        notice.textContent = currentLang === 'ar'
+        panel.style.display = 'none';
+        notice.textContent  = currentLang === 'ar'
           ? 'الرقم ده مش مسجل عندنا — هنسجّلك كعميل جديد'
           : 'Number not found — you will be registered as a new client';
         notice.classList.add('show');
@@ -1093,6 +1088,13 @@ function sbHeaders() {
 function sbGet(table, query) {
   return fetch(SB_URL + '/rest/v1/' + table + '?' + query, { headers: sbHeaders() })
     .then(function(r) { if (!r.ok) throw new Error('GET error ' + r.status); return r.json(); });
+}
+function sbRpc(fn, params) {
+  return fetch(SB_URL + '/rest/v1/rpc/' + fn, {
+    method  : 'POST',
+    headers : sbHeaders(),
+    body    : JSON.stringify(params)
+  }).then(function(r) { if (!r.ok) throw new Error('RPC error ' + r.status); return r.json(); });
 }
 function sbInsert(table, payload) {
   return fetch(SB_URL + '/rest/v1/' + table, {
