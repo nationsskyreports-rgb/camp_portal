@@ -502,7 +502,16 @@ function renderMyClients() {
   m.innerHTML =
     hdr(S.role === 'admin' ? 'All Clients' : 'My Clients', all.length + ' total') +
     buildRedistributePanel() +
-    '<div class="mb-4 fade-in"><select class="input max-w-xs" onchange="empClientFilter=this.value||\'\';renderMyClients()">' + campOpts + '</select></div>' +
+    '<div class="mb-4 fade-in" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+      '<select class="input" style="max-width:220px" onchange="empClientFilter=this.value||\'\';renderMyClients()">' + campOpts + '</select>' +
+      (S.role==='admin' ?
+        '<div style="display:flex;gap:5px">' +
+        '<button class="btn btn-sm ' + (!formFilter ? 'btn-primary' : 'btn-ghost') + '" onclick="formFilter=\'\';renderMyClients()">All</button>' +
+        '<button class="btn btn-sm ' + (formFilter==='submitted' ? 'btn-success' : 'btn-ghost') + '" onclick="formFilter=\'submitted\';renderMyClients()"><i data-lucide=\"check-circle\" class=\"w-3.5 h-3.5\"></i> Form Submitted</button>' +
+        '<button class="btn btn-sm ' + (formFilter==='pending' ? 'btn-danger' : 'btn-ghost') + '" onclick="formFilter=\'pending\';renderMyClients()"><i data-lucide=\"clock\" class=\"w-3.5 h-3.5\"></i> Not Submitted</button>' +
+        '</div>'
+      : '') +
+    '</div>' +
     '<div class="flex gap-2 mb-4 flex-wrap border-b border-white/10 pb-2">' +
     tabDefs.map(function(t) {
       var count  = tabs[t.key].length;
