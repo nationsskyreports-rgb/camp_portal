@@ -52,6 +52,57 @@ var cleanupState = {
 // ============================================================
 // DATA FETCH
 // ============================================================
+
+// ============================================================
+// REALTIME — Auto-refresh notifications without page reload
+// ============================================================
+var _realtimeChannel = null;
+
+function startRealtimeNotifications(){
+  if(_realtimeChannel) return; // already subscribed
+  if(!S.employee && S.role !== 'admin') return;
+
+  var filter = S.role === 'admin'
+    ? 'employee_id=is.null'
+    : 'employee_id=eq.' + S.employee.id;
+
+  _realtimeChannel = sb.channel('notif-live')
+    .on('postgres_changes', {
+      event  : 'INSERT',
+      schema : 'public',
+      table  : 'notifications',
+      filter : filter
+    }, function(payload){
+      var notif = payload.new;
+      // Add to local state
+      S.notifications.unshift(notif);
+      // Update bell badge
+      updateNotifBadge();
+      // Show toast
+      var meta = notifMeta(notif.type||'');
+      toast(meta.icon + ' ' + (notif.message||'New notification'), 'info');
+      // Refresh current page if on notifications
+      if(S.currentPage === 'notifications') renderNotifPage();
+    })
+    .subscribe();
+}
+
+function stopRealtimeNotifications(){
+  if(_realtimeChannel){
+    sb.removeChannel(_realtimeChannel);
+    _realtimeChannel = null;
+  }
+}
+
+function updateNotifBadge(){
+  var count = unreadCount();
+  var badge = document.getElementById('notif-badge');
+  if(badge){
+    badge.textContent = count > 0 ? (count > 9 ? '9+' : count) : '';
+    badge.style.display = count > 0 ? 'flex' : 'none';
+  }
+}
+
 function fetchAll(){
   return Promise.all([
     sb.from('employees').select('*').order('name'),
@@ -83,6 +134,10 @@ function fetchAll(){
         sb.from('reminders').select('*').order('remind_at',{ascending:true})
       ]).then(function(r2){S.notifications=r2[0].data||[];S.contactHistory=r2[1].data||[];S.reminders=r2[2].data||[];});
     } else {S.notifications=[];S.contactHistory=[];}
+  }).then(function(){
+    // Check for due follow-ups after data loads
+    if(typeof checkDueFollowups === 'function') checkDueFollowups();
+    updateNotifBadge();
   }).catch(function(e){console.error('Fetch error:',e);});
 }
 
