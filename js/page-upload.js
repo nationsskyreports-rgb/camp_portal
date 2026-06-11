@@ -1,75 +1,119 @@
 // ============================================================
-// NOS SHEET AUTO-DETECTION & COLUMN MAPPING
+// GENERIC SHEET MIRROR — reads ANY sheet's headers exactly,
+// stores data under them, drops empty columns automatically.
+// Each campaign keeps its own column structure independently.
 // ============================================================
 
-var NOS_HEADER_MAP = {
-  'Contract Number'                           : {key:'contract_number',  label:'Contract Number'},
-  'Project'                                   : {key:'project',          label:'Project'},
-  'Unit'                                      : {key:'unit',             label:'Unit'},
-  'Deal Type'                                 : {key:'deal_type',        label:'Deal Type'},
-  'Customer'                                  : {key:'customer',         label:'Customer'},
-  'Mobile Phone (Customer) (Contact)'         : {key:'phone',            label:'Phone 1'},
-  'Mobile Phone 2 (Customer) (Contact)'       : {key:'phone_2',          label:'Phone 2'},
-  'Email (Customer) (Contact)'                : {key:'email',            label:'Email'},
-  'Primary Contact (Customer) (Account)'      : {key:'primary_contact',  label:'Primary Contact'},
-  'Main Phone (Customer) (Account)'           : {key:'phone_3',          label:'Phone 3'},
-  'Phone Number (Customer) (Account)'         : {key:'phone_4',          label:'Phone 4'},
-  'Email (Customer) (Account)'                : {key:'email_account',    label:'Company Email'},
-  'Contract Date'                             : {key:'contract_date',    label:'Contract Date'},
-  'Contract Status'                           : {key:'contract_status',  label:'Contract Status'},
-  'Sales Property Status (Unit) (Product)'    : {key:'property_status',  label:'Property Status'}
-};
+// Junk columns that should never be imported
+var SKIP_HEADERS = ['(Do Not Modify) Order','(Do Not Modify) Row Checksum','(Do Not Modify) Modified On'];
 
-var NOS_SKIP_HEADERS = ['(Do Not Modify) Order','(Do Not Modify) Row Checksum','(Do Not Modify) Modified On'];
-
-var NOS_COLUMN_CONFIG = [
-  {key:'contract_number', label:'Contract Number',    visible:true,  order:0,  show_in_form:false},
-  {key:'project',         label:'Project',       visible:true,  order:1,  show_in_form:false},
-  {key:'unit',            label:'Unit',        visible:true,  order:2,  show_in_form:false},
-  {key:'deal_type',       label:'Deal Type',    visible:true,  order:3,  show_in_form:false},
-  {key:'phone_2',         label:'Phone 2',      visible:true,  order:4,  show_in_form:false},
-  {key:'phone_3',         label:'Phone 3',      visible:true,  order:5,  show_in_form:false},
-  {key:'email',           label:'Email',       visible:true,  order:6,  show_in_form:true, form_label:'Email Address'},
-  {key:'primary_contact', label:'Primary Contact',   visible:false, order:7,  show_in_form:false},
-  {key:'contract_date',   label:'Contract Date',   visible:true,  order:8,  show_in_form:false},
-  {key:'contract_status', label:'Contract Status',    visible:true,  order:9,  show_in_form:false},
-  {key:'property_status', label:'Property Status',   visible:true,  order:10, show_in_form:false}
-];
-
-function detectNOSSheet(headers){
-  return headers.some(function(h){return h==='Contract Number';}) &&
-         headers.some(function(h){return h&&h.indexOf('Mobile Phone')>-1;});
-}
-
+// Build columns from the sheet's first row — completely generic
 function buildColsFromHeaders(headers){
-  if(detectNOSSheet(headers)){
-    U.isNOSSheet=true;
-    var cols=[];
-    headers.forEach(function(h,i){
-      if(NOS_SKIP_HEADERS.indexOf(h)>-1) return;
-      var mapped=NOS_HEADER_MAP[h];
-      if(mapped){
-        cols.push({key:mapped.key,label:mapped.label,srcIdx:i});
-      } else if(h&&h.trim()){
-        var safeKey=h.toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_').slice(0,30);
-        cols.push({key:safeKey,label:h,srcIdx:i});
-      }
-    });
-    return cols;
-  }
-  // Default — use campaign column config positions as-is
-  U.isNOSSheet=false;
-  return getCurrentUploadCols().map(function(c,i){return{key:c.key,label:c.label,srcIdx:i};});
+  var cols = [];
+  var seen = {};
+  var phoneCount = 0;
+
+  headers.forEach(function(h, i){
+    if (h === null || h === undefined) return;
+    var label = String(h).trim();
+    if (!label) return;
+    if (SKIP_HEADERS.indexOf(label) > -1) return;
+
+    var lower = label.toLowerCase();
+    var key;
+
+    // Phone columns get canonical keys (phone, phone_2, phone_3...)
+    // so the intake form lookup keeps working regardless of header names
+    if (/mobile|phone|تليفون|موبايل|هاتف|جوال/.test(lower)) {
+      phoneCount++;
+      key = phoneCount === 1 ? 'phone' : 'phone_' + phoneCount;
+    }
+    // Customer/name column gets canonical key
+    else if (/^customer$|^client$|customer name|client name|^name$|الاسم|اسم العميل/.test(lower)) {
+      key = 'customer';
+    }
+    // Everything else: slugified from the header itself
+    else {
+      key = label.toLowerCase()
+        .replace(/[^a-z0-9\u0600-\u06FF]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 40) || ('col_' + i);
+    }
+
+    // Ensure uniqueness
+    var base = key, n = 2;
+    while (seen[key]) { key = base + '_' + n; n++; }
+    seen[key] = true;
+
+    cols.push({ key: key, label: label, srcIdx: i });
+  });
+
+  return cols;
 }
 
-function saveDetectedCols(cols){
-  U.detectedCols=cols;
-  if(U.isNOSSheet&&U.campaignId){
-    sb.from('campaigns').update({column_config:NOS_COLUMN_CONFIG}).eq('id',U.campaignId).then(function(r){
-      if(!r.error) toast('Campaign columns auto-updated for NOS sheet ✓','success');
-    });
-    toast('NOS contracts sheet detected ✓','success');
+// Format cell values: Excel dates → readable date strings
+function formatCellValue(v){
+  if (v === null || v === undefined) return '';
+  // Excel serial date number (rough range for modern dates)
+  if (typeof v === 'number' && v > 25569 && v < 60000 && v % 1 === 0) {
+    var d = new Date((v - 25569) * 86400 * 1000);
+    if (!isNaN(d)) return d.toISOString().slice(0, 10);
   }
+  var s = String(v).trim();
+  // Datetime strings like "2026-06-02 00:00:00" → "2026-06-02"
+  var m = s.match(/^(\d{4}-\d{2}-\d{2})[T ]00:00:00/);
+  if (m) return m[1];
+  return s;
+}
+
+// After rows are parsed: drop columns that are completely empty
+function dropEmptyColumns(){
+  if (!U.detectedCols || !U.rows.length) return;
+  var before = U.detectedCols.length;
+  U.detectedCols = U.detectedCols.filter(function(c){
+    return U.rows.some(function(r){ return r[c.key] && String(r[c.key]).trim(); });
+  });
+  var dropped = before - U.detectedCols.length;
+  if (dropped > 0) toast(dropped + ' empty column(s) removed automatically', 'info');
+}
+
+// Save the detected structure into THIS campaign's column_config —
+// each campaign keeps its own independent structure
+function saveDetectedCols(cols){
+  U.detectedCols = cols;
+  if (!U.campaignId) return;
+
+  var camp = campById(U.campaignId);
+  var existing = (camp && camp.column_config) || [];
+  // Preserve form settings (show_in_form etc.) for keys that already exist
+  var existingByKey = {};
+  existing.forEach(function(c){ existingByKey[c.key] = c; });
+
+  var newConfig = cols.map(function(c, i){
+    var prev = existingByKey[c.key] || {};
+    return {
+      key           : c.key,
+      label         : c.label,
+      visible       : prev.visible !== undefined ? prev.visible : true,
+      order         : i,
+      show_in_form  : prev.show_in_form || false,
+      form_label    : prev.form_label || c.label,
+      form_order    : prev.form_order !== undefined ? prev.form_order : 999,
+      form_required : prev.form_required || false
+    };
+  });
+  // Keep form-only custom questions that aren't sheet columns
+  existing.forEach(function(c){
+    if (c.form_only && !cols.some(function(x){ return x.key === c.key; })) newConfig.push(c);
+  });
+
+  sb.from('campaigns').update({ column_config: newConfig }).eq('id', U.campaignId).then(function(r){
+    if (!r.error) {
+      // refresh local state so campaign table reflects new structure immediately
+      if (camp) camp.column_config = newConfig;
+      toast('Campaign columns synced with sheet structure ✓', 'success');
+    }
+  });
 }
 
 // ── Phone normalization helper (used in upload + intake) ──────
@@ -143,13 +187,15 @@ function parsePaste(){
     var line=lines[i].trim();if(!line)continue;
     var parts=line.split('\t');
     var obj={};
-    cols.forEach(function(c){obj[c.key]=(c.srcIdx!==undefined?(parts[c.srcIdx]||''):(parts[cols.indexOf(c)]||'')).toString().trim();});
+    cols.forEach(function(c){obj[c.key]=formatCellValue(c.srcIdx!==undefined?parts[c.srcIdx]:parts[cols.indexOf(c)]);});
     if(!Object.values(obj).some(function(v){return v;}))continue;
     rows.push(obj);
   }
   if(!rows.length){toast('No data rows found','error');return;}
   U.rows=rows;
-  toast(cols.length+' columns detected · '+rows.length+' rows parsed','success');
+  dropEmptyColumns();
+  saveDetectedCols(U.detectedCols);
+  toast(U.detectedCols.length+' columns detected · '+rows.length+' rows parsed','success');
   renderUpload();
 }
 function handleExcelDrop(e){e.preventDefault();var f=e.dataTransfer.files[0];if(f)readExcelFile(f);}
@@ -170,19 +216,21 @@ function readExcelFile(file){
       for(var i=1;i<lines.length;i++){
         var parts=lines[i].replace(/\r/g,'').split(',');
         var obj={};
-        cols.forEach(function(c,ci){obj[c.key]=(parts[ci]||'').replace(/^"|"$/g,'').trim();});
+        cols.forEach(function(c){var v=(c.srcIdx!==undefined?parts[c.srcIdx]:'')||'';obj[c.key]=formatCellValue(String(v).replace(/^"|"$/g,''));});
         if(!Object.values(obj).some(function(v){return v;}))continue;
         rows.push(obj);
       }
       U.rows=rows;
-      toast(cols.length+' columns detected · '+rows.length+' rows from CSV','success');
+      dropEmptyColumns();
+      saveDetectedCols(U.detectedCols);
+      toast(U.detectedCols.length+' columns detected · '+rows.length+' rows from CSV','success');
       renderUpload();
     };reader.readAsText(file);
   } else if(window.XLSX){
     var reader=new FileReader();
     reader.onload=function(e){
       try{
-        var wb=XLSX.read(e.target.result,{type:'array'});
+        var wb=XLSX.read(e.target.result,{type:'array',cellDates:false});
         var ws=wb.Sheets[wb.SheetNames[0]];
         var data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
         if(!data.length){toast('Empty file','error');return;}
@@ -195,12 +243,14 @@ function readExcelFile(file){
         for(var i=1;i<data.length;i++){
           var row=data[i];
           var obj={};
-          cols.forEach(function(c){obj[c.key]=(c.srcIdx!==undefined?(row[c.srcIdx]||''):(row[cols.indexOf(c)]||'')).toString().trim();});
+          cols.forEach(function(c){obj[c.key]=formatCellValue(c.srcIdx!==undefined?row[c.srcIdx]:row[cols.indexOf(c)]);});
           if(!Object.values(obj).some(function(v){return v;}))continue;
           rows.push(obj);
         }
         U.rows=rows;
-        toast(cols.length+' columns detected · '+rows.length+' rows from Excel','success');
+        dropEmptyColumns();
+        saveDetectedCols(U.detectedCols);
+        toast(U.detectedCols.length+' columns detected · '+rows.length+' rows from Excel','success');
         renderUpload();
       }catch(err){toast('Could not read file: '+err.message,'error');}
     };reader.readAsArrayBuffer(file);
