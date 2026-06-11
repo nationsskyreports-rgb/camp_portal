@@ -3,37 +3,37 @@
 // ============================================================
 
 var NOS_HEADER_MAP = {
-  'Contract Number'                           : {key:'contract_number',  label:'رقم العقد'},
-  'Project'                                   : {key:'project',          label:'المشروع'},
-  'Unit'                                      : {key:'unit',             label:'الوحدة'},
-  'Deal Type'                                 : {key:'deal_type',        label:'نوع الصفقة'},
-  'Customer'                                  : {key:'customer',         label:'اسم العميل'},
-  'Mobile Phone (Customer) (Contact)'         : {key:'phone',            label:'تليفون 1'},
-  'Mobile Phone 2 (Customer) (Contact)'       : {key:'phone_2',          label:'تليفون 2'},
-  'Email (Customer) (Contact)'                : {key:'email',            label:'الإيميل'},
-  'Primary Contact (Customer) (Account)'      : {key:'primary_contact',  label:'جهة الاتصال'},
-  'Main Phone (Customer) (Account)'           : {key:'phone_3',          label:'تليفون 3'},
-  'Phone Number (Customer) (Account)'         : {key:'phone_4',          label:'تليفون 4'},
-  'Email (Customer) (Account)'                : {key:'email_account',    label:'إيميل الشركة'},
-  'Contract Date'                             : {key:'contract_date',    label:'تاريخ العقد'},
-  'Contract Status'                           : {key:'contract_status',  label:'حالة العقد'},
-  'Sales Property Status (Unit) (Product)'    : {key:'property_status',  label:'حالة الوحدة'}
+  'Contract Number'                           : {key:'contract_number',  label:'Contract Number'},
+  'Project'                                   : {key:'project',          label:'Project'},
+  'Unit'                                      : {key:'unit',             label:'Unit'},
+  'Deal Type'                                 : {key:'deal_type',        label:'Deal Type'},
+  'Customer'                                  : {key:'customer',         label:'Customer'},
+  'Mobile Phone (Customer) (Contact)'         : {key:'phone',            label:'Phone 1'},
+  'Mobile Phone 2 (Customer) (Contact)'       : {key:'phone_2',          label:'Phone 2'},
+  'Email (Customer) (Contact)'                : {key:'email',            label:'Email'},
+  'Primary Contact (Customer) (Account)'      : {key:'primary_contact',  label:'Primary Contact'},
+  'Main Phone (Customer) (Account)'           : {key:'phone_3',          label:'Phone 3'},
+  'Phone Number (Customer) (Account)'         : {key:'phone_4',          label:'Phone 4'},
+  'Email (Customer) (Account)'                : {key:'email_account',    label:'Company Email'},
+  'Contract Date'                             : {key:'contract_date',    label:'Contract Date'},
+  'Contract Status'                           : {key:'contract_status',  label:'Contract Status'},
+  'Sales Property Status (Unit) (Product)'    : {key:'property_status',  label:'Property Status'}
 };
 
 var NOS_SKIP_HEADERS = ['(Do Not Modify) Order','(Do Not Modify) Row Checksum','(Do Not Modify) Modified On'];
 
 var NOS_COLUMN_CONFIG = [
-  {key:'contract_number', label:'رقم العقد',    visible:true,  order:0,  show_in_form:false},
-  {key:'project',         label:'المشروع',       visible:true,  order:1,  show_in_form:false},
-  {key:'unit',            label:'الوحدة',        visible:true,  order:2,  show_in_form:false},
-  {key:'deal_type',       label:'نوع الصفقة',    visible:true,  order:3,  show_in_form:false},
-  {key:'phone_2',         label:'تليفون 2',      visible:true,  order:4,  show_in_form:false},
-  {key:'phone_3',         label:'تليفون 3',      visible:true,  order:5,  show_in_form:false},
-  {key:'email',           label:'الإيميل',       visible:true,  order:6,  show_in_form:true, form_label:'البريد الإلكتروني'},
-  {key:'primary_contact', label:'جهة الاتصال',   visible:false, order:7,  show_in_form:false},
-  {key:'contract_date',   label:'تاريخ العقد',   visible:true,  order:8,  show_in_form:false},
-  {key:'contract_status', label:'حالة العقد',    visible:true,  order:9,  show_in_form:false},
-  {key:'property_status', label:'حالة الوحدة',   visible:true,  order:10, show_in_form:false}
+  {key:'contract_number', label:'Contract Number',    visible:true,  order:0,  show_in_form:false},
+  {key:'project',         label:'Project',       visible:true,  order:1,  show_in_form:false},
+  {key:'unit',            label:'Unit',        visible:true,  order:2,  show_in_form:false},
+  {key:'deal_type',       label:'Deal Type',    visible:true,  order:3,  show_in_form:false},
+  {key:'phone_2',         label:'Phone 2',      visible:true,  order:4,  show_in_form:false},
+  {key:'phone_3',         label:'Phone 3',      visible:true,  order:5,  show_in_form:false},
+  {key:'email',           label:'Email',       visible:true,  order:6,  show_in_form:true, form_label:'Email Address'},
+  {key:'primary_contact', label:'Primary Contact',   visible:false, order:7,  show_in_form:false},
+  {key:'contract_date',   label:'Contract Date',   visible:true,  order:8,  show_in_form:false},
+  {key:'contract_status', label:'Contract Status',    visible:true,  order:9,  show_in_form:false},
+  {key:'property_status', label:'Property Status',   visible:true,  order:10, show_in_form:false}
 ];
 
 function detectNOSSheet(headers){
@@ -66,9 +66,9 @@ function saveDetectedCols(cols){
   U.detectedCols=cols;
   if(U.isNOSSheet&&U.campaignId){
     sb.from('campaigns').update({column_config:NOS_COLUMN_CONFIG}).eq('id',U.campaignId).then(function(r){
-      if(!r.error) toast('تم تحديث أعمدة الـ campaign تلقائياً لشيت NOS ✓','success');
+      if(!r.error) toast('Campaign columns auto-updated for NOS sheet ✓','success');
     });
-    toast('تم التعرف على شيت عقود NOS تلقائياً ✓','success');
+    toast('NOS contracts sheet detected ✓','success');
   }
 }
 
@@ -116,12 +116,12 @@ function renderUpload(){
   '<div class="flex flex-wrap gap-2 mb-5 p-3 rounded-lg bg-white/[0.02] border border-white/5">'+
   '<span class="text-xs text-slate-500 self-center mr-1">Columns:</span>'+cols.map(function(c){return'<span class="badge badge-new text-[11px]">'+esc(c.label)+'</span>';}).join('')+'</div>'+
   '<div class="flex gap-2 mb-4 border-b border-white/10 pb-2">'+tabBtn('paste','clipboard','Paste from Excel')+tabBtn('excel','file-spreadsheet','Upload File')+tabBtn('manual','table','Manual Entry')+'</div>'+
-  (U.uploadTab==='paste'?'<div class="space-y-3"><p class="text-xs text-slate-400 mb-2">الصق من Excel — <strong class="text-slate-300">السطر الأول لازم يكون الهيدرز</strong> والسيستم هيتعرف على الأعمدة تلقائياً</p><textarea id="paste-area" class="input font-mono text-xs" rows="10" placeholder="Paste tab-separated rows here..."></textarea><button class="btn btn-primary" onclick="parsePaste()"><i data-lucide="clipboard-check" class="w-4 h-4"></i> Parse & Preview</button></div>':'')+
-  (U.uploadTab==='excel'?'<div class="space-y-3"><p class="text-xs text-slate-400">ارفع ملف .xlsx أو .csv — <strong class="text-slate-300">السيستم هيتعرف على الهيدرز تلقائياً</strong> من السطر الأول</p><div class="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:border-blue-500/40 transition-colors" ondrop="handleExcelDrop(event)" ondragover="event.preventDefault()"><i data-lucide="file-spreadsheet" class="w-10 h-10 text-slate-600 mx-auto mb-3"></i><p class="text-slate-400 text-sm mb-3">Drag & drop file here</p><label class="btn btn-ghost cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i> Browse<input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleExcelFile(this)"></label></div>'+(U.rows.length?'<p class="text-emerald-400 text-sm font-medium">✓ '+U.rows.length+' rows loaded</p>':'')+'</div>':'')+
+  (U.uploadTab==='paste'?'<div class="space-y-3"><p class="text-xs text-slate-400 mb-2">Paste from Excel — first row must be headers, system auto-detects columns<strong class="text-slate-300">First row must be headers</strong> , system auto-detects columns</p><textarea id="paste-area" class="input font-mono text-xs" rows="10" placeholder="Paste tab-separated rows here..."></textarea><button class="btn btn-primary" onclick="parsePaste()"><i data-lucide="clipboard-check" class="w-4 h-4"></i> Parse & Preview</button></div>':'')+
+  (U.uploadTab==='excel'?'<div class="space-y-3"><p class="text-xs text-slate-400">Upload .xlsx or .csv file — <strong class="text-slate-300">System will auto-detect headers</strong> from first row</p><div class="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:border-blue-500/40 transition-colors" ondrop="handleExcelDrop(event)" ondragover="event.preventDefault()"><i data-lucide="file-spreadsheet" class="w-10 h-10 text-slate-600 mx-auto mb-3"></i><p class="text-slate-400 text-sm mb-3">Drag & drop file here</p><label class="btn btn-ghost cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i> Browse<input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleExcelFile(this)"></label></div>'+(U.rows.length?'<p class="text-emerald-400 text-sm font-medium">✓ '+U.rows.length+' rows loaded</p>':'')+'</div>':'')+
   manualHtml+
   (U.rows.length?'<div class="mt-4 pt-4 border-t border-white/10 flex gap-2 flex-wrap">'+
-  '<button class="btn btn-primary" onclick="previewDistribute()"><i data-lucide="shuffle" class="w-4 h-4"></i> توزيع على الأجينتس ('+U.rows.length+' صف)</button>'+
-  '<button class="btn btn-ghost" onclick="saveWithoutDistribution()"><i data-lucide="save" class="w-4 h-4"></i> حفظ بدون توزيع</button>'+
+  '<button class="btn btn-primary" onclick="previewDistribute()"><i data-lucide="shuffle" class="w-4 h-4"></i> Distribute to agents ('+U.rows.length+' rows)</button>'+
+  '<button class="btn btn-ghost" onclick="saveWithoutDistribution()"><i data-lucide="save" class="w-4 h-4"></i> Save without distribution</button>'+
 '</div>':'')+'</div>';
   lucide.createIcons();
 }
@@ -207,8 +207,8 @@ function readExcelFile(file){
   } else {toast('XLSX library not loaded','error');}
 }
 function saveWithoutDistribution(){
-  if(!U.rows.length){toast('لا توجد بيانات للحفظ','error');return;}
-  if(!U.campaignId){toast('اختر campaign أولاً','error');return;}
+  if(!U.rows.length){toast('No data to save','error');return;}
+  if(!U.campaignId){toast('Select a campaign first','error');return;}
   var cols=U.detectedCols||getCurrentUploadCols();
   var campName=(campById(U.campaignId)||{}).name||'Campaign';
   var rows=[];
@@ -220,7 +220,7 @@ function saveWithoutDistribution(){
   });
   sb.from('clients').insert(rows).then(function(result){
     if(result.error){toast(result.error.message,'error');return;}
-    toast(rows.length+' عميل اتحفظوا بدون توزيع ✓','success');
+    toast(rows.length+' clients saved without distribution ✓','success');
     U={campaignId:U.campaignId,rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,isNOSSheet:false};
     fetchAll().then(renderUpload);
   });
