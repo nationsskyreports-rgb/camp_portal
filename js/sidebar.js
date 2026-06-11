@@ -69,7 +69,8 @@ function renderPage(){
       upload:renderUpload,qa:renderQA,reports:renderReports,
       team:renderTeam,'my-clients':renderMyClients,
       'ask-question':renderAskQuestion,'my-questions':renderMyQuestions,
-      notifications:renderNotifPage,cleanup:renderCleanup
+      notifications:renderNotifPage,cleanup:renderCleanup,
+      'form-tracking':renderFormTracking
     };
     if(fn[S.currentPage])fn[S.currentPage]();
     else renderDashboard();
