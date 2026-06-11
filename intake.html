@@ -541,8 +541,6 @@
 var SB_URL = 'https://biwrdwxgfyhnltzddlwu.supabase.co';
 var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpd3Jkd3hnZnlobmx0emRkbHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTczMTYsImV4cCI6MjA4OTc5MzMxNn0.EMOV5v3cGaDEqQJusnyrWTWdSPPwKeyuguPzxJvtKdQ';
 
-var SKIP_KEYS = ['contract_id','customer','contract_date','actual_price','contract_status','approval_status','name','phone','phone2','email','notes','unit'];
-
 var NOS_PROJECTS = [
   'Jirian',
   'Sky Ridge Elite',
@@ -738,8 +736,10 @@ function buildDynamicFields(camp) {
   var cols = camp.column_config || [];
   if (typeof cols === 'string') { try { cols = JSON.parse(cols); } catch(e) { cols = []; } }
 
+  // Skip keys that already have dedicated inputs in the form
+  var DYNAMIC_SKIP = ['email','email_account','email2','name','phone','phone2','notes'];
   var visibleCols = cols
-    .filter(function(c) { return c.show_in_form === true; })
+    .filter(function(c) { return c.show_in_form === true && DYNAMIC_SKIP.indexOf(c.key) === -1; })
     .sort(function(a,b) { return (a.form_order !== undefined ? a.form_order : a.order) - (b.form_order !== undefined ? b.form_order : b.order); });
 
   if (!visibleCols.length) { document.getElementById('dynamic-fields').innerHTML = ''; return; }
@@ -833,12 +833,6 @@ function attachDraftListeners() {
 
 // ── PHONE LOOKUP ─────────────────────────────────────────────
 function digitsOnly(s) { return String(s || '').replace(/\D/g, ''); }
-function phonesMatch(stored, inputD) {
-  var s = digitsOnly(stored);
-  if (!s || !inputD || s.length < 7 || inputD.length < 7) return false;
-  return s.slice(-9) === inputD.slice(-9);
-}
-
 function lookupPhone() {
   var raw = val('inp-phone');
   if (!raw || !campaignId) return;
