@@ -663,8 +663,22 @@ function renderClientCard(c) {
           outcomeSelector(c.id, null, null) +
           '<div class="flex gap-2">' +
           '<textarea id="note-' + c.id + '" class="input flex-1" placeholder="Note (optional)..." rows="2"></textarea>' +
-          '<button class="btn btn-primary self-end" onclick="saveClient(\'' + c.id + '\')">' +
+          '<button class="btn btn-primary self-end" onclick="saveClient(\'" + c.id + '\')">'+
           '<i data-lucide="save" class="w-4 h-4"></i> Save</button>' +
+          '</div></div></div>'
+        : '') +
+
+      // Set Follow-up Reminder (employee only)
+      (S.role === 'employee'
+        ? '<div class="pt-4 border-t border-white/5" onclick="event.stopPropagation()">' +
+          '<p class="text-xs text-slate-500 mb-3 font-medium">Schedule Follow-up</p>' +
+          '<div class="space-y-2">' +
+          '<input type="date" id="followup-date-' + c.id + '" class="input" value="' + (c.next_followup_date ? new Date(c.next_followup_date).toISOString().split('T')[0] : '') + '">' +
+          '<input type="time" id="followup-time-' + c.id + '" class="input" value="' + (c.next_followup_date ? new Date(c.next_followup_date).toTimeString().split(' ')[0].substring(0, 5) : '09:00') + '">' +
+          '<textarea id="followup-note-' + c.id + '" class="input" placeholder="Follow-up note (optional)..." rows="2">' + esc(c.followup_note || '') + '</textarea>' +
+          '<div class="flex gap-2">' +
+          '<button class="btn btn-primary flex-1" onclick="saveFollowupFromClient(\'" + c.id + '\')"><i data-lucide="bell" class="w-4 h-4"></i> Set Reminder</button>' +
+          (c.next_followup_date ? '<button class="btn btn-ghost" onclick="clearFollowupFromClient(\'" + c.id + '\')"><i data-lucide="trash" class="w-4 h-4"></i> Clear</button>' : '') +
           '</div></div></div>'
         : '') +
 
@@ -703,6 +717,45 @@ async function saveClient(cid) {
     moodFilter = '';
     var finalStatus = newStatus || (S.clients.find(function(x) { return x.id === cid; })||{}).status;
     navigateToClientTab(cid, outcome, finalStatus);
+    fetchAll().then(renderMyClients);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── Save follow-up reminder from client card ──
+async function saveFollowupFromClient(cid) {
+  var dateEl = document.getElementById('followup-date-' + cid);
+  var timeEl = document.getElementById('followup-time-' + cid);
+  var noteEl = document.getElementById('followup-note-' + cid);
+
+  if (!dateEl.value || !timeEl.value) {
+    toast('Please select both date and time', 'info');
+    return;
+  }
+
+  var dateStr = dateEl.value + 'T' + timeEl.value + ':00';
+  var noteStr = noteEl.value.trim();
+
+  try {
+    var res = await sb.from('clients').update({
+      next_followup_date: dateStr,
+      followup_note: noteStr || ''
+    }).eq('id', cid);
+    if (res.error) throw res.error;
+    toast('Follow-up reminder set successfully', 'success');
+    fetchAll().then(renderMyClients);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── Clear follow-up reminder from client card ──
+async function clearFollowupFromClient(cid) {
+  if (!confirm('Clear this follow-up reminder?')) return;
+  try {
+    var res = await sb.from('clients').update({
+      next_followup_date: null,
+      followup_note: ''
+    }).eq('id', cid);
+    if (res.error) throw res.error;
+    toast('Follow-up reminder cleared', 'success');
     fetchAll().then(renderMyClients);
   } catch(e) { toast(e.message, 'error'); }
 }
