@@ -40,15 +40,19 @@ function getEmployeeMetrics(empId) {
   var productivity  = totalClients > 0 ? Math.round(totalCalls / totalClients * 10) / 10 : 0;
 
   // reminders from our reminders table (if loaded)
-  var overdueReminders = 0;
-  if (S.reminders && S.reminders.length) {
-    var now = Date.now();
-    overdueReminders = S.reminders.filter(function(r){
-      return r.employee_id === empId &&
-             !r.done &&
-             new Date(r.remind_at).getTime() <= now;
-    }).length;
-  }
+  // ── Follow-up metrics (from reminders table) ─────────────────
+  var now = Date.now();
+  var myReminders = (S.reminders||[]).filter(function(r){ return r.employee_id === empId; });
+  var fuTotal    = myReminders.length;
+  var fuDone     = myReminders.filter(function(r){ return r.done; }).length;
+  var fuOverdue  = myReminders.filter(function(r){ return !r.done && new Date(r.remind_at).getTime() <= now; }).length;
+  var fuPending  = myReminders.filter(function(r){ return !r.done; }).length;
+  // clients that have at least 1 reminder set (proactiveness)
+  var clientsWithFu = {};
+  myReminders.forEach(function(r){ clientsWithFu[r.client_id] = true; });
+  var fuSetRate  = totalClients > 0 ? Math.round(Object.keys(clientsWithFu).length / totalClients * 100) : 0;
+  // completion: done / (done + overdue) — measures reliability
+  var fuDoneOfDue = (fuDone + fuOverdue) > 0 ? Math.round(fuDone / (fuDone + fuOverdue) * 100) : 100;
 
   return {
     id: empId, name: emp.name, color: emp.color || '#3b82f6', isActive: emp.is_active,
@@ -62,7 +66,12 @@ function getEmployeeMetrics(empId) {
     contactRate: contactRate,
     closeRate: closeRate,
     productivity: productivity,
-    overdueReminders: overdueReminders
+    fuTotal: fuTotal,
+    fuDone: fuDone,
+    fuOverdue: fuOverdue,
+    fuPending: fuPending,
+    fuSetRate: fuSetRate,
+    fuDoneOfDue: fuDoneOfDue
   };
 }
 
@@ -113,7 +122,7 @@ function renderAgentPerformance() {
       perfCard('Calls Made',     T.calls,    '#06b6d4', 'phone')+
       perfCard('Answered',       T.answered, '#10b981', 'phone-call')+
       perfCard('Closed',         T.closed,   '#8b5cf6', 'check-circle')+
-      perfCard('Untouched',      T.untouched, T.untouched > 0 ? '#ef4444' : '#10b981', 'user-x')+
+      perfCard('Untouched',      T.untouched,      T.untouched > 0 ? '#ef4444' : '#10b981', 'user-x')+
     '</div>'+
 
     // ── Leaderboard ──
@@ -163,7 +172,9 @@ function renderAgentPerformance() {
           '<th class="pb-3 pr-4 text-center whitespace-nowrap">Close %</th>'+
           '<th class="pb-3 pr-4 text-center whitespace-nowrap">Calls/Client</th>'+
           '<th class="pb-3 pr-4 text-center whitespace-nowrap">Untouched</th>'+
-          '<th class="pb-3 text-center whitespace-nowrap">Reminders Due</th>'+
+          '<th class="pb-3 pr-4 text-center whitespace-nowrap">Follow-ups Set</th>'+
+          '<th class="pb-3 pr-4 text-center whitespace-nowrap">Overdue FU</th>'+
+          '<th class="pb-3 text-center whitespace-nowrap">FU Done %</th>'+
         '</tr></thead><tbody>'+
         all.map(function(s){
           return '<tr class="table-row border-b border-white/[0.03]">'+
@@ -177,7 +188,9 @@ function renderAgentPerformance() {
             '<td class="py-3 pr-4 text-center">'+perfPct(s.closeRate, s.closeRate>=50?'emerald':'amber')+'</td>'+
             '<td class="py-3 pr-4 text-center text-slate-400">'+s.productivity+'</td>'+
             '<td class="py-3 pr-4 text-center">'+(s.untouched>0?'<span style="color:#fca5a5;font-weight:700">'+s.untouched+'</span>':'<span style="color:#6ee7b7">0</span>')+'</td>'+
-            '<td class="py-3 text-center">'+(s.overdueReminders>0?'<span style="color:#f87171;font-weight:700">'+s.overdueReminders+'</span>':'-')+'</td>'+
+            '<td class="py-3 pr-4 text-center"><span style="font-size:12px;color:#94a3b8">'+s.fuPending+'</span></td>'+
+            '<td class="py-3 pr-4 text-center">'+(s.fuOverdue>0?'<span style="font-size:12px;font-weight:700;color:#f87171">'+s.fuOverdue+'</span>':'<span style="color:#6ee7b7;font-size:12px">0</span>')+'</td>'+
+            '<td class="py-3 text-center">'+perfPct(s.fuDoneOfDue, s.fuDoneOfDue>=80?'emerald':s.fuDoneOfDue>=50?'amber':'red')+'</td>'+
           '</tr>';
         }).join('')+
       '</tbody></table></div>' : '<p class="text-slate-500 text-sm py-6 text-center">No agent data yet</p>')+
