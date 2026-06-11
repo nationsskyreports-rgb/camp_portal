@@ -22,6 +22,8 @@ var DEFAULT_COLUMNS = [
 
 var ADMIN_PAGES = [
   {id:'dashboard',      label:'Dashboard',          icon:'layout-dashboard'},
+  {id:'agent-performance', label:'Agent Performance', icon:'bar-chart-3'},
+  {id:'followup-reminders', label:'Follow-up Reminders', icon:'bell-ring'},
   {id:'campaigns',      label:'Campaigns',          icon:'target'},
   {id:'upload',         label:'Upload & Distribute', icon:'upload'},
   {id:'qa',             label:'Q&A Inbox',           icon:'message-circle-question'},
