@@ -470,6 +470,12 @@ function renderMyClients() {
 
   if (empClientFilter) all = all.filter(function(c) { return c.campaign_id === empClientFilter; });
 
+  if (S.role === 'admin' && formFilter === 'submitted') {
+    all = all.filter(function(c) { return c.extra_data && c.extra_data.form_submitted; });
+  } else if (S.role === 'admin' && formFilter === 'pending') {
+    all = all.filter(function(c) { return !c.extra_data || !c.extra_data.form_submitted; });
+  }
+
   var tabs = { active: [], answered: [], wrong_number: [], closed: [] };
   all.forEach(function(c) { tabs[getClientTab(c)].push(c); });
 
