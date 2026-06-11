@@ -4,7 +4,7 @@
 var S = {
   role:null, employee:null, currentPage:'',
   employees:[], campaigns:[], clients:[],
-  questions:[], notifications:[], contactHistory:[],
+  questions:[], notifications:[], contactHistory:[], reminders:[],
   darkMode:true,
   callTimers:{}
 };
@@ -73,13 +73,15 @@ function fetchAll(){
       var ids=S.clients.filter(function(c){return c.assigned_employee_id===S.employee.id;}).map(function(c){return c.id;});
       return Promise.all([
         sb.from('notifications').select('*').eq('employee_id',S.employee.id).order('created_at',{ascending:false}),
-        ids.length?sb.from('contact_history').select('*').in('client_id',ids).order('created_at',{ascending:false}):Promise.resolve({data:[]})
-      ]).then(function(r2){S.notifications=r2[0].data||[];S.contactHistory=r2[1].data||[];});
+        ids.length?sb.from('contact_history').select('*').in('client_id',ids).order('created_at',{ascending:false}):Promise.resolve({data:[]}),
+        sb.from('reminders').select('*').eq('employee_id',S.employee.id).order('remind_at',{ascending:true})
+      ]).then(function(r2){S.notifications=r2[0].data||[];S.contactHistory=r2[1].data||[];S.reminders=r2[2].data||[];});
     } else if(S.role==='admin'){
       return Promise.all([
         sb.from('notifications').select('*').is('employee_id',null).order('created_at',{ascending:false}).limit(100),
-        sb.from('contact_history').select('*').order('created_at',{ascending:false})
-      ]).then(function(r2){S.notifications=r2[0].data||[];S.contactHistory=r2[1].data||[];});
+        sb.from('contact_history').select('*').order('created_at',{ascending:false}),
+        sb.from('reminders').select('*').order('remind_at',{ascending:true})
+      ]).then(function(r2){S.notifications=r2[0].data||[];S.contactHistory=r2[1].data||[];S.reminders=r2[2].data||[];});
     } else {S.notifications=[];S.contactHistory=[];}
   }).catch(function(e){console.error('Fetch error:',e);});
 }
