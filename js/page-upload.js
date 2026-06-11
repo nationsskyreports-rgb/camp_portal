@@ -1,4 +1,90 @@
 // ============================================================
+// NOS SHEET AUTO-DETECTION & COLUMN MAPPING
+// ============================================================
+
+var NOS_HEADER_MAP = {
+  'Contract Number'                           : {key:'contract_number',  label:'رقم العقد'},
+  'Project'                                   : {key:'project',          label:'المشروع'},
+  'Unit'                                      : {key:'unit',             label:'الوحدة'},
+  'Deal Type'                                 : {key:'deal_type',        label:'نوع الصفقة'},
+  'Customer'                                  : {key:'customer',         label:'اسم العميل'},
+  'Mobile Phone (Customer) (Contact)'         : {key:'phone',            label:'تليفون 1'},
+  'Mobile Phone 2 (Customer) (Contact)'       : {key:'phone_2',          label:'تليفون 2'},
+  'Email (Customer) (Contact)'                : {key:'email',            label:'الإيميل'},
+  'Primary Contact (Customer) (Account)'      : {key:'primary_contact',  label:'جهة الاتصال'},
+  'Main Phone (Customer) (Account)'           : {key:'phone_3',          label:'تليفون 3'},
+  'Phone Number (Customer) (Account)'         : {key:'phone_4',          label:'تليفون 4'},
+  'Email (Customer) (Account)'                : {key:'email_account',    label:'إيميل الشركة'},
+  'Contract Date'                             : {key:'contract_date',    label:'تاريخ العقد'},
+  'Contract Status'                           : {key:'contract_status',  label:'حالة العقد'},
+  'Sales Property Status (Unit) (Product)'    : {key:'property_status',  label:'حالة الوحدة'}
+};
+
+var NOS_SKIP_HEADERS = ['(Do Not Modify) Order','(Do Not Modify) Row Checksum','(Do Not Modify) Modified On'];
+
+var NOS_COLUMN_CONFIG = [
+  {key:'contract_number', label:'رقم العقد',    visible:true,  order:0,  show_in_form:false},
+  {key:'project',         label:'المشروع',       visible:true,  order:1,  show_in_form:false},
+  {key:'unit',            label:'الوحدة',        visible:true,  order:2,  show_in_form:false},
+  {key:'deal_type',       label:'نوع الصفقة',    visible:true,  order:3,  show_in_form:false},
+  {key:'phone_2',         label:'تليفون 2',      visible:true,  order:4,  show_in_form:false},
+  {key:'phone_3',         label:'تليفون 3',      visible:true,  order:5,  show_in_form:false},
+  {key:'email',           label:'الإيميل',       visible:true,  order:6,  show_in_form:true, form_label:'البريد الإلكتروني'},
+  {key:'primary_contact', label:'جهة الاتصال',   visible:false, order:7,  show_in_form:false},
+  {key:'contract_date',   label:'تاريخ العقد',   visible:true,  order:8,  show_in_form:false},
+  {key:'contract_status', label:'حالة العقد',    visible:true,  order:9,  show_in_form:false},
+  {key:'property_status', label:'حالة الوحدة',   visible:true,  order:10, show_in_form:false}
+];
+
+function detectNOSSheet(headers){
+  return headers.some(function(h){return h==='Contract Number';}) &&
+         headers.some(function(h){return h&&h.indexOf('Mobile Phone')>-1;});
+}
+
+function buildColsFromHeaders(headers){
+  if(detectNOSSheet(headers)){
+    U.isNOSSheet=true;
+    var cols=[];
+    headers.forEach(function(h,i){
+      if(NOS_SKIP_HEADERS.indexOf(h)>-1) return;
+      var mapped=NOS_HEADER_MAP[h];
+      if(mapped){
+        cols.push({key:mapped.key,label:mapped.label,srcIdx:i});
+      } else if(h&&h.trim()){
+        var safeKey=h.toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_').slice(0,30);
+        cols.push({key:safeKey,label:h,srcIdx:i});
+      }
+    });
+    return cols;
+  }
+  // Default — use campaign column config positions as-is
+  U.isNOSSheet=false;
+  return getCurrentUploadCols().map(function(c,i){return{key:c.key,label:c.label,srcIdx:i};});
+}
+
+function saveDetectedCols(cols){
+  U.detectedCols=cols;
+  if(U.isNOSSheet&&U.campaignId){
+    sb.from('campaigns').update({column_config:NOS_COLUMN_CONFIG}).eq('id',U.campaignId).then(function(r){
+      if(!r.error) toast('تم تحديث أعمدة الـ campaign تلقائياً لشيت NOS ✓','success');
+    });
+    toast('تم التعرف على شيت عقود NOS تلقائياً ✓','success');
+  }
+}
+
+// ── Phone normalization helper (used in upload + intake) ──────
+function normalizePhoneDigits(raw){
+  if(!raw) return '';
+  return String(raw).replace(/\D/g,'');
+}
+function phonesMatch(stored,input){
+  var s=normalizePhoneDigits(stored);
+  var i=normalizePhoneDigits(input);
+  if(s.length<7||i.length<7) return false;
+  return s.slice(-9)===i.slice(-9);
+}
+
+// ============================================================
 // PAGE UPLOAD
 // ============================================================
 // ── UPLOAD ──
@@ -54,7 +140,7 @@ function parsePaste(){
     var line=lines[i].trim();if(!line)continue;
     var parts=line.split('\t');
     var obj={};
-    cols.forEach(function(c,ci){obj[c.key]=(parts[ci]||'').trim();});
+    cols.forEach(function(c){obj[c.key]=(c.srcIdx!==undefined?(parts[c.srcIdx]||''):(parts[cols.indexOf(c)]||'')).toString().trim();});
     if(!Object.values(obj).some(function(v){return v;}))continue;
     rows.push(obj);
   }
@@ -106,7 +192,7 @@ function readExcelFile(file){
         for(var i=1;i<data.length;i++){
           var row=data[i];
           var obj={};
-          cols.forEach(function(c,ci){obj[c.key]=(row[ci]||'').toString().trim();});
+          cols.forEach(function(c){obj[c.key]=(c.srcIdx!==undefined?(row[c.srcIdx]||''):(row[cols.indexOf(c)]||'')).toString().trim();});
           if(!Object.values(obj).some(function(v){return v;}))continue;
           rows.push(obj);
         }
@@ -134,7 +220,7 @@ function confirmDistribute(){
   Object.keys(U.preview).forEach(function(eid){
     U.preview[eid].forEach(function(c){
       var extraData={};cols.forEach(function(col){extraData[col.key]=c[col.key]||'';});
-      var name=c[cols[0]?cols[0].key:''||'customer']||c['customer']||c['name']||Object.values(c)[0]||'';
+      var name=c['customer']||c['Customer']||c[cols[0]?cols[0].key:'']||c['name']||Object.values(c)[0]||'';
       var phone=c['phone']||c['Phone']||'';
       rows.push({name:name.trim(),phone:phone||null,extra_data:extraData,status:'New',assigned_employee_id:eid,campaign_id:U.campaignId});
     });
