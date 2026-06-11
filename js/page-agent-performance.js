@@ -2,294 +2,201 @@
 // AGENT PERFORMANCE DASHBOARD
 // ============================================================
 
-var performanceFilter = { timeRange: '30days', campaign: '' };
+var performanceFilter = { campaign: '' };
 
-// ── Get performance metrics for an employee ──
+// ── Get metrics for one employee ─────────────────────────────
 function getEmployeeMetrics(empId) {
   var emp = empById(empId);
   if (!emp) return null;
 
-  var empClients = S.clients.filter(function(c) { return c.assigned_employee_id === empId; });
-  var empHistory = [];
-  empClients.forEach(function(c) {
-    clientHistory(c.id).forEach(function(h) { empHistory.push(h); });
+  // respect campaign filter
+  var empClients = S.clients.filter(function(c) {
+    if (c.assigned_employee_id !== empId) return false;
+    if (performanceFilter.campaign && c.campaign_id !== performanceFilter.campaign) return false;
+    return true;
   });
 
-  var totalClients = empClients.length;
-  var closedClients = empClients.filter(function(c) { return c.status === 'Closed'; }).length;
-  var answeredCalls = empHistory.filter(function(h) { return h.outcome === 'answered'; }).length;
-  var totalCalls = empHistory.length;
-  var answerRate = totalCalls > 0 ? Math.round((answeredCalls / totalCalls) * 100) : 0;
-  var closeRate = totalClients > 0 ? Math.round((closedClients / totalClients) * 100) : 0;
+  // contact history for this agent's filtered clients
+  var clientIds = {};
+  empClients.forEach(function(c) { clientIds[c.id] = true; });
+  var empHistory = (S.contactHistory || []).filter(function(h) { return clientIds[h.client_id]; });
 
-  // Count overdue follow-ups
-  var now = new Date();
-  var overdueCount = 0;
-  empClients.forEach(function(c) {
-    if (c.next_followup_date && new Date(c.next_followup_date) < now && c.status !== 'Closed') {
-      overdueCount++;
-    }
-  });
+  var totalClients   = empClients.length;
+  var closedClients  = empClients.filter(function(c){ return c.status === 'Closed'; }).length;
+  var totalCalls     = empHistory.length;
+  var answeredCalls  = empHistory.filter(function(h){ return h.outcome === 'answered'; }).length;
+  var wrongNumber    = empHistory.filter(function(h){ return h.outcome === 'wrong_number'; }).length;
 
-  // Calculate Contact Rate (clients with at least one contact attempt)
-  var contactedClients = empClients.filter(function(c) {
-    return clientHistory(c.id).length > 0;
-  }).length;
-  var contactRate = totalClients > 0 ? Math.round((contactedClients / totalClients) * 100) : 0;
+  // clients with at least 1 attempt
+  var touchedIds = {};
+  empHistory.forEach(function(h){ touchedIds[h.client_id] = true; });
+  var touchedCount  = Object.keys(touchedIds).length;
+  var untouched     = totalClients - touchedCount;
 
-  // Calculate Conversion Rate (closed clients / total clients)
-  var conversionRate = closeRate; // Already calculated above
+  var answerRate    = totalCalls > 0 ? Math.round(answeredCalls / totalCalls * 100) : 0;
+  var contactRate   = totalClients > 0 ? Math.round(touchedCount / totalClients * 100) : 0;
+  var closeRate     = totalClients > 0 ? Math.round(closedClients / totalClients * 100) : 0;
+  // productivity = average calls per client
+  var productivity  = totalClients > 0 ? Math.round(totalCalls / totalClients * 10) / 10 : 0;
 
-  // Calculate Average Follow-up Delay (days overdue for pending follow-ups)
-  var followupDelays = [];
-  empClients.forEach(function(c) {
-    if (c.next_followup_date && c.status !== 'Closed') {
-      var followupDate = new Date(c.next_followup_date);
-      if (followupDate < now) {
-        var delayDays = Math.floor((now - followupDate) / (1000 * 60 * 60 * 24));
-        followupDelays.push(delayDays);
-      }
-    }
-  });
-  var avgFollowupDelay = followupDelays.length > 0 
-    ? Math.round(followupDelays.reduce(function(a, b) { return a + b; }, 0) / followupDelays.length)
-    : 0;
-
-  // Calculate Agent Productivity (calls per client assigned)
-  var agentProductivity = totalClients > 0 ? Math.round((totalCalls / totalClients) * 100) / 100 : 0;
+  // reminders from our reminders table (if loaded)
+  var overdueReminders = 0;
+  if (S.reminders && S.reminders.length) {
+    var now = Date.now();
+    overdueReminders = S.reminders.filter(function(r){
+      return r.employee_id === empId &&
+             !r.done &&
+             new Date(r.remind_at).getTime() <= now;
+    }).length;
+  }
 
   return {
-    id: empId,
-    name: emp.name,
-    color: emp.color || '#3b82f6',
+    id: empId, name: emp.name, color: emp.color || '#3b82f6', isActive: emp.is_active,
     totalClients: totalClients,
     closedClients: closedClients,
+    untouched: untouched,
     totalCalls: totalCalls,
     answeredCalls: answeredCalls,
+    wrongNumber: wrongNumber,
     answerRate: answerRate,
-    closeRate: closeRate,
-    overdueFollowups: overdueCount,
-    isActive: emp.is_active,
     contactRate: contactRate,
-    conversionRate: conversionRate,
-    avgFollowupDelay: avgFollowupDelay,
-    agentProductivity: agentProductivity
+    closeRate: closeRate,
+    productivity: productivity,
+    overdueReminders: overdueReminders
   };
 }
 
-// ── Get all employees metrics sorted by performance ──
+// ── All agents sorted by close rate ──────────────────────────
 function getAllEmployeesMetrics() {
-  var metrics = [];
-  S.employees.forEach(function(emp) {
-    var m = getEmployeeMetrics(emp.id);
-    if (m) metrics.push(m);
-  });
-  return metrics.sort(function(a, b) { return b.closeRate - a.closeRate; });
+  return S.employees
+    .map(function(e){ return getEmployeeMetrics(e.id); })
+    .filter(function(m){ return m && m.totalClients > 0; })
+    .sort(function(a,b){ return b.closeRate - a.closeRate || b.answeredCalls - a.answeredCalls; });
 }
 
-// ── Render Agent Performance Dashboard ──
+// ── Main render ───────────────────────────────────────────────
 function renderAgentPerformance() {
   var m = document.getElementById('main-content');
-  var allMetrics = getAllEmployeesMetrics();
+  var all = getAllEmployeesMetrics();
 
-  var html = '<div class="space-y-6 pb-6">' +
-    // Header
-    '<div>' +
-    '<h1 class="text-3xl font-bold text-white mb-2" style="font-family:\'Syne\',sans-serif">Agent Performance Dashboard</h1>' +
-    '<p class="text-slate-400 text-sm">Real-time performance metrics and KPIs for all agents</p>' +
-    '</div>' +
+  // ── Totals ──
+  var T = all.reduce(function(acc, s){
+    acc.clients  += s.totalClients;
+    acc.closed   += s.closedClients;
+    acc.calls    += s.totalCalls;
+    acc.answered += s.answeredCalls;
+    acc.untouched += s.untouched;
+    return acc;
+  }, {clients:0, closed:0, calls:0, answered:0, untouched:0});
 
-    // Filters
-    '<div class="flex gap-3 flex-wrap">' +
-    '<select id="perf-campaign-filter" class="input" onchange="performanceFilter.campaign=this.value;renderAgentPerformance()">' +
-    '<option value="">All Campaigns</option>' +
-    S.campaigns.map(function(c) {
-      return '<option value="' + c.id + '" ' + (performanceFilter.campaign === c.id ? 'selected' : '') + '>' + esc(c.name) + '</option>';
-    }).join('') +
-    '</select>' +
-    '</div>' +
+  var campOpts = '<option value="">All Campaigns</option>' +
+    S.campaigns.map(function(c){
+      return '<option value="'+c.id+'" '+(performanceFilter.campaign===c.id?'selected':'')+'>'+esc(c.name)+'</option>';
+    }).join('');
 
-    // Summary Cards
-    '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">' +
-    buildSummaryCard('Total Agents', allMetrics.length, '#3b82f6', 'users') +
-    buildSummaryCard('Active Agents', allMetrics.filter(function(m) { return m.isActive; }).length, '#10b981', 'user-check') +
-    buildSummaryCard('Total Clients', S.clients.length, '#8b5cf6', 'contact') +
-    buildSummaryCard('Closed Clients', S.clients.filter(function(c) { return c.status === 'Closed'; }).length, '#f59e0b', 'check-circle') +
-    '</div>' +
+  m.innerHTML = hdr('Agent Performance','Live metrics based on calls & client statuses')+
 
-    // Performance Leaderboard
-    '<div class="card">' +
-    '<div class="flex items-center gap-2 mb-4">' +
-    '<i data-lucide="trophy" class="w-5 h-5 text-amber-400"></i>' +
-    '<h2 class="text-lg font-bold text-white">Performance Leaderboard</h2>' +
-    '</div>' +
-    buildPerformanceLeaderboard(allMetrics) +
-    '</div>' +
+    // ── Campaign filter ──
+    '<div class="card mb-5 fade-in" style="padding:.75rem 1rem">'+
+      '<div class="flex items-center gap-3 flex-wrap">'+
+        '<span class="text-xs text-slate-400">Campaign:</span>'+
+        '<select class="input" style="max-width:240px" onchange="performanceFilter.campaign=this.value;renderAgentPerformance()">'+campOpts+'</select>'+
+        (performanceFilter.campaign
+          ? '<button class="btn btn-ghost btn-sm" onclick="performanceFilter.campaign=String();renderAgentPerformance()"><i data-lucide="x" class="w-3.5 h-3.5"></i> Clear</button>'
+          : '')+
+      '</div>'+
+    '</div>'+
 
-    // Detailed Metrics Table
-    '<div class="card">' +
-    '<div class="flex items-center gap-2 mb-4">' +
-    '<i data-lucide="bar-chart-3" class="w-5 h-5 text-blue-400"></i>' +
-    '<h2 class="text-lg font-bold text-white">Detailed Metrics</h2>' +
-    '</div>' +
-    buildPerformanceTable(allMetrics) +
-    '</div>' +
+    // ── Summary cards ──
+    '<div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6 fade-in">'+
+      perfCard('Total Clients',  T.clients,  '#3b82f6', 'users')+
+      perfCard('Calls Made',     T.calls,    '#06b6d4', 'phone')+
+      perfCard('Answered',       T.answered, '#10b981', 'phone-call')+
+      perfCard('Closed',         T.closed,   '#8b5cf6', 'check-circle')+
+      perfCard('Untouched',      T.untouched, T.untouched > 0 ? '#ef4444' : '#10b981', 'user-x')+
+    '</div>'+
 
-    // Overdue Follow-ups Alert
-    buildOverdueFollowupsSection(allMetrics) +
+    // ── Leaderboard ──
+    '<div class="card mb-5 fade-in">'+
+      '<div class="flex items-center gap-2 mb-4">'+
+        '<i data-lucide="trophy" class="w-5 h-5 text-amber-400"></i>'+
+        '<h2 class="text-lg font-bold text-white">Leaderboard</h2>'+
+      '</div>'+
+      '<div class="space-y-2">'+
+      (all.length ? all.slice(0, 10).map(function(s, i){
+        var medal = i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : '<span class="text-slate-500 text-sm font-bold">'+(i+1)+'</span>';
+        return '<div class="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/8 transition-colors">'+
+          '<div class="flex items-center gap-3 flex-1 min-w-0">'+
+            '<span style="min-width:28px;text-align:center">'+medal+'</span>'+
+            av(s.name, s.color, 32)+
+            '<div class="flex-1 min-w-0">'+
+              '<p class="text-sm font-semibold text-white">'+esc(s.name)+'</p>'+
+              '<p class="text-xs text-slate-400">'+s.totalClients+' clients · '+s.totalCalls+' calls</p>'+
+            '</div>'+
+          '</div>'+
+          '<div class="flex items-center gap-3 flex-wrap justify-end">'+
+            '<div class="text-right"><p class="text-sm font-bold text-emerald-400">'+s.closeRate+'%</p><p class="text-xs text-slate-500">Close</p></div>'+
+            '<div class="text-right"><p class="text-sm font-bold text-blue-400">'+s.answerRate+'%</p><p class="text-xs text-slate-500">Answer</p></div>'+
+            (s.untouched > 0 ? '<span class="badge" style="background:rgba(239,68,68,.12);color:#fca5a5;font-size:10px">'+s.untouched+' untouched</span>' : '')+
+            sBadge(s.isActive ? 'online' : 'offline')+
+          '</div>'+
+        '</div>';
+      }).join('') : '<p class="text-slate-500 text-sm">No data</p>')+
+      '</div>'+
+    '</div>'+
 
+    // ── Detailed table ──
+    '<div class="card fade-in">'+
+      '<div class="flex items-center gap-2 mb-4">'+
+        '<i data-lucide="bar-chart-3" class="w-5 h-5 text-blue-400"></i>'+
+        '<h2 class="text-lg font-bold text-white">Detailed Metrics</h2>'+
+      '</div>'+
+      (all.length ? '<div class="tbl-wrap"><table class="w-full text-sm">'+
+        '<thead><tr class="text-left text-slate-500 text-xs uppercase border-b border-white/5">'+
+          '<th class="pb-3 pr-4 whitespace-nowrap">Agent</th>'+
+          '<th class="pb-3 pr-4 text-center whitespace-nowrap">Clients</th>'+
+          '<th class="pb-3 pr-4 text-center whitespace-nowrap">Calls</th>'+
+          '<th class="pb-3 pr-4 text-center whitespace-nowrap">Answered</th>'+
+          '<th class="pb-3 pr-4 text-center whitespace-nowrap">Answer %</th>'+
+          '<th class="pb-3 pr-4 text-center whitespace-nowrap">Contacted %</th>'+
+          '<th class="pb-3 pr-4 text-center whitespace-nowrap">Closed</th>'+
+          '<th class="pb-3 pr-4 text-center whitespace-nowrap">Close %</th>'+
+          '<th class="pb-3 pr-4 text-center whitespace-nowrap">Calls/Client</th>'+
+          '<th class="pb-3 pr-4 text-center whitespace-nowrap">Untouched</th>'+
+          '<th class="pb-3 text-center whitespace-nowrap">Reminders Due</th>'+
+        '</tr></thead><tbody>'+
+        all.map(function(s){
+          return '<tr class="table-row border-b border-white/[0.03]">'+
+            '<td class="py-3 pr-4">'+av(s.name,s.color,26)+'<span class="text-xs text-slate-200 ml-2">'+esc(s.name)+'</span></td>'+
+            '<td class="py-3 pr-4 text-center text-slate-300 font-semibold">'+s.totalClients+'</td>'+
+            '<td class="py-3 pr-4 text-center text-slate-400">'+s.totalCalls+'</td>'+
+            '<td class="py-3 pr-4 text-center text-emerald-400">'+s.answeredCalls+'</td>'+
+            '<td class="py-3 pr-4 text-center">'+perfPct(s.answerRate,'blue')+'</td>'+
+            '<td class="py-3 pr-4 text-center">'+perfPct(s.contactRate,'violet')+'</td>'+
+            '<td class="py-3 pr-4 text-center text-blue-400 font-bold">'+s.closedClients+'</td>'+
+            '<td class="py-3 pr-4 text-center">'+perfPct(s.closeRate, s.closeRate>=50?'emerald':'amber')+'</td>'+
+            '<td class="py-3 pr-4 text-center text-slate-400">'+s.productivity+'</td>'+
+            '<td class="py-3 pr-4 text-center">'+(s.untouched>0?'<span style="color:#fca5a5;font-weight:700">'+s.untouched+'</span>':'<span style="color:#6ee7b7">0</span>')+'</td>'+
+            '<td class="py-3 text-center">'+(s.overdueReminders>0?'<span style="color:#f87171;font-weight:700">'+s.overdueReminders+'</span>':'-')+'</td>'+
+          '</tr>';
+        }).join('')+
+      '</tbody></table></div>' : '<p class="text-slate-500 text-sm py-6 text-center">No agent data yet</p>')+
     '</div>';
 
-  m.innerHTML = html;
   lucide.createIcons();
 }
 
-// ── Build Summary Card ──
-function buildSummaryCard(label, value, color, icon) {
-  return '<div class="card border-l-4" style="border-left-color:' + color + '">' +
-    '<div class="flex items-start justify-between">' +
-    '<div>' +
-    '<p class="text-slate-400 text-xs font-medium mb-1">' + label + '</p>' +
-    '<p class="text-3xl font-bold text-white">' + value + '</p>' +
-    '</div>' +
-    '<i data-lucide="' + icon + '" class="w-8 h-8" style="color:' + color + ';opacity:0.6"></i>' +
-    '</div>' +
-    '</div>';
+function perfCard(label, val, color, icon){
+  return '<div class="card text-center" style="padding:14px">'+
+    '<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:4px">'+
+      '<i data-lucide="'+icon+'" style="width:14px;height:14px;color:'+color+'"></i>'+
+      '<p class="text-xs text-slate-400">'+label+'</p>'+
+    '</div>'+
+    '<p class="text-2xl font-bold" style="color:'+color+'">'+val+'</p>'+
+  '</div>';
 }
 
-// ── Build Performance Leaderboard ──
-function buildPerformanceLeaderboard(metrics) {
-  if (!metrics.length) return '<p class="text-slate-400 text-sm">No agents available</p>';
-
-  var html = '<div class="space-y-3">';
-  metrics.slice(0, 10).forEach(function(m, idx) {
-    var medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : (idx + 1);
-    var statusBadge = m.isActive ? '<span class="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300">Active</span>' : 
-                      '<span class="text-xs px-2 py-1 rounded bg-slate-500/20 text-slate-300">Inactive</span>';
-    
-    html += '<div class="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">' +
-      '<div class="flex items-center gap-3 flex-1">' +
-      '<span class="text-lg font-bold" style="min-width:30px">' + medal + '</span>' +
-      av(m.name, m.color, 32) +
-      '<div class="flex-1 min-w-0">' +
-      '<p class="text-sm font-semibold text-white">' + esc(m.name) + '</p>' +
-      '<p class="text-xs text-slate-400">' + m.totalClients + ' clients · ' + m.totalCalls + ' calls</p>' +
-      '</div>' +
-      '</div>' +
-      '<div class="flex items-center gap-4 flex-wrap justify-end">' +
-      '<div class="text-right">' +
-      '<p class="text-sm font-bold text-white">' + m.closeRate + '%</p>' +
-      '<p class="text-xs text-slate-400">Close Rate</p>' +
-      '</div>' +
-      statusBadge +
-      '</div>' +
-      '</div>';
-  });
-  html += '</div>';
-  return html;
-}
-
-// ── Build Performance Table ──
-function buildPerformanceTable(metrics) {
-  if (!metrics.length) return '<p class="text-slate-400 text-sm">No agents available</p>';
-
-  var html = '<div class="overflow-x-auto">' +
-    '<table class="w-full text-sm">' +
-    '<thead>' +
-    '<tr class="border-b border-white/10">' +
-    '<th class="text-left py-3 px-4 text-slate-400 font-semibold">Agent</th>' +
-    '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Clients</th>' +
-    '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Closed</th>' +
-    '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Calls</th>' +
-    '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Answer Rate</th>' +
-    '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Contact Rate</th>' +
-    '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Conversion Rate</th>' +
-    '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Avg Follow-up Delay</th>' +
-    '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Productivity</th>' +
-    '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Close Rate</th>' +
-    '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Overdue</th>' +
-    '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Status</th>' +
-    '</tr>' +
-    '</thead>' +
-    '<tbody>';
-
-  metrics.forEach(function(m, idx) {
-    var statusColor = m.isActive ? 'text-emerald-400' : 'text-slate-400';
-    var statusText = m.isActive ? 'Active' : 'Inactive';
-    
-    html += '<tr class="border-b border-white/5 hover:bg-white/5 transition-colors">' +
-      '<td class="py-3 px-4"><div class="flex items-center gap-2">' + av(m.name, m.color, 28) + '<span class="text-white">' + esc(m.name) + '</span></div></td>' +
-      '<td class="py-3 px-4 text-center text-white font-semibold">' + m.totalClients + '</td>' +
-      '<td class="py-3 px-4 text-center text-white font-semibold">' + m.closedClients + '</td>' +
-      '<td class="py-3 px-4 text-center text-white font-semibold">' + m.totalCalls + '</td>' +
-      '<td class="py-3 px-4 text-center"><span class="px-2 py-1 rounded bg-blue-500/20 text-blue-300 text-xs font-semibold">' + m.answerRate + '%</span></td>' +
-      '<td class="py-3 px-4 text-center"><span class="px-2 py-1 rounded bg-purple-500/20 text-purple-300 text-xs font-semibold">' + m.contactRate + '%</span></td>' +
-      '<td class="py-3 px-4 text-center"><span class="px-2 py-1 rounded bg-cyan-500/20 text-cyan-300 text-xs font-semibold">' + m.conversionRate + '%</span></td>' +
-      '<td class="py-3 px-4 text-center"><span class="px-2 py-1 rounded ' + (m.avgFollowupDelay > 3 ? 'bg-red-500/20 text-red-300' : 'bg-yellow-500/20 text-yellow-300') + ' text-xs font-semibold">' + m.avgFollowupDelay + 'd</span></td>' +
-      '<td class="py-3 px-4 text-center"><span class="px-2 py-1 rounded bg-indigo-500/20 text-indigo-300 text-xs font-semibold">' + m.agentProductivity.toFixed(2) + '</span></td>' +
-      '<td class="py-3 px-4 text-center"><span class="px-2 py-1 rounded ' + (m.closeRate >= 50 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300') + ' text-xs font-semibold">' + m.closeRate + '%</span></td>' +
-      '<td class="py-3 px-4 text-center text-white font-semibold">' + (m.overdueFollowups > 0 ? '<span class="px-2 py-1 rounded bg-red-500/20 text-red-300 text-xs font-bold">' + m.overdueFollowups + '</span>' : '0') + '</td>' +
-      '<td class="py-3 px-4 text-center"><span class="text-xs font-semibold ' + statusColor + '">' + statusText + '</span></td>' +
-      '</tr>';
-  });
-
-  html += '</tbody></table></div>';
-  return html;
-}
-
-// ── Build Overdue Follow-ups Section ──
-function buildOverdueFollowupsSection(metrics) {
-  var overdueClients = [];
-  S.clients.forEach(function(c) {
-    if (c.next_followup_date && new Date(c.next_followup_date) < new Date() && c.status !== 'Closed') {
-      var emp = empById(c.assigned_employee_id);
-      overdueClients.push({ client: c, employee: emp });
-    }
-  });
-
-  if (!overdueClients.length) {
-    return '<div class="card border-emerald-500/20 bg-emerald-500/5">' +
-      '<div class="flex items-center gap-2">' +
-      '<i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>' +
-      '<p class="text-emerald-300 text-sm font-semibold">✓ All follow-ups are up to date!</p>' +
-      '</div></div>';
-  }
-
-  var html = '<div class="card border-red-500/20 bg-red-500/5">' +
-    '<div class="flex items-center gap-2 mb-4">' +
-    '<i data-lucide="alert-circle" class="w-5 h-5 text-red-400"></i>' +
-    '<h2 class="text-lg font-bold text-red-300">' + overdueClients.length + ' Overdue Follow-ups</h2>' +
-    '</div>' +
-    '<div class="space-y-2 max-h-96 overflow-y-auto">';
-
-  overdueClients.slice(0, 20).forEach(function(item) {
-    var daysOverdue = Math.floor((new Date() - new Date(item.client.next_followup_date)) / (1000 * 60 * 60 * 24));
-    html += '<div class="flex items-center justify-between p-2 rounded bg-white/5">' +
-      '<div class="flex-1 min-w-0">' +
-      '<p class="text-sm font-semibold text-white">' + esc(item.client.name) + '</p>' +
-      '<p class="text-xs text-slate-400">' + (item.employee ? esc(item.employee.name) : 'Unassigned') + '</p>' +
-      '</div>' +
-      '<span class="text-xs px-2 py-1 rounded bg-red-500/20 text-red-300 font-semibold">' + daysOverdue + ' days overdue</span>' +
-      '</div>';
-  });
-
-  if (overdueClients.length > 20) {
-    html += '<p class="text-xs text-slate-400 text-center py-2">... and ' + (overdueClients.length - 20) + ' more</p>';
-  }
-
-  html += '</div></div>';
-  return html;
-}
-
-// ── Avatar helper ──
-function av(name, color, size) {
-  var initials = name.split(' ').map(function(n) { return n[0]; }).join('').toUpperCase().substring(0, 2);
-  return '<div class="flex items-center justify-center rounded-full font-bold text-white" style="width:' + size + 'px;height:' + size + 'px;background:' + color + ';font-size:' + Math.round(size * 0.4) + 'px">' + initials + '</div>';
-}
-
-// ── Escape HTML ──
-function esc(str) {
-  var div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+function perfPct(pct, clr){
+  var c = clr === 'emerald' ? '#6ee7b7' : clr === 'amber' ? '#fbbf24' : clr === 'blue' ? '#93c5fd' : clr === 'violet' ? '#c4b5fd' : '#94a3b8';
+  return '<span style="font-size:12px;font-weight:600;color:'+c+'">'+pct+'%</span>';
 }
