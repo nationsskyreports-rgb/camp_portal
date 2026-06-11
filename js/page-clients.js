@@ -334,30 +334,34 @@ var selectedClients = {};
 function buildBulkBar(cls) {
   var selCount = Object.keys(selectedClients).length;
   if (!cls.length) return '';
-  var empOpts = '<option value="">اختر موظف...</option>' +
-    S.employees.filter(function(e){return e.is_active;}).map(function(e){
-      return '<option value="'+e.id+'">'+esc(e.name)+'</option>';
-    }).join('');
-  return '<div class="card mb-3 fade-in" style="padding:.75rem 1rem">'+
-    '<div class="flex items-center gap-3 flex-wrap">'+
-      '<label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300">'+
-        '<input type="checkbox" '+(selCount>0&&selCount===cls.length?'checked':'')+' '+
-          'onclick="toggleSelectAll(event)" style="width:16px;height:16px;accent-color:#3b82f6">'+
-        '<span>'+(selCount>0?selCount+' محدد':'تحديد الكل')+'</span>'+
-      '</label>'+
-      (selCount>0 ?
-        '<button class="btn btn-danger btn-sm" onclick="bulkUnassign()">'+
-          '<i data-lucide="user-x" class="w-3.5 h-3.5"></i> إلغاء التعيين ('+selCount+')'+
-        '</button>'+
-        '<select class="input" style="max-width:200px;height:34px;font-size:12px" onchange="bulkAssign(this.value);this.value=''">'+
-          empOpts+
-        '</select>'+
-        '<button class="btn btn-ghost btn-sm" onclick="selectedClients={};renderMyClients()">'+
-          '<i data-lucide="x" class="w-3.5 h-3.5"></i> إلغاء التحديد'+
-        '</button>'
-      : '') +
-    '</div>'+
-  '</div>';
+  var html = '<div class="card mb-3 fade-in" style="padding:.75rem 1rem">' +
+    '<div class="flex items-center gap-3 flex-wrap">' +
+      '<label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300">' +
+        '<input type="checkbox" ' + (selCount > 0 && selCount === cls.length ? 'checked' : '') +
+          ' onclick="toggleSelectAll(event)" style="width:16px;height:16px;accent-color:#3b82f6">' +
+        '<span>' + (selCount > 0 ? selCount + ' محدد' : 'تحديد الكل') + '</span>' +
+      '</label>';
+  if (selCount > 0) {
+    html += '<button class="btn btn-danger btn-sm" onclick="bulkUnassign()">' +
+              '<i data-lucide="user-x" class="w-3.5 h-3.5"></i> إلغاء التعيين (' + selCount + ')' +
+            '</button>';
+    html += '<select class="input" id="bulk-assign-sel" style="max-width:200px;height:34px;font-size:12px" onchange="bulkAssignFromSelect()">' +
+              '<option value="">تعيين على موظف...</option>';
+    S.employees.filter(function(e){return e.is_active;}).forEach(function(e){
+      html += '<option value="' + e.id + '">' + esc(e.name) + '</option>';
+    });
+    html += '</select>';
+    html += '<button class="btn btn-ghost btn-sm" onclick="selectedClients={};renderMyClients()">' +
+              '<i data-lucide="x" class="w-3.5 h-3.5"></i> إلغاء التحديد' +
+            '</button>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function bulkAssignFromSelect() {
+  var sel = document.getElementById('bulk-assign-sel');
+  if (sel && sel.value) { bulkAssign(sel.value); sel.value = ''; }
 }
 
 function toggleClientSelect(id, e) {
