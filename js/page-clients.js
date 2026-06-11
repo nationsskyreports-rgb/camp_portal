@@ -339,20 +339,20 @@ function buildBulkBar(cls) {
       '<label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300">' +
         '<input type="checkbox" ' + (selCount > 0 && selCount === cls.length ? 'checked' : '') +
           ' onclick="toggleSelectAll(event)" style="width:16px;height:16px;accent-color:#3b82f6">' +
-        '<span>' + (selCount > 0 ? selCount + ' محدد' : 'تحديد الكل') + '</span>' +
+        '<span>' + (selCount > 0 ? selCount + ' selected' : 'Select all') + '</span>' +
       '</label>';
   if (selCount > 0) {
     html += '<button class="btn btn-danger btn-sm" onclick="bulkUnassign()">' +
-              '<i data-lucide="user-x" class="w-3.5 h-3.5"></i> إلغاء التعيين (' + selCount + ')' +
+              '<i data-lucide="user-x" class="w-3.5 h-3.5"></i> Unassign (' + selCount + ')' +
             '</button>';
     html += '<select class="input" id="bulk-assign-sel" style="max-width:200px;height:34px;font-size:12px" onchange="bulkAssignFromSelect()">' +
-              '<option value="">تعيين على موظف...</option>';
+              '<option value="">Assign to agent...</option>';
     S.employees.filter(function(e){return e.is_active;}).forEach(function(e){
       html += '<option value="' + e.id + '">' + esc(e.name) + '</option>';
     });
     html += '</select>';
     html += '<button class="btn btn-ghost btn-sm" onclick="selectedClients={};renderMyClients()">' +
-              '<i data-lucide="x" class="w-3.5 h-3.5"></i> إلغاء التحديد' +
+              '<i data-lucide="x" class="w-3.5 h-3.5"></i> Clear selection' +
             '</button>';
   }
   html += '</div></div>';
@@ -385,19 +385,19 @@ function bulkUnassign() {
   var ids = Object.keys(selectedClients);
   if (!ids.length) return;
   showConfirm(
-    'إلغاء التعيين',
-    'هتعمل unassign لـ '+ids.length+' عميل — متابع؟',
+    'Unassign',
+    'Unassign '+ids.length+' clients — continue?',
     function() {
       var updates = ids.map(function(id){
         return sb.from('clients').update({assigned_employee_id:null}).eq('id',id);
       });
       Promise.all(updates).then(function(){
-        toast(ids.length+' عميل اتعمل لهم unassign ✓','success');
+        toast(ids.length+' clients unassigned ✓','success');
         selectedClients={};
         fetchAll().then(renderMyClients);
       });
     },
-    'إلغاء التعيين',
+    'Unassign',
     'btn-danger'
   );
 }
@@ -408,14 +408,14 @@ function bulkAssign(employeeId) {
   if (!ids.length) return;
   var emp = empById(employeeId);
   showConfirm(
-    'تعيين الأجينت',
-    'هتعيّن '+ids.length+' عميل على '+(emp?emp.name:'')+'؟',
+    'Assign agent',
+    'Assign '+ids.length+' clients to '+(emp?emp.name:'')+'?',
     function() {
       var updates = ids.map(function(id){
         return sb.from('clients').update({assigned_employee_id:employeeId}).eq('id',id);
       });
       Promise.all(updates).then(function(){
-        toast(ids.length+' عميل اتعيّنوا على '+(emp?emp.name:'')+ ' ✓','success');
+        toast(ids.length+' clients assigned to '+(emp?emp.name:'')+ ' ✓','success');
         selectedClients={};
         fetchAll().then(renderMyClients);
       });
