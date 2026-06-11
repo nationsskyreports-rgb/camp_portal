@@ -112,7 +112,9 @@ body:not(.light-mode) .mood-btn.selected-refused{border-color:#ef4444;background
 .progress-fill{height:100%;background:linear-gradient(90deg,#3b82f6,#10b981);border-radius:4px;transition:width .3s ease}
 .mode-toggle{position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:50%;background:#3b82f6;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;z-index:40;transition:all .2s;box-shadow:0 4px 12px rgba(59,130,246,0.3)}
 .mode-toggle:hover{transform:scale(1.1);box-shadow:0 6px 16px rgba(59,130,246,0.4)}
-.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px}
+#main-content{min-width:0;max-width:100%}
+.card{min-width:0;max-width:100%}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;max-width:100%}
 .tbl-wrap table{min-width:500px}
 .mobile-menu-btn{display:none;position:fixed;top:14px;left:14px;z-index:45;background:#0d1628;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px;cursor:pointer;align-items:center;justify-content:center}
 /* Light Mode */
