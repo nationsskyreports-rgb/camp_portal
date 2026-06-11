@@ -885,8 +885,12 @@ function renderLookupUnits() {
   Object.keys(byProject).forEach(function(proj) {
     html += '<div class="lookup-proj-lbl">' + escHtml(proj) + '</div>';
     byProject[proj].forEach(function(c) {
-      var unit     = (c.extra_data || {}).unit || c.id;
+      var unit     = (c.extra_data || {}).unit
+                 || (c.extra_data || {}).contract_number
+                 || (c.extra_data || {}).Unit
+                 || '';
       var contract = (c.extra_data || {}).contract_number || '';
+      if (!unit) unit = currentLang === 'ar' ? 'وحدة ' + (byProject[proj].indexOf(c) + 1) : 'Unit ' + (byProject[proj].indexOf(c) + 1);
       html += '<label class="lookup-unit-item sel" id="lui-' + c.id + '" onclick="toggleLookupUnit(\'' + c.id + '\')">';
       html += '<input type="checkbox" checked id="lchk-' + c.id + '" onclick="event.stopPropagation()">';
       html += '<div><div class="lookup-unit-code">' + escHtml(unit) + '</div>';
