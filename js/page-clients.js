@@ -483,6 +483,10 @@ function renderMyClients() {
     all = all.filter(function(c) { return !c.extra_data || !c.extra_data.form_submitted; });
   }
 
+  if (clientSearch) all = all.filter(function(c) { return clientMatchesSearch(c, clientSearch); });
+  var allBeforeStatus = all;
+  if (statusFilter) all = all.filter(function(c) { return c.status === statusFilter; });
+
   var tabs = { active: [], answered: [], wrong_number: [], closed: [] };
   all.forEach(function(c) { tabs[getClientTab(c)].push(c); });
 
@@ -525,6 +529,20 @@ function renderMyClients() {
         '<button class="btn btn-sm ' + (formFilter==='pending' ? 'btn-danger' : 'btn-ghost') + '" onclick="formFilter=\'pending\';renderMyClients()"><i data-lucide=\"clock\" class=\"w-3.5 h-3.5\"></i> Not Submitted</button>' +
         '</div>'
       : '') +
+    '</div>' +
+    // ── Status filter tabs (works for both admin & employee) ──
+    '<div class="mb-4 fade-in" style="display:flex;gap:6px;flex-wrap:wrap">' +
+      (function(){
+        var statuses = ['','New','Contacted','Interested','Closed'];
+        var colors = {'':'#3b82f6','New':'#3b82f6','Contacted':'#8b5cf6','Interested':'#f59e0b','Closed':'#10b981'};
+        return statuses.map(function(st){
+          var cnt = st ? allBeforeStatus.filter(function(c){return c.status===st;}).length : allBeforeStatus.length;
+          var active = statusFilter === st;
+          return '<button class="btn btn-sm ' + (active?'btn-primary':'btn-ghost') + '" ' +
+            'onclick="statusFilter=statusFilter===\''+st+'\'?String():\''+st+'\';renderMyClients()">' +
+            (st||'All') + ' <span style="opacity:.7;font-size:10px;margin-right:2px">(' + cnt + ')</span></button>';
+        }).join('');
+      })() +
     '</div>' +
     '<div class="flex gap-2 mb-4 flex-wrap border-b border-white/10 pb-2">' +
     tabDefs.map(function(t) {
