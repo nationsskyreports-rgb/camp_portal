@@ -15,16 +15,21 @@ function renderNotifPage(){
 
   // Apply filter
   var filtered = all;
-  if(notifFilter === 'unread') filtered = all.filter(function(n){return !n.read;});
-  else if(notifFilter === 'data_updated') filtered = all.filter(function(n){return n.type==='data_updated';});
+  if(notifFilter === 'unread')            filtered = all.filter(function(n){return !n.read;});
+  else if(notifFilter === 'new_clients')  filtered = all.filter(function(n){return n.type==='new_clients'||n.type==='client_assigned';});
+  else if(notifFilter === 'form_submitted') filtered = all.filter(function(n){return n.type==='form_submitted';});
   else if(notifFilter === 'question_answered') filtered = all.filter(function(n){return n.type==='question_answered';});
+  else if(notifFilter === 'followup_due') filtered = all.filter(function(n){return n.type==='followup_due';});
+  else filtered = all;
 
   // Filter tabs
   var tabs = [
-    {key:'all',      label:'All',         count: all.length},
-    {key:'unread',   label:'Unread',      count: unreadCount},
-    {key:'data_updated',      label:'📊 Data',     count: all.filter(function(n){return n.type==='data_updated';}).length},
-    {key:'question_answered', label:'💬 Answers',  count: all.filter(function(n){return n.type==='question_answered';}).length},
+    {key:'all',               label:'All',           count: all.length},
+    {key:'unread',            label:'Unread',        count: unreadCount},
+    {key:'new_clients',       label:'📋 Clients',    count: all.filter(function(n){return n.type==='new_clients'||n.type==='client_assigned';}).length},
+    {key:'form_submitted',    label:'📝 Forms',      count: all.filter(function(n){return n.type==='form_submitted';}).length},
+    {key:'question_answered', label:'💬 Answers',    count: all.filter(function(n){return n.type==='question_answered';}).length},
+    {key:'followup_due',      label:'⏰ Follow-ups', count: all.filter(function(n){return n.type==='followup_due';}).length},
   ];
 
   var tabsHtml = '<div class="flex gap-2 flex-wrap mb-6">'+
@@ -45,10 +50,9 @@ function renderNotifPage(){
   '<div class="space-y-2 fade-in">'+
   (filtered.length ?
     filtered.map(function(n){
-      var isData = n.type === 'data_updated';
-      var isAnswer = n.type === 'question_answered';
-      var icon = isData ? '📊' : isAnswer ? '💬' : '🔔';
-      var iconBg = isData ? 'bg-blue-500/10' : isAnswer ? 'bg-emerald-500/10' : 'bg-slate-500/10';
+      var meta = notifMeta(n.type||'');
+      var icon = meta.icon;
+      var iconBg = meta.color;
       var borderCls = n.read ? '' : 'border-blue-500/20 bg-blue-500/[0.02]';
 
       return '<div class="card '+borderCls+' cursor-pointer transition-all hover:border-white/15" onclick="markNotifRead(\''+n.id+'\')">'+
