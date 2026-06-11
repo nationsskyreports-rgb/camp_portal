@@ -28,6 +28,7 @@ var ADMIN_PAGES = [
   {id:'reports',        label:'Reports & Export',    icon:'file-bar-chart'},
   {id:'team',           label:'Team Management',     icon:'users'},
   {id:'my-clients',     label:'All Clients',         icon:'contact'},
+  {id:'form-tracking',  label:'Form Tracking',       icon:'clipboard-check'},
   {id:'notifications',  label:'Notifications',       icon:'bell'},
   {id:'cleanup',        label:'Data Cleanup',        icon:'trash-2'}
 ];
