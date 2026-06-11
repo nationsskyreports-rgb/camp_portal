@@ -1015,6 +1015,10 @@ function submitForm() {
   });
   if(channels.length) extraData.preferred_channel = channels.join(', ');
 
+  // Mark as form-submitted (applies to both INSERT and UPDATE paths)
+  extraData.form_submitted    = true;
+  extraData.form_submitted_at = new Date().toISOString();
+
   // If existing client matched & units selected → UPDATE those records
   if (selectedIds.length > 0 && matchedClients.length > 0) {
     doUpdateExisting(extraData, t);
