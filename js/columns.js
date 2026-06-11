@@ -1,6 +1,19 @@
 // ============================================================
 // COLUMNS — Column Config Helpers + Modal
 // ============================================================
+
+// Form fields that intake.html always saves into extra_data
+var FORM_FIELDS = [
+  {key:'name',               label:'Client Name',        visible:true,  order:0},
+  {key:'phone',              label:'Mobile',             visible:true,  order:1},
+  {key:'old_phone',          label:'Old Phone',          visible:true,  order:2},
+  {key:'phone2',             label:'Mobile 2',           visible:true,  order:3},
+  {key:'email',              label:'Email',              visible:true,  order:4},
+  {key:'email2',             label:'Email 2',            visible:true,  order:5},
+  {key:'preferred_channel',  label:'Preferred Channel',  visible:true,  order:6},
+  {key:'notes',              label:'Notes',              visible:true,  order:7},
+];
+
 function getDefaultCols(){return JSON.parse(JSON.stringify(DEFAULT_COLUMNS));}
 
 function getCampaignCols(campId){
@@ -11,8 +24,34 @@ function getCampaignCols(campId){
   return getDefaultCols();
 }
 
+// Returns visible columns for a campaign.
+// If the campaign has clients submitted via the intake form,
+// auto-merges any form fields that are missing from the saved config
+// so form data always shows up — even without touching column config.
 function getVisibleCols(campId){
-  var cols=getCampaignCols(campId);
+  var cols = getCampaignCols(campId);
+
+  // Collect keys already in config
+  var existingKeys = {};
+  cols.forEach(function(c){ existingKeys[c.key] = true; });
+
+  // Find clients of this campaign that came from the form
+  var hasFormClients = S.clients.some(function(c){
+    return c.campaign_id === campId && c.extra_data && c.extra_data.form_submitted;
+  });
+
+  if(hasFormClients){
+    // Find the highest order value already used
+    var maxOrder = cols.reduce(function(m,c){ return Math.max(m, c.order); }, -1);
+
+    FORM_FIELDS.forEach(function(ff){
+      if(!existingKeys[ff.key]){
+        maxOrder++;
+        cols.push({key:ff.key, label:ff.label, visible:true, order:maxOrder, _auto:true});
+      }
+    });
+  }
+
   return cols.filter(function(c){return c.visible;}).sort(function(a,b){return a.order-b.order;});
 }
 
@@ -69,6 +108,24 @@ function renderColConfigList(){
   });
   document.getElementById('col-config-list').innerHTML=html;
   lucide.createIcons();
+}
+
+// ── "Add Form Fields" button in modal ──
+// Adds any missing intake form fields to the working config
+function addFormFieldsToConfig(){
+  var existingKeys={};
+  colConfigWorking.forEach(function(c){ existingKeys[c.key]=true; });
+  var maxOrder=colConfigWorking.reduce(function(m,c){ return Math.max(m,c.order); },-1);
+  var added=0;
+  FORM_FIELDS.forEach(function(ff){
+    if(!existingKeys[ff.key]){
+      maxOrder++;
+      colConfigWorking.push({key:ff.key, label:ff.label, visible:true, order:maxOrder, custom:true});
+      added++;
+    }
+  });
+  if(added) renderColConfigList();
+  toast(added ? added+' form fields added' : 'All form fields already present', added?'success':'info');
 }
 
 function colDragStart(e,key){colConfigDragSrc=key;e.target.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
