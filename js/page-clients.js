@@ -528,6 +528,65 @@ function renderMyClients() {
 }
 
 // ── Single client card ────────────────────────────────────────
+
+function copyClientInfo(id, e) {
+  if (e) e.stopPropagation();
+  var c = clientById(id);
+  if (!c) return;
+  var ex = c.extra_data || {};
+  var lines = [];
+  if (c.name || ex.name || ex.customer)
+    lines.push('Name: '+(c.name||ex.name||ex.customer||''));
+  if (c.phone)
+    lines.push('Phone: '+c.phone);
+  if (ex.phone2 || ex.phone_2)
+    lines.push('Phone 2: '+(ex.phone2||ex.phone_2||''));
+  if (ex.contract_number)
+    lines.push('Contract: '+ex.contract_number);
+  if (ex.unit)
+    lines.push('Unit: '+ex.unit);
+  if (ex.project)
+    lines.push('Project: '+ex.project);
+  if (ex.email)
+    lines.push('Email: '+ex.email);
+  var text = lines.join('\n');
+  if (!text.trim()) { toast('No info to copy','error'); return; }
+  navigator.clipboard.writeText(text)
+    .then(function(){ toast('Copied ✓','success'); })
+    .catch(function(){
+      var t=document.createElement('textarea');t.value=text;
+      document.body.appendChild(t);t.select();
+      document.execCommand('copy');document.body.removeChild(t);
+      toast('Copied ✓','success');
+    });
+}
+
+
+// Render a value with inline copy icon — won't collapse card
+function copyable(value, label) {
+  if (!value || value === '-') return '<span class="text-white text-sm">-</span>';
+  return '<span style="display:inline-flex;align-items:center;gap:5px;cursor:default" onclick="event.stopPropagation()">'+
+    '<span class="text-sm text-white">'+esc(value)+'</span>'+
+    '<button title="Copy '+escHtmlAttr(label||'')+'" onclick="event.stopPropagation();quickCopy(\''+escHtmlAttr(value)+'\')" '+
+      'style="background:none;border:none;cursor:pointer;padding:2px;color:#475569;display:inline-flex" '+
+      'onmouseover="this.style.color=\'#94a3b8\'" onmouseout="this.style.color=\'#475569\'">'+
+      '<i data-lucide=\"copy\" style=\"width:11px;height:11px\"></i>'+
+    '</button>'+
+  '</span>';
+}
+
+function quickCopy(text) {
+  navigator.clipboard.writeText(text)
+    .then(function(){ toast('Copied ✓','success'); })
+    .catch(function(){
+      var t = document.createElement('textarea');
+      t.value = text; document.body.appendChild(t);
+      t.select(); document.execCommand('copy');
+      document.body.removeChild(t);
+      toast('Copied ✓','success');
+    });
+}
+
 function renderClientCard(c) {
   var isExp   = expandedClientId === c.id;
   var hist    = clientHistory(c.id);
@@ -589,7 +648,13 @@ function renderClientCard(c) {
     '<div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 flex-shrink-0"><i data-lucide="user" class="w-5 h-5"></i></div>' +
     '<div class="min-w-0">' +
     '<p class="font-semibold text-white truncate">' + esc(displayName) + '</p>' +
-    '<p class="text-xs text-slate-500 truncate">' + esc(subInfo) + '</p>' +
+    '<div class="flex items-center gap-2" onclick="event.stopPropagation()">'+
+      '<p class="text-xs text-slate-500 truncate">' + esc(subInfo) + '</p>'+
+      (c.phone ? '<button title="Copy phone" onclick="event.stopPropagation();quickCopy(\''+escHtmlAttr(c.phone)+'\')" '+
+        'style="background:none;border:none;cursor:pointer;padding:1px;color:#334155;display:inline-flex" '+
+        'onmouseover="this.style.color=\'#64748b\'" onmouseout="this.style.color=\'#334155\'">'+
+        '<i data-lucide=\"copy\" style=\"width:10px;height:10px\"></i></button>' : '')+
+    '</div>' +
     statsBar + '</div></div>' +
     '<div class="flex items-center gap-2 flex-shrink-0">' +
     assignBadge + sBadge(c.status) +
@@ -602,8 +667,12 @@ function renderClientCard(c) {
       // Fields
       '<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">' +
       visCols.map(function(col) {
-        return '<div><p class="text-xs text-slate-500 mb-1">' + esc(col.label) + '</p>' +
-          '<p class="text-sm text-white">' + esc(extra[col.key]||c[col.key]||'-') + '</p></div>';
+        var v = extra[col.key]||c[col.key]||'-';
+        var isCopiable = (col.key==='phone'||col.key==='phone_2'||col.key==='phone_3'||col.key==='phone2'||
+          col.key==='unit'||col.key==='contract_number'||col.key==='email'||col.key==='customer');
+        return '<div onclick="event.stopPropagation()"><p class="text-xs text-slate-500 mb-1">' + esc(col.label) + '</p>' +
+          (isCopiable ? copyable(v, col.label) : '<p class="text-sm text-white">' + esc(v) + '</p>') +
+          '</div>';
       }).join('') +
       '<div><p class="text-xs text-slate-500 mb-1">Status</p>' +
       (S.role === 'employee'
