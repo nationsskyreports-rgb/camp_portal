@@ -10,6 +10,8 @@ var reassignClientId = null; // client being reassigned
 // Redistribute state
 var redistPreview = null;
 var redistCampId  = '';
+var clientSearch  = '';
+var statusFilter  = '';
 
 var OUTCOMES = [
   { value: 'answered',     label: 'Answered',     emoji: '✅', color: '#10b981' },
@@ -317,87 +319,39 @@ function buildRedistributePanel() {
     '<i data-lucide="shuffle" class="w-4 h-4 text-violet-400"></i>' +
     '<h3 class="text-sm font-bold text-white">Redistribute Unassigned Clients</h3></div>' +
     '<div class="flex flex-wrap gap-3 items-end">' +
-    '<div><label class="text-xs text-slate-400 mb-1 block">Campaign</label>' +
-    '<select class="input" style="min-width:200px" onchange="redistCampId=this.value;redistPreview=null;renderMyClients()">' + campOpts + '</select></div>' +
-    '<div><p class="text-xs text-slate-500 mb-1">Unassigned</p>' +
-    '<p class="text-lg font-bold ' + (unassignedCount > 0 ? 'text-violet-400' : 'text-slate-500') + '">' + unassignedCount + '</p></div>' +
-    '<div><p class="text-xs text-slate-500 mb-1">Active Employees</p>' +
-    '<p class="text-lg font-bold text-emerald-400">' + actEmps.length + '</p></div>' +
-    '<button class="btn btn-primary" onclick="previewRedistribute()" ' + (unassignedCount === 0 || actEmps.length === 0 ? 'disabled' : '') + '>' +
-    '<i data-lucide="shuffle" class="w-4 h-4"></i> Preview Distribution</button>' +
-    '</div>' + previewHtml + '</div>';
+    '<div><label class="text-[10px] text-slate-500 uppercase tracking-wider mb-1 block">Campaign Source</label>' +
+    '<select class="input py-1 text-xs" style="min-width:160px" onchange="redistCampId=this.value;renderMyClients()">' + campOpts + '</select></div>' +
+    '<div class="flex-1"><p class="text-xs text-slate-400 mb-1">Found <span class="text-white font-medium">' + unassignedCount + '</span> unassigned clients</p>' +
+    '<button class="btn btn-primary btn-sm w-full" onclick="previewRedistribute()" ' + (unassignedCount===0?'disabled':'') + '>' +
+    '<i data-lucide="play" class="w-3 h-3"></i> Preview Distribution</button></div></div>' +
+    previewHtml + '</div>';
 }
 
-// ── Render ─────────────────────────────────────────────────────
-var selectedClients = {};
+// ══════════════════════════════════════════════════════════════
+// BULK ACTIONS
+// ══════════════════════════════════════════════════════════════
 
-
-function buildFormResponseSection(extra) {
-  var submittedAt = extra.form_submitted_at
-    ? new Date(extra.form_submitted_at).toLocaleString('en-GB', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
-    : '';
-
-  // Fields that came from the form (not from the original sheet upload)
-  var FORM_FIELDS = [
-    {key:'name',              label:'Full Name'},
-    {key:'phone',             label:'Primary Phone'},
-    {key:'old_phone',         label:'Previous Phone'},
-    {key:'phone2',            label:'Secondary Phone'},
-    {key:'email',             label:'Email'},
-    {key:'email2',            label:'Secondary Email'},
-    {key:'preferred_channel', label:'Preferred Channel'},
-    {key:'notes',             label:'Notes'},
-  ];
-
-  var rows = FORM_FIELDS
-    .filter(function(f) { return extra[f.key] && extra[f.key].toString().trim(); })
-    .map(function(f) {
-      return '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0;border-bottom:0.5px solid rgba(255,255,255,.06);gap:12px">' +
-        '<span style="font-size:11px;color:#64748b;flex-shrink:0">' + esc(f.label) + '</span>' +
-        '<span style="font-size:11px;color:#6ee7b7;font-weight:500;text-align:right;word-break:break-all">' + esc(extra[f.key]) + '</span>' +
-      '</div>';
-    });
-
-  if (!rows.length) return '';
-
-  return '<div style="background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:.85rem 1rem">' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">' +
-      '<p style="font-size:11px;font-weight:600;color:#6ee7b7;text-transform:uppercase;letter-spacing:.05em">Form Response</p>' +
-      (submittedAt ? '<span style="font-size:10px;color:#64748b">' + submittedAt + '</span>' : '') +
-    '</div>' +
-    rows.join('') +
-  '</div>';
-}
+var selectedClients = {}; // {id: true}
 
 function buildBulkBar(cls) {
-  var selCount = Object.keys(selectedClients).length;
-  if (!cls.length) return '';
-  var html = '<div class="card mb-3 fade-in" style="padding:.75rem 1rem">' +
-    '<div class="flex items-center gap-3 flex-wrap">' +
-      '<label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300">' +
-        '<input type="checkbox" ' + (selCount > 0 && selCount === cls.length ? 'checked' : '') +
-          ' onclick="toggleSelectAll(event)" style="width:16px;height:16px;accent-color:#3b82f6">' +
-        '<span>' + (selCount > 0 ? selCount + ' selected' : 'Select all') + '</span>' +
-      '</label>';
-  if (selCount > 0) {
-    html += '<button class="btn btn-danger btn-sm" onclick="bulkUnassign()">' +
-              '<i data-lucide="user-x" class="w-3.5 h-3.5"></i> Unassign (' + selCount + ')' +
-            '</button>';
-    html += '<select class="input" id="bulk-assign-sel" style="max-width:200px;height:34px;font-size:12px" onchange="bulkAssignFromSelect()">' +
-              '<option value="">Assign to agent...</option>';
-    S.employees.filter(function(e){return e.is_active;}).forEach(function(e){
-      html += '<option value="' + e.id + '">' + esc(e.name) + '</option>';
-    });
-    html += '</select>';
-    html += '<button class="btn btn-ghost btn-sm" onclick="selectedClients={};renderMyClients()">' +
-              '<i data-lucide="x" class="w-3.5 h-3.5"></i> Clear selection' +
-            '</button>';
-  }
-  html += '</div></div>';
-  return html;
+  var ids = Object.keys(selectedClients);
+  if (!ids.length) return '';
+  var empOpts = '<option value="">Assign to...</option>' +
+    S.employees.filter(function(e){return e.is_active;}).map(function(e){
+      return '<option value="'+e.id+'">'+esc(e.name)+'</option>';
+    }).join('');
+
+  return '<div class="card mb-4 bg-blue-600/10 border-blue-500/30 flex items-center justify-between gap-4 py-2 px-4 sticky top-0 z-30 backdrop-blur-md fade-in">' +
+    '<div class="flex items-center gap-3">' +
+    '<span class="text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md">' + ids.length + ' Selected</span>' +
+    '<button class="btn btn-ghost btn-sm text-xs" onclick="selectedClients={};renderMyClients()">Clear</button></div>' +
+    '<div class="flex items-center gap-2">' +
+    '<select id="bulk-assign-sel" class="input py-1 text-xs" style="width:140px" onchange="handleBulkAssignChange()">' + empOpts + '</select>' +
+    '<button class="btn btn-danger btn-sm py-1 text-xs" onclick="bulkUnassign()">Unassign</button>' +
+    '</div></div>';
 }
 
-function bulkAssignFromSelect() {
+function handleBulkAssignChange() {
   var sel = document.getElementById('bulk-assign-sel');
   if (sel && sel.value) { bulkAssign(sel.value); sel.value = ''; }
 }
