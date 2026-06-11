@@ -2,15 +2,18 @@
 // PAGE CAMPAIGNS
 // ============================================================
 // ── CAMPAIGNS ──
+var campClientSearch = '';
 function renderCampaigns(){
   var m=document.getElementById('main-content');
   if(selectedCampId){
     var vc=campById(selectedCampId);if(!vc){selectedCampId=null;renderCampaigns();return;}
     var cc=S.clients.filter(function(c){return c.campaign_id===vc.id;});
+    var ccAll = cc;
+    if (campClientSearch) cc = cc.filter(function(c){ return clientMatchesSearch(c, campClientSearch); });
     var sBtns='';['Active','Paused','Ended'].forEach(function(s){sBtns+='<button class="btn btn-sm '+(vc.status===s?'btn-primary':'btn-ghost')+'" onclick="changeCampStatus(\''+vc.id+'\',\''+s+'\')">'+s+'</button>';});
     var visCols=getVisibleCols(vc.id);
     m.innerHTML=hdr(esc(vc.name),esc(vc.type),
-      '<button class="btn btn-ghost" onclick="selectedCampId=null;renderCampaigns()"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back</button>'+
+      '<button class="btn btn-ghost" onclick="selectedCampId=null;campClientSearch=String();renderCampaigns()"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back</button>'+
       '<button class="btn btn-ghost btn-sm" onclick="openColConfig(\''+vc.id+'\')"><i data-lucide="settings-2" class="w-4 h-4"></i> Columns</button>'+
       sBadge(vc.status))+
     '<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 fade-in">'+
@@ -18,12 +21,13 @@ function renderCampaigns(){
     '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Contacted</p><p class="text-2xl font-bold text-violet-400">'+cc.filter(function(c){return c.status==='Contacted';}).length+'</p></div>'+
     '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Closed</p><p class="text-2xl font-bold text-emerald-400">'+cc.filter(function(c){return c.status==='Closed';}).length+'</p></div></div>'+
     '<div class="card mb-6 fade-in"><div class="flex items-center gap-3"><span class="text-sm text-slate-400">Status:</span>'+sBtns+'</div></div>'+
-    '<div class="card fade-in"><div class="flex items-center justify-between mb-4">'+
-    '<h3 class="text-sm font-bold text-white">Clients ('+cc.length+')</h3>'+
-    (cc.filter(function(c){return !c.assigned_employee_id;}).length?
+    '<div class="card fade-in"><div class="flex items-center justify-between mb-4 flex-wrap gap-3">'+
+    '<h3 class="text-sm font-bold text-white">Clients ('+cc.length+(campClientSearch?' / '+ccAll.length:'')+')</h3>'+
+    searchBox('camp-client-search', campClientSearch, 'setCampClientSearch', 'Search clients...')+
+    (ccAll.filter(function(c){return !c.assigned_employee_id;}).length?
       '<button class="btn btn-primary btn-sm" onclick="distributeCampUnassigned(\''+vc.id+'\')">'+
       '<i data-lucide="shuffle" class="w-4 h-4"></i> Distribute Unassigned ('+
-      cc.filter(function(c){return !c.assigned_employee_id;}).length+')</button>':'')+
+      ccAll.filter(function(c){return !c.assigned_employee_id;}).length+')</button>':'')+
     '</div>'+
     (cc.length?(function(){
       // Columns come from THIS campaign's saved structure (mirror of its sheet)
@@ -121,6 +125,13 @@ function showFormResponse(clientId) {
       (rows || '<p style="font-size:12px;color:#64748b">No form data</p>')+
     '</div>';
   document.body.appendChild(overlay);
+}
+
+
+function setCampClientSearch(v){
+  campClientSearch = v;
+  renderCampaigns();
+  restoreSearchFocus('camp-client-search');
 }
 
 function createCamp(){
