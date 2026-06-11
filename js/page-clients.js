@@ -329,6 +329,99 @@ function buildRedistributePanel() {
 }
 
 // ── Render ─────────────────────────────────────────────────────
+var selectedClients = {};
+
+function buildBulkBar(cls) {
+  var selCount = Object.keys(selectedClients).length;
+  if (!cls.length) return '';
+  var empOpts = '<option value="">اختر موظف...</option>' +
+    S.employees.filter(function(e){return e.is_active;}).map(function(e){
+      return '<option value="'+e.id+'">'+esc(e.name)+'</option>';
+    }).join('');
+  return '<div class="card mb-3 fade-in" style="padding:.75rem 1rem">'+
+    '<div class="flex items-center gap-3 flex-wrap">'+
+      '<label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300">'+
+        '<input type="checkbox" '+(selCount>0&&selCount===cls.length?'checked':'')+' '+
+          'onclick="toggleSelectAll(event)" style="width:16px;height:16px;accent-color:#3b82f6">'+
+        '<span>'+(selCount>0?selCount+' محدد':'تحديد الكل')+'</span>'+
+      '</label>'+
+      (selCount>0 ?
+        '<button class="btn btn-danger btn-sm" onclick="bulkUnassign()">'+
+          '<i data-lucide="user-x" class="w-3.5 h-3.5"></i> إلغاء التعيين ('+selCount+')'+
+        '</button>'+
+        '<select class="input" style="max-width:200px;height:34px;font-size:12px" onchange="bulkAssign(this.value);this.value=''">'+
+          empOpts+
+        '</select>'+
+        '<button class="btn btn-ghost btn-sm" onclick="selectedClients={};renderMyClients()">'+
+          '<i data-lucide="x" class="w-3.5 h-3.5"></i> إلغاء التحديد'+
+        '</button>'
+      : '') +
+    '</div>'+
+  '</div>';
+}
+
+function toggleClientSelect(id, e) {
+  if (e) e.stopPropagation();
+  if (selectedClients[id]) { delete selectedClients[id]; }
+  else { selectedClients[id] = true; }
+  renderMyClients();
+}
+
+function toggleSelectAll(e) {
+  var cls = (myClients()).filter(function(c){
+    if(empClientFilter) return c.campaign_id===empClientFilter; return true;
+  });
+  var allSel = Object.keys(selectedClients).length === cls.length;
+  selectedClients = {};
+  if (!allSel) cls.forEach(function(c){ selectedClients[c.id]=true; });
+  renderMyClients();
+}
+
+function bulkUnassign() {
+  var ids = Object.keys(selectedClients);
+  if (!ids.length) return;
+  showConfirm(
+    'إلغاء التعيين',
+    'هتعمل unassign لـ '+ids.length+' عميل — متابع؟',
+    function() {
+      var updates = ids.map(function(id){
+        return sb.from('clients').update({assigned_employee_id:null}).eq('id',id);
+      });
+      Promise.all(updates).then(function(){
+        toast(ids.length+' عميل اتعمل لهم unassign ✓','success');
+        selectedClients={};
+        fetchAll().then(renderMyClients);
+      });
+    },
+    'إلغاء التعيين',
+    'btn-danger'
+  );
+}
+
+function bulkAssign(employeeId) {
+  if (!employeeId) return;
+  var ids = Object.keys(selectedClients);
+  if (!ids.length) return;
+  var emp = empById(employeeId);
+  showConfirm(
+    'تعيين الأجينت',
+    'هتعيّن '+ids.length+' عميل على '+(emp?emp.name:'')+'؟',
+    function() {
+      var updates = ids.map(function(id){
+        return sb.from('clients').update({assigned_employee_id:employeeId}).eq('id',id);
+      });
+      Promise.all(updates).then(function(){
+        toast(ids.length+' عميل اتعيّنوا على '+(emp?emp.name:'')+ ' ✓','success');
+        selectedClients={};
+        fetchAll().then(renderMyClients);
+      });
+    },
+    'تعيين',
+    'btn-primary'
+  );
+}
+
+
 function renderMyClients() {
   var m   = document.getElementById('main-content');
   var all = myClients();
@@ -387,7 +480,8 @@ function renderMyClients() {
             'onclick="moodFilter=\'' + mo.value + '\';renderMyClients()">' + mo.emoji + ' ' + mo.label + '</button>';
         }).join('') + '</div>'
       : '') +
-    '<div class="space-y-3 fade-in">' +
+    (S.role==='admin' ? buildBulkBar(cls) : '') +
+    '<div class="space-y-3 fade-in" id="clients-list">' +
     (cls.length
       ? cls.map(function(c) { return renderClientCard(c); }).join('')
       : '<div class="card text-center py-12"><p class="text-slate-500">No clients here</p></div>') +
@@ -449,7 +543,9 @@ function renderClientCard(c) {
         : '<span style="font-size:10px;padding:2px 7px;border-radius:5px;background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.2)">Unassigned</span>')
     : '';
 
-  return '<div class="card client-card ' + (isExp ? 'border-blue-500/30' : '') + '">' +
+  var isSel = !!selectedClients[c.id];
+  return '<div class="card client-card ' + (isExp ? 'border-blue-500/30' : '') + (isSel ? ' border-blue-500/60 bg-blue-500/5' : '') + '">' +
+    (S.role==='admin' ? '<div style="float:left;margin:0 0 4px 8px"><input type="checkbox" ' + (isSel?'checked':'') + ' onclick="toggleClientSelect(\''+c.id+'\',event)" style="width:16px;height:16px;cursor:pointer;accent-color:#3b82f6"></div>' : '') +
 
     '<div class="flex items-center justify-between gap-3" onclick="expandedClientId=' + (isExp ? 'null' : '\'' + c.id + '\'') + ';renderMyClients()">' +
     '<div class="flex items-center gap-3 min-w-0 flex-1">' +
