@@ -26,27 +26,25 @@ function renderCampaigns(){
       cc.filter(function(c){return !c.assigned_employee_id;}).length+')</button>':'')+
     '</div>'+
     (cc.length?(function(){
-      // Collect all extra_data keys, skip base fields already shown as columns
-      var SKIP_EX = ['name','phone','phone2','email',
-        // form metadata — shown in Form popup, not as columns
-        'email2','old_phone','notes','preferred_channel','form_submitted','form_submitted_at'];
-      var extraKeysMap = {};
-      cc.forEach(function(c){
-        var ex = c.extra_data||{};
-        Object.keys(ex).forEach(function(k){ if(SKIP_EX.indexOf(k)===-1) extraKeysMap[k]=true; });
-      });
-      var extraKeys = Object.keys(extraKeysMap);
-      // Friendly labels
-      var KEY_LABELS = { project:'Project', unit:'Unit No.', property_type:'Type', payment_term:'Payment', notes:'Notes' };
-      function colLabel(k){ return KEY_LABELS[k]||(k.charAt(0).toUpperCase()+k.slice(1).replace(/_/g,' ')); }
+      // Columns come from THIS campaign's saved structure (mirror of its sheet)
+      var FORM_META = ['email2','old_phone','notes','preferred_channel','form_submitted','form_submitted_at'];
+      var BASE_KEYS = ['customer','name','phone'];
+      var campCols = (vc.column_config||[]).filter(function(col){
+        return col.visible !== false &&
+               !col.form_only &&
+               BASE_KEYS.indexOf(col.key) === -1 &&
+               FORM_META.indexOf(col.key) === -1;
+      }).sort(function(a,b){ return (a.order||0)-(b.order||0); });
+      var extraKeys = campCols.map(function(col){ return col.key; });
+      var labelByKey = {};
+      campCols.forEach(function(col){ labelByKey[col.key] = col.label; });
+      function colLabel(k){ return labelByKey[k] || (k.charAt(0).toUpperCase()+k.slice(1).replace(/_/g,' ')); }
       var th = 'pb-3 pr-4 whitespace-nowrap';
       var td = 'py-3 pr-4 text-slate-300';
       return '<div class="tbl-wrap"><table class="w-full text-sm">'+
         '<thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5">'+
         '<th class="'+th+'">Client Name</th>'+
         '<th class="'+th+'">Mobile</th>'+
-        '<th class="'+th+'">Mobile 2</th>'+
-        '<th class="'+th+'">Email</th>'+
         '<th class="'+th+'">Form</th>'+
         extraKeys.map(function(k){ return '<th class="'+th+'">'+esc(colLabel(k))+'</th>'; }).join('')+
         '<th class="'+th+'">Assigned To</th>'+
@@ -55,10 +53,8 @@ function renderCampaigns(){
         cc.map(function(c){
           var e=empById(c.assigned_employee_id); var extra=c.extra_data||{};
           return '<tr class="table-row border-b border-white/[0.03]">'+
-            '<td class="'+td+'">'+esc(c.name||extra.name||'-')+'</td>'+
+            '<td class="'+td+'">'+esc(c.name||extra.name||extra.customer||'-')+'</td>'+
             '<td class="'+td+'">'+esc(c.phone||extra.phone||'-')+'</td>'+
-            '<td class="'+td+'">'+esc(extra.phone2||'-')+'</td>'+
-            '<td class="'+td+'">'+esc(extra.email||'-')+'</td>'+
             '<td class="'+td+'">'+(extra.form_submitted
               ? '<button class="btn btn-sm" style="background:rgba(16,185,129,.12);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);padding:2px 10px;font-size:11px" onclick="showFormResponse(\''+c.id+'\')"><i data-lucide="check" style="width:11px;height:11px"></i> View</button>'
               : '<span class="text-slate-600 text-xs">-</span>')+'</td>'+
