@@ -32,6 +32,7 @@ var confirmCb         = null;
 var qaFilter          = {employee:'', campaign:'', status:''};
 var rptFilter         = {campaign:'', employee:'', status:'', dateFrom:'', dateTo:'', page:0};
 var empClientFilter   = '';
+var formFilter        = '';
 var RPT_PAGE_SIZE     = 100;
 
 // Column config modal state
