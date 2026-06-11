@@ -31,6 +31,33 @@ function getEmployeeMetrics(empId) {
     }
   });
 
+  // Calculate Contact Rate (clients with at least one contact attempt)
+  var contactedClients = empClients.filter(function(c) {
+    return clientHistory(c.id).length > 0;
+  }).length;
+  var contactRate = totalClients > 0 ? Math.round((contactedClients / totalClients) * 100) : 0;
+
+  // Calculate Conversion Rate (closed clients / total clients)
+  var conversionRate = closeRate; // Already calculated above
+
+  // Calculate Average Follow-up Delay (days overdue for pending follow-ups)
+  var followupDelays = [];
+  empClients.forEach(function(c) {
+    if (c.next_followup_date && c.status !== 'Closed') {
+      var followupDate = new Date(c.next_followup_date);
+      if (followupDate < now) {
+        var delayDays = Math.floor((now - followupDate) / (1000 * 60 * 60 * 24));
+        followupDelays.push(delayDays);
+      }
+    }
+  });
+  var avgFollowupDelay = followupDelays.length > 0 
+    ? Math.round(followupDelays.reduce(function(a, b) { return a + b; }, 0) / followupDelays.length)
+    : 0;
+
+  // Calculate Agent Productivity (calls per client assigned)
+  var agentProductivity = totalClients > 0 ? Math.round((totalCalls / totalClients) * 100) / 100 : 0;
+
   return {
     id: empId,
     name: emp.name,
@@ -42,7 +69,11 @@ function getEmployeeMetrics(empId) {
     answerRate: answerRate,
     closeRate: closeRate,
     overdueFollowups: overdueCount,
-    isActive: emp.is_active
+    isActive: emp.is_active,
+    contactRate: contactRate,
+    conversionRate: conversionRate,
+    avgFollowupDelay: avgFollowupDelay,
+    agentProductivity: agentProductivity
   };
 }
 
@@ -171,6 +202,10 @@ function buildPerformanceTable(metrics) {
     '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Closed</th>' +
     '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Calls</th>' +
     '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Answer Rate</th>' +
+    '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Contact Rate</th>' +
+    '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Conversion Rate</th>' +
+    '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Avg Follow-up Delay</th>' +
+    '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Productivity</th>' +
     '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Close Rate</th>' +
     '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Overdue</th>' +
     '<th class="text-center py-3 px-4 text-slate-400 font-semibold">Status</th>' +
@@ -188,6 +223,10 @@ function buildPerformanceTable(metrics) {
       '<td class="py-3 px-4 text-center text-white font-semibold">' + m.closedClients + '</td>' +
       '<td class="py-3 px-4 text-center text-white font-semibold">' + m.totalCalls + '</td>' +
       '<td class="py-3 px-4 text-center"><span class="px-2 py-1 rounded bg-blue-500/20 text-blue-300 text-xs font-semibold">' + m.answerRate + '%</span></td>' +
+      '<td class="py-3 px-4 text-center"><span class="px-2 py-1 rounded bg-purple-500/20 text-purple-300 text-xs font-semibold">' + m.contactRate + '%</span></td>' +
+      '<td class="py-3 px-4 text-center"><span class="px-2 py-1 rounded bg-cyan-500/20 text-cyan-300 text-xs font-semibold">' + m.conversionRate + '%</span></td>' +
+      '<td class="py-3 px-4 text-center"><span class="px-2 py-1 rounded ' + (m.avgFollowupDelay > 3 ? 'bg-red-500/20 text-red-300' : 'bg-yellow-500/20 text-yellow-300') + ' text-xs font-semibold">' + m.avgFollowupDelay + 'd</span></td>' +
+      '<td class="py-3 px-4 text-center"><span class="px-2 py-1 rounded bg-indigo-500/20 text-indigo-300 text-xs font-semibold">' + m.agentProductivity.toFixed(2) + '</span></td>' +
       '<td class="py-3 px-4 text-center"><span class="px-2 py-1 rounded ' + (m.closeRate >= 50 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300') + ' text-xs font-semibold">' + m.closeRate + '%</span></td>' +
       '<td class="py-3 px-4 text-center text-white font-semibold">' + (m.overdueFollowups > 0 ? '<span class="px-2 py-1 rounded bg-red-500/20 text-red-300 text-xs font-bold">' + m.overdueFollowups + '</span>' : '0') + '</td>' +
       '<td class="py-3 px-4 text-center"><span class="text-xs font-semibold ' + statusColor + '">' + statusText + '</span></td>' +
