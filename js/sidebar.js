@@ -71,7 +71,9 @@ function renderPage(){
       'ask-question':renderAskQuestion,'my-questions':renderMyQuestions,
       notifications:renderNotifPage,cleanup:renderCleanup,
       'form-tracking':renderFormTracking,
-      'team-qa':renderTeamQA
+      'team-qa':renderTeamQA,
+      'agent-performance':renderAgentPerformance,
+      'followup-reminders':renderFollowupReminders
     };
     if(fn[S.currentPage])fn[S.currentPage]();
     else renderDashboard();
