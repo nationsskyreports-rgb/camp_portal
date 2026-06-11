@@ -663,7 +663,7 @@ function renderClientCard(c) {
           outcomeSelector(c.id, null, null) +
           '<div class="flex gap-2">' +
           '<textarea id="note-' + c.id + '" class="input flex-1" placeholder="Note (optional)..." rows="2"></textarea>' +
-          '<button class="btn btn-primary self-end" onclick="saveClient(\'" + c.id + '\')">'+
+          '<button class="btn btn-primary self-end" onclick="saveClient(\'' + c.id + '\')">'+
           '<i data-lucide="save" class="w-4 h-4"></i> Save</button>' +
           '</div></div></div>'
         : '') +
@@ -677,8 +677,8 @@ function renderClientCard(c) {
           '<input type="time" id="followup-time-' + c.id + '" class="input" value="' + (c.next_followup_date ? new Date(c.next_followup_date).toTimeString().split(' ')[0].substring(0, 5) : '09:00') + '">' +
           '<textarea id="followup-note-' + c.id + '" class="input" placeholder="Follow-up note (optional)..." rows="2">' + esc(c.followup_note || '') + '</textarea>' +
           '<div class="flex gap-2">' +
-          '<button class="btn btn-primary flex-1" onclick="saveFollowupFromClient(\'" + c.id + '\')"><i data-lucide="bell" class="w-4 h-4"></i> Set Reminder</button>' +
-          (c.next_followup_date ? '<button class="btn btn-ghost" onclick="clearFollowupFromClient(\'" + c.id + '\')"><i data-lucide="trash" class="w-4 h-4"></i> Clear</button>' : '') +
+          '<button class="btn btn-primary flex-1" onclick="saveFollowupFromClient(\'' + c.id + '\')"><i data-lucide="bell" class="w-4 h-4"></i> Set Reminder</button>' +
+          (c.next_followup_date ? '<button class="btn btn-ghost" onclick="clearFollowupFromClient(\'' + c.id + '\')"><i data-lucide="trash" class="w-4 h-4"></i> Clear</button>' : '') +
           '</div></div></div>'
         : '') +
 
