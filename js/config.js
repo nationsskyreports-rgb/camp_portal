@@ -36,9 +36,10 @@ var ADMIN_PAGES = [
 ];
 
 var EMP_PAGES = [
-  {id:'my-clients',    label:'My Clients',     icon:'contact'},
-  {id:'ask-question',  label:'Ask a Question', icon:'send'},
-  {id:'my-questions',  label:'My Questions',   icon:'messages-square'},
-  {id:'team-qa',       label:'Team Q&A',       icon:'book-open'},
-  {id:'notifications', label:'Notifications',  icon:'bell'}
+  {id:'my-clients',          label:'My Clients',     icon:'contact'},
+  {id:'followup-reminders',  label:'Follow-ups',     icon:'alarm-clock'},
+  {id:'ask-question',        label:'Ask a Question', icon:'send'},
+  {id:'my-questions',        label:'My Questions',   icon:'messages-square'},
+  {id:'team-qa',             label:'Team Q&A',       icon:'book-open'},
+  {id:'notifications',       label:'Notifications',  icon:'bell'}
 ];
