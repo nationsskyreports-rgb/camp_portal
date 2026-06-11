@@ -3,6 +3,13 @@
 // ============================================================
 var ftFilter   = '';   // '' | 'submitted' | 'pending'
 var ftCampaign = '';   // campaign filter
+var ftSearch   = '';
+
+function setFtSearch(v){
+  ftSearch = v;
+  renderFormTracking();
+  restoreSearchFocus('ft-search');
+}
 
 function renderFormTracking(){
   var m = document.getElementById('main-content');
@@ -17,6 +24,7 @@ function renderFormTracking(){
   var shown = ftFilter === 'submitted' ? submitted
             : ftFilter === 'pending'   ? pending
             : all;
+  if (ftSearch) shown = shown.filter(function(c){ return clientMatchesSearch(c, ftSearch); });
 
   // ── campaign options ──
   var campOpts = '<option value="">All Campaigns</option>' +
@@ -52,6 +60,7 @@ function renderFormTracking(){
     // ── Campaign Filter ──
     '<div class="card mb-4 fade-in" style="padding:.75rem 1rem">'+
       '<div class="flex items-center gap-3 flex-wrap">'+
+        searchBox('ft-search', ftSearch, 'setFtSearch', 'Search name, phone, unit...')+
         '<span class="text-xs text-slate-400">Campaign:</span>'+
         '<select class="input" style="max-width:240px" onchange="ftCampaign=this.value;renderFormTracking()">'+campOpts+'</select>'+
         (ftFilter?'<span class="badge badge-active" style="font-size:11px">'+
@@ -111,6 +120,7 @@ function exportFormTracking(){
   var shown = ftFilter === 'submitted' ? all.filter(function(c){ return (c.extra_data||{}).form_submitted === true; })
             : ftFilter === 'pending'   ? all.filter(function(c){ return !(c.extra_data||{}).form_submitted; })
             : all;
+  if (ftSearch) shown = shown.filter(function(c){ return clientMatchesSearch(c, ftSearch); });
 
   if (!shown.length){ toast('No data to export','error'); return; }
 
