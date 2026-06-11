@@ -171,32 +171,84 @@ function renderUpload(){
 }
 function addUploadRows(n){var cols=getCurrentUploadCols();for(var i=0;i<n;i++){var r={};cols.forEach(function(c){r[c.key]='';});U.rows.push(r);}renderUpload();}
 function parsePaste(){
-  var raw=document.getElementById('paste-area').value.trim();
-  if(!raw){toast('Paste data first','error');return;}
-  var lines=raw.split('\n').map(function(l){return l.replace(/\r/g,'');});
-  if(!lines.length){toast('No data','error');return;}
+  var raw=document.getElementById('paste-area').value;
+  if(!raw||!raw.trim()){toast('Paste data first','error');return;}
 
-  // Always treat first row as headers
-  var headerParts=lines[0].split('\t');
-  var cols=buildColsFromHeaders(headerParts);
+  // ── Parse TSV handling quoted multiline cells ─────────────
+  // Excel wraps cells containing newlines in double-quotes when copying
+  // e.g. "line1\nline2" — we collapse them to a single value
+  var allLines = parseTSV(raw);
+  if(allLines.length < 2){toast('No data rows found','error');return;}
+
+  var headerParts = allLines[0];
+  var cols = buildColsFromHeaders(headerParts);
   if(!cols.length){toast('Could not detect headers','error');return;}
   saveDetectedCols(cols);
 
-  var rows=[];
-  for(var i=1;i<lines.length;i++){
-    var line=lines[i].trim();if(!line)continue;
-    var parts=line.split('\t');
-    var obj={};
-    cols.forEach(function(c){obj[c.key]=formatCellValue(c.srcIdx!==undefined?parts[c.srcIdx]:parts[cols.indexOf(c)]);});
-    if(!Object.values(obj).some(function(v){return v;}))continue;
+  var minCols = Math.floor(headerParts.length * 0.3); // at least 30% of header cols must be filled
+  var rows = [];
+  for(var i = 1; i < allLines.length; i++){
+    var parts = allLines[i];
+    // Skip rows that are clearly partial (too few columns — likely newline artifact)
+    if(parts.length < minCols) continue;
+    var obj = {};
+    cols.forEach(function(c){
+      obj[c.key] = formatCellValue(c.srcIdx !== undefined ? parts[c.srcIdx] : parts[cols.indexOf(c)]);
+    });
+    if(!Object.values(obj).some(function(v){return v;})) continue;
     rows.push(obj);
   }
   if(!rows.length){toast('No data rows found','error');return;}
-  U.rows=rows;
+  U.rows = rows;
   dropEmptyColumns();
   saveDetectedCols(U.detectedCols);
   toast(U.detectedCols.length+' columns detected · '+rows.length+' rows parsed','success');
   renderUpload();
+}
+
+// ── TSV parser that handles quoted multiline cells ─────────────
+function parseTSV(raw){
+  var rows = [];
+  var currentRow = [];
+  var currentCell = '';
+  var inQuotes = false;
+  var i = 0;
+
+  // Normalize line endings
+  raw = raw.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+
+  while(i < raw.length){
+    var ch = raw[i];
+    if(inQuotes){
+      if(ch === '"'){
+        if(raw[i+1] === '"'){
+          // Escaped quote
+          currentCell += '"';
+          i += 2; continue;
+        }
+        inQuotes = false; i++; continue;
+      }
+      // Newline inside quoted cell — collapse to space
+      if(ch === '\n'){ currentCell += ' '; i++; continue; }
+      currentCell += ch; i++; continue;
+    }
+    // Not in quotes
+    if(ch === '"'){ inQuotes = true; i++; continue; }
+    if(ch === '\t'){
+      currentRow.push(currentCell.trim());
+      currentCell = ''; i++; continue;
+    }
+    if(ch === '\n'){
+      currentRow.push(currentCell.trim());
+      if(currentRow.some(function(c){return c;})) rows.push(currentRow);
+      currentRow = []; currentCell = ''; i++; continue;
+    }
+    currentCell += ch; i++;
+  }
+  // Last cell/row
+  currentRow.push(currentCell.trim());
+  if(currentRow.some(function(c){return c;})) rows.push(currentRow);
+  return rows;
 }
 function handleExcelDrop(e){e.preventDefault();var f=e.dataTransfer.files[0];if(f)readExcelFile(f);}
 function handleExcelFile(input){var f=input.files[0];if(f)readExcelFile(f);}
