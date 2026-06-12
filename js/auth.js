@@ -140,7 +140,6 @@ function enterAdminDashboard(fromRestore, targetPage) {
   fetchAll().then(function() {
     buildSidebar();
     appShell.classList.remove('hidden'); // show only after data loaded
-    if(typeof startRealtimeNotifications==='function') startRealtimeNotifications();
     navigateTo(targetPage || 'dashboard');
   }).catch(function(e) {
     toast('Error loading data: ' + e.message, 'error');
@@ -176,7 +175,6 @@ function enterEmployeeDashboard(emp, fromRestore, targetPage) {
   fetchAll().then(function() {
     buildSidebar();
     appShell.classList.remove('hidden'); // show only after data loaded
-    if(typeof startRealtimeNotifications==='function') startRealtimeNotifications();
     navigateTo(targetPage || 'my-clients');
   }).catch(function(e) {
     toast('Error loading data: ' + e.message, 'error');
@@ -248,6 +246,7 @@ function loadEmpDropdown() {
 }
 
 function initializeEmployeeList() {
+  if(typeof hideLoader==='function') hideLoader();
   sb.from('employees').select('id,name,is_active,color').order('name')
     .then(function(res) { S.employees = res.data || []; loadEmpDropdown(); lucide.createIcons(); })
     .catch(function(e) {
