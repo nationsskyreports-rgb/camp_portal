@@ -140,6 +140,7 @@ function enterAdminDashboard(fromRestore, targetPage) {
   fetchAll().then(function() {
     buildSidebar();
     appShell.classList.remove('hidden'); // show only after data loaded
+    if(typeof startRealtimeNotifications==='function') startRealtimeNotifications();
     navigateTo(targetPage || 'dashboard');
   }).catch(function(e) {
     toast('Error loading data: ' + e.message, 'error');
@@ -175,6 +176,7 @@ function enterEmployeeDashboard(emp, fromRestore, targetPage) {
   fetchAll().then(function() {
     buildSidebar();
     appShell.classList.remove('hidden'); // show only after data loaded
+    if(typeof startRealtimeNotifications==='function') startRealtimeNotifications();
     navigateTo(targetPage || 'my-clients');
   }).catch(function(e) {
     toast('Error loading data: ' + e.message, 'error');
