@@ -1,6 +1,23 @@
 // ============================================================
 // SIDEBAR — Navigation + Active Status Toggle
 // ============================================================
+
+// ── Update notification badge without full sidebar rebuild ───
+function updateNotifBadge(){
+  var badge = document.getElementById('notif-badge');
+  if(!badge) return;
+  var uc = unreadCount();
+  if(uc > 0){
+    badge.textContent = uc > 9 ? '9+' : uc;
+    badge.style.display = '';
+    badge.style.background = 'rgba(239,68,68,.2)';
+    badge.style.color = '#fca5a5';
+    badge.style.fontWeight = '700';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
 function buildSidebar(){
   var pages=S.role==='admin'?ADMIN_PAGES:EMP_PAGES;
   var html='';
@@ -9,7 +26,9 @@ function buildSidebar(){
     var extra='';
     if(p.id==='notifications'){
       var uc=unreadCount();
-      if(uc>0)extra='<span class="ml-auto text-xs bg-blue-500/20 text-blue-400 rounded-full px-2 py-0.5">'+uc+'</span>';
+      extra='<span id="notif-badge" class="ml-auto text-xs rounded-full px-2 py-0.5" '+
+        'style="'+(uc>0?'background:rgba(239,68,68,.2);color:#fca5a5;font-weight:700':'display:none')+'">'+
+        (uc>9?'9+':uc)+'</span>';
     }
     if(p.id==='qa'&&S.role==='admin'){
       var pq=S.questions.filter(function(q){return q.status==='pending';}).length;
@@ -71,6 +90,7 @@ function renderPage(){
       'ask-question':renderAskQuestion,'my-questions':renderMyQuestions,
       notifications:renderNotifPage,cleanup:renderCleanup,
       'form-tracking':renderFormTracking,
+      'activity-log':renderActivityLog,
       'team-qa':renderTeamQA,
       'agent-performance':renderAgentPerformance,
       'followup-reminders':renderFollowupReminders
