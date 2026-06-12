@@ -206,8 +206,9 @@ function parsePaste(){
   renderUpload();
 }
 
-// ── TSV parser that handles quoted multiline cells ─────────────
-function parseTSV(raw){
+// ── Generic delimited parser (handles quoted multiline cells) ──
+// delimiter: '\t' for TSV, ',' for CSV
+function parseDelimited(raw, delimiter){
   var rows = [];
   var currentRow = [];
   var currentCell = '';
@@ -222,7 +223,7 @@ function parseTSV(raw){
     if(inQuotes){
       if(ch === '"'){
         if(raw[i+1] === '"'){
-          // Escaped quote
+          // Escaped quote ("")
           currentCell += '"';
           i += 2; continue;
         }
@@ -234,7 +235,7 @@ function parseTSV(raw){
     }
     // Not in quotes
     if(ch === '"'){ inQuotes = true; i++; continue; }
-    if(ch === '\t'){
+    if(ch === delimiter){
       currentRow.push(currentCell.trim());
       currentCell = ''; i++; continue;
     }
@@ -250,6 +251,9 @@ function parseTSV(raw){
   if(currentRow.some(function(c){return c;})) rows.push(currentRow);
   return rows;
 }
+
+// Backwards-compat alias used by parsePaste
+function parseTSV(raw){ return parseDelimited(raw, '\t'); }
 function handleExcelDrop(e){e.preventDefault();var f=e.dataTransfer.files[0];if(f)readExcelFile(f);}
 function handleExcelFile(input){var f=input.files[0];if(f)readExcelFile(f);}
 function readExcelFile(file){
@@ -257,18 +261,20 @@ function readExcelFile(file){
   if(name.endsWith('.csv')){
     var reader=new FileReader();
     reader.onload=function(e){
-      var lines=e.target.result.split('\n');
-      if(!lines.length){toast('Empty file','error');return;}
-      // First row = headers
-      var headerParts=lines[0].replace(/\r/g,'').split(',').map(function(h){return h.replace(/^"|"$/g,'').trim();});
+      // Use proper RFC-4180 parser — handles quoted fields with commas/newlines
+      var allLines=parseDelimited(e.target.result,',');
+      if(!allLines.length){toast('Empty file','error');return;}
+      var headerParts=allLines[0];
       var cols=buildColsFromHeaders(headerParts);
       if(!cols.length){toast('Could not detect headers','error');return;}
       saveDetectedCols(cols);
+      var minCols=Math.floor(headerParts.length*0.3);
       var rows=[];
-      for(var i=1;i<lines.length;i++){
-        var parts=lines[i].replace(/\r/g,'').split(',');
+      for(var i=1;i<allLines.length;i++){
+        var parts=allLines[i];
+        if(parts.length<minCols) continue;
         var obj={};
-        cols.forEach(function(c){var v=(c.srcIdx!==undefined?parts[c.srcIdx]:'')||'';obj[c.key]=formatCellValue(String(v).replace(/^"|"$/g,''));});
+        cols.forEach(function(c){obj[c.key]=formatCellValue(c.srcIdx!==undefined?parts[c.srcIdx]:parts[cols.indexOf(c)]);});
         if(!Object.values(obj).some(function(v){return v;}))continue;
         rows.push(obj);
       }
