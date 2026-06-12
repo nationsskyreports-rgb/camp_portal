@@ -434,27 +434,108 @@ function normalizePhoneForGroup(p){
 }
 
 function groupClientsByPhone(clients){
-  var byPhone={}, noPhone=[];
+  var groups  = [];
+  var byPhone = {};
+  var noPhone = [];
+
   clients.forEach(function(c){
-    var k=normPhoneGroup(c.phone);
-    if(!k){noPhone.push(c);return;}
-    if(!byPhone[k]) byPhone[k]=[];
-    byPhone[k].push(c);
+    var norm = normalizePhoneForGroup(c.phone);
+    if(!norm){
+      noPhone.push([c]);
+      return;
+    }
+    if(!byPhone[norm]) byPhone[norm] = [];
+    byPhone[norm].push(c);
   });
-  var groups=[];
-  Object.keys(byPhone).forEach(function(k){groups.push(byPhone[k]);});
-  noPhone.forEach(function(c){groups.push([c]);});
-  groups.sort(function(a,b){return b.length-a.length;});
+
+  Object.keys(byPhone).forEach(function(k){ groups.push(byPhone[k]); });
+  noPhone.forEach(function(g){ groups.push(g); });
+
+  // Sort: multi-unit first (so they stand out at top), then by name
+  groups.sort(function(a,b){
+    if(b.length !== a.length) return b.length - a.length;
+    var na = (a[0].name||(a[0].extra_data||{}).customer||'').toLowerCase();
+    var nb = (b[0].name||(b[0].extra_data||{}).customer||'').toLowerCase();
+    return na < nb ? -1 : 1;
+  });
+
   return groups;
 }
 
 
-// ── Get all units for same phone ─────────────────────────────
+// ── Phone grouping helpers ────────────────────────────────────
+function normPhoneGroup(p){
+  if(!p) return null;
+  var d = String(p).replace(/\D/g,'');
+  return d.length >= 7 ? d.slice(-9) : null;
+}
+
+
 function getSiblingClients(c){
-  var k=normPhoneGroup(c.phone);
-  if(!k) return [c];
-  var siblings=myClients().filter(function(x){return normPhoneGroup(x.phone)===k;});
-  return siblings.length>1 ? siblings : [c];
+  var k = normPhoneGroup(c.phone);
+  if(!k) return [];
+  return myClients().filter(function(x){
+    return x.id !== c.id && normPhoneGroup(x.phone) === k;
+  });
+}
+
+// ── Form response section ─────────────────────────────────────
+function buildFormResponseSection(extra){
+  var submittedAt = extra.form_submitted_at
+    ? new Date(extra.form_submitted_at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+    : '';
+  var FIELDS = [
+    {key:'name',              label:'Full Name'},
+    {key:'phone',             label:'Primary Phone'},
+    {key:'old_phone',         label:'Previous Phone'},
+    {key:'phone2',            label:'Secondary Phone'},
+    {key:'email',             label:'Email'},
+    {key:'email2',            label:'Secondary Email'},
+    {key:'preferred_channel', label:'Preferred Channel'},
+    {key:'notes',             label:'Notes'}
+  ];
+  var rows = FIELDS.filter(function(f){ return extra[f.key]&&String(extra[f.key]).trim(); })
+    .map(function(f){
+      return '<div style="display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)">'+
+        '<span style="font-size:11px;color:#64748b;flex-shrink:0">'+esc(f.label)+'</span>'+
+        '<span style="font-size:11px;color:#6ee7b7;font-weight:500;text-align:right;word-break:break-word">'+esc(String(extra[f.key]))+'</span>'+
+      '</div>';
+    }).join('');
+  if(!rows) return '';
+  return '<div style="background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:.75rem 1rem;margin-bottom:8px">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">'+
+      '<p style="font-size:11px;font-weight:700;color:#6ee7b7;text-transform:uppercase;letter-spacing:.05em">📝 Form Response</p>'+
+      (submittedAt?'<span style="font-size:10px;color:#64748b">'+submittedAt+'</span>':'')+
+    '</div>'+rows+'</div>';
+}
+
+// ── Activity timeline ─────────────────────────────────────────
+function buildClientTimeline(c){
+  var extra = c.extra_data||{}, events = [];
+  if(c.created_at) events.push({t:new Date(c.created_at).getTime(),icon:'upload',color:'#06b6d4',text:'Added'+(extra.contract_number?' — '+extra.contract_number:'')});
+  if(c.assigned_employee_id){ var e=empById(c.assigned_employee_id); if(e) events.push({t:new Date(c.created_at||Date.now()).getTime()+1,icon:'user-plus',color:'#8b5cf6',text:'Assigned to '+e.name}); }
+  if(extra.form_submitted_at) events.push({t:new Date(extra.form_submitted_at).getTime(),icon:'clipboard-check',color:'#10b981',text:'Filled the form'});
+  clientHistory(c.id).forEach(function(h){
+    events.push({t:new Date(h.created_at).getTime(),icon:h.outcome==='answered'?'phone-call':'phone-missed',color:h.outcome==='answered'?'#10b981':'#f59e0b',text:(h.outcome==='answered'?'Answered':h.outcome==='wrong_number'?'Wrong number':'Attempt')+(h.note?' — '+h.note:'')});
+  });
+  if(!events.length) return '';
+  events.sort(function(a,b){return b.t-a.t;});
+  return '<div style="margin-bottom:8px">'+
+    '<p style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Activity</p>'+
+    '<div style="max-height:180px;overflow-y:auto">'+
+    events.map(function(ev,i){
+      var when=new Date(ev.t).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+      return '<div style="display:flex;gap:8px;padding:4px 0">'+
+        '<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">'+
+          '<div style="width:20px;height:20px;border-radius:50%;background:'+ev.color+'18;display:flex;align-items:center;justify-content:center">'+
+            '<i data-lucide="'+ev.icon+'" style="width:9px;height:9px;color:'+ev.color+'"></i></div>'+
+          (i<events.length-1?'<div style="width:1px;flex:1;min-height:6px;background:rgba(255,255,255,.06)"></div>':'')+
+        '</div>'+
+        '<div style="flex:1;min-width:0;padding-bottom:3px">'+
+          '<p style="font-size:11px;color:#cbd5e1">'+esc(ev.text)+'</p>'+
+          '<p style="font-size:10px;color:#475569">'+when+'</p>'+
+        '</div></div>';
+    }).join('')+'</div></div>';
 }
 
 function renderMyClients() {
@@ -569,7 +650,7 @@ function renderMyClients() {
               multi+' client'+(multi>1?'s':'')+' with multiple units — grouped below</div>'
             : '';
           return banner + groups.map(function(g){
-            return renderClientCard(g[0]); // unified card for all clients
+            return g.length > 1 ? renderGroupedCard(g) : renderClientCard(g[0]);
           }).join('');
         })()
       : '<div class="card text-center py-12"><p class="text-slate-500">No clients here</p></div>') +
@@ -639,6 +720,121 @@ function quickCopy(text) {
 }
 
 
+// ── Grouped card: one client, multiple units ──────────────────
+function renderGroupedCard(clients){
+  // Sort units by contract number
+  clients.sort(function(a,b){
+    var ca = ((a.extra_data||{}).contract_number||a.id);
+    var cb = ((b.extra_data||{}).contract_number||b.id);
+    return ca < cb ? -1 : 1;
+  });
+
+  var primary = clients[0];
+  var extra   = primary.extra_data || {};
+  var name    = primary.name || extra.customer || extra.name || '—';
+  var phone   = primary.phone || '—';
+  var emp     = empById(primary.assigned_employee_id);
+
+  // Check if all form submitted
+  var allSubmitted = clients.every(function(c){ return (c.extra_data||{}).form_submitted; });
+  var anySubmitted = clients.some(function(c){ return (c.extra_data||{}).form_submitted; });
+
+  // Any overdue follow-up?
+  var anyFu = clients.some(function(c){
+    return (S.reminders||[]).some(function(r){ return r.client_id===c.id && !r.done; });
+  });
+  var anyOverdueFu = clients.some(function(c){
+    return (S.reminders||[]).some(function(r){ return r.client_id===c.id && !r.done && new Date(r.remind_at)<new Date(); });
+  });
+
+  // Dominant status
+  var statusCounts = {};
+  clients.forEach(function(c){ statusCounts[c.status] = (statusCounts[c.status]||0)+1; });
+  var dominantStatus = Object.keys(statusCounts).sort(function(a,b){ return statusCounts[b]-statusCounts[a]; })[0];
+
+  var isExpanded = expandedClientId === ('group_'+phone.replace(/\D/g,''));
+
+  var html =
+    '<div class="card" style="border-color:rgba(251,191,36,.35);border-left:3px solid #f59e0b;margin-bottom:8px">'+
+
+    // ── Header row ──
+    '<div style="display:flex;align-items:center;gap:12px;cursor:pointer" '+
+      'onclick="expandedClientId=expandedClientId===\'group_'+phone.replace(/\D/g,'')+'\'?null:\'group_'+phone.replace(/\D/g,'')+'\'  ;renderMyClients()">'+
+
+      // Avatar
+      av(name, '#f59e0b', 36)+
+
+      // Name + phone
+      '<div style="flex:1;min-width:0">'+
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+          '<p style="font-weight:700;color:#fff;font-size:14px">'+esc(name)+'</p>'+
+          '<span style="background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:5px;font-size:11px;font-weight:700;padding:2px 8px">'+
+            '🏠 '+clients.length+' units</span>'+
+          (anySubmitted?'<span style="background:rgba(16,185,129,.1);color:#6ee7b7;border-radius:5px;font-size:10px;padding:2px 6px">'+(allSubmitted?'✓ All':'½ Partial')+' Form</span>':'')+
+          (anyOverdueFu?'<span style="background:rgba(239,68,68,.1);color:#f87171;border-radius:5px;font-size:10px;padding:2px 6px">⏰ Overdue FU</span>':
+            anyFu?'<span style="background:rgba(251,191,36,.1);color:#fbbf24;border-radius:5px;font-size:10px;padding:2px 6px">⏰ FU Set</span>':'')+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:6px;margin-top:2px">'+
+          '<span style="font-size:12px;color:#64748b">'+esc(phone)+'</span>'+
+          '<button onclick="event.stopPropagation();quickCopy(\''+escHtmlAttr(phone)+'\');" '+
+            'style="background:none;border:none;cursor:pointer;padding:1px;color:#334155;display:inline-flex">'+
+            '<i data-lucide="copy" style="width:10px;height:10px"></i></button>'+
+        '</div>'+
+      '</div>'+
+
+      // Right side: agent + status + expand arrow
+      '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'+
+        (emp ? av(emp.name, emp.color||'#3b82f6', 24)+'<span style="font-size:11px;color:#94a3b8">'+esc(emp.name)+'</span>' : '')+
+        sBadge(dominantStatus)+
+        '<i data-lucide="'+(isExpanded?'chevron-up':'chevron-down')+'" style="width:16px;height:16px;color:#64748b"></i>'+
+      '</div>'+
+
+    '</div>'+ // end header
+
+    // ── Units list (always visible, not just expanded) ──
+    '<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,.06);padding-top:8px">'+
+      clients.map(function(c){
+        var ex2     = c.extra_data || {};
+        var contract = ex2.contract_number || c.id.slice(0,8);
+        var unit     = ex2.unit || '—';
+        var project  = ex2.project || '';
+        var fuCount  = (S.reminders||[]).filter(function(r){return r.client_id===c.id&&!r.done;}).length;
+        var fuOver   = (S.reminders||[]).some(function(r){return r.client_id===c.id&&!r.done&&new Date(r.remind_at)<new Date();});
+        return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)">'+
+          '<i data-lucide="home" style="width:12px;height:12px;color:#64748b;flex-shrink:0"></i>'+
+          '<div style="flex:1;min-width:0">'+
+            '<span style="font-size:12px;font-weight:600;color:#e2e8f0">'+esc(unit)+'</span>'+
+            (project?'<span style="font-size:11px;color:#64748b;margin-right:6px"> · '+esc(project)+'</span>':'')+
+            '<span style="font-size:11px;color:#475569">'+esc(contract)+'</span>'+
+          '</div>'+
+          sBadge(c.status)+
+          (fuOver?'<span style="font-size:10px;color:#f87171">⏰</span>':fuCount?'<span style="font-size:10px;color:#fbbf24">⏰</span>':'')+
+          ((ex2.form_submitted)?'<span style="font-size:10px;color:#6ee7b7">📝</span>':'')+
+        '</div>';
+      }).join('')+
+    '</div>'+
+
+    // ── Expanded actions ──
+    (isExpanded ?
+      '<div style="margin-top:12px;border-top:1px solid rgba(255,255,255,.06);padding-top:10px;display:flex;gap:8px;flex-wrap:wrap">'+
+        // Follow-up button
+        '<button class="btn btn-sm" '+
+          'style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);color:#fbbf24" '+
+          'onclick="openFollowupModal(\''+primary.id+'\',event)">'+
+          '<i data-lucide="alarm-clock" class="w-3.5 h-3.5"></i> Follow-up</button>'+
+        // Assign (admin only)
+        (S.role==='admin' && !primary.assigned_employee_id ?
+          '<button class="btn btn-primary btn-sm" onclick="openAssignModal('+JSON.stringify(clients.map(function(c){return c.id;}))+')">'+
+          '<i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Assign All</button>'
+        : '') +
+      '</div>'
+    : '')+
+
+    '</div>';
+
+  return html;
+}
+
 // ── Assign multiple records at once ──────────────────────────
 var _assignIds = [];
 function openAssignModal(ids){
@@ -675,81 +871,6 @@ function doMassAssign(){
     document.getElementById('mass-assign-modal').remove();
     fetchAll().then(renderMyClients);
   });
-}
-
-
-// ── Form Response Section (expanded card) ─────────────────────
-function buildFormResponseSection(extra){
-  var submittedAt = extra.form_submitted_at
-    ? new Date(extra.form_submitted_at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
-    : '';
-  var FIELDS = [
-    {key:'name',              label:'Full Name'},
-    {key:'phone',             label:'Primary Phone'},
-    {key:'old_phone',         label:'Previous Phone'},
-    {key:'phone2',            label:'Secondary Phone'},
-    {key:'email',             label:'Email'},
-    {key:'email2',            label:'Secondary Email'},
-    {key:'preferred_channel', label:'Preferred Channel'},
-    {key:'notes',             label:'Notes'}
-  ];
-  var rows = FIELDS
-    .filter(function(f){ return extra[f.key] && String(extra[f.key]).trim(); })
-    .map(function(f){
-      return '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);gap:12px">'+
-        '<span style="font-size:11px;color:#64748b;flex-shrink:0">'+esc(f.label)+'</span>'+
-        '<span style="font-size:11px;color:#6ee7b7;font-weight:500;text-align:right;word-break:break-word">'+esc(String(extra[f.key]))+'</span>'+
-      '</div>';
-    }).join('');
-  if(!rows) return '';
-  return '<div style="background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:.75rem 1rem;margin-bottom:8px">'+
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">'+
-      '<p style="font-size:11px;font-weight:700;color:#6ee7b7;text-transform:uppercase;letter-spacing:.05em">📝 Form Response</p>'+
-      (submittedAt?'<span style="font-size:10px;color:#64748b">'+submittedAt+'</span>':'')+
-    '</div>'+rows+'</div>';
-}
-
-// ── Client Activity Timeline ───────────────────────────────────
-function buildClientTimeline(c){
-  var extra = c.extra_data || {};
-  var events = [];
-  if(c.created_at) events.push({
-    t:new Date(c.created_at).getTime(), icon:'upload', color:'#06b6d4',
-    text:'Added to portal'+(extra.contract_number?' — '+extra.contract_number:'')
-  });
-  if(c.assigned_employee_id){
-    var e=empById(c.assigned_employee_id);
-    if(e) events.push({t:new Date(c.created_at||Date.now()).getTime()+1,icon:'user-plus',color:'#8b5cf6',text:'Assigned to '+e.name});
-  }
-  if(extra.form_submitted_at) events.push({
-    t:new Date(extra.form_submitted_at).getTime(), icon:'clipboard-check', color:'#10b981',
-    text:'Filled the data update form'
-  });
-  clientHistory(c.id).forEach(function(h){
-    events.push({
-      t:new Date(h.created_at).getTime(),
-      icon:h.outcome==='answered'?'phone-call':'phone-missed',
-      color:h.outcome==='answered'?'#10b981':'#f59e0b',
-      text:(h.outcome==='answered'?'Answered call':h.outcome==='wrong_number'?'Wrong number':'Call attempt')+(h.note?' — '+h.note:'')
-    });
-  });
-  if(!events.length) return '';
-  events.sort(function(a,b){return b.t-a.t;});
-  return '<div style="margin-bottom:8px"><p style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Activity</p>'+
-    '<div style="max-height:200px;overflow-y:auto">'+
-    events.map(function(ev,i){
-      var when=new Date(ev.t).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-      return '<div style="display:flex;gap:8px;padding:4px 0">'+
-        '<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">'+
-          '<div style="width:22px;height:22px;border-radius:50%;background:'+ev.color+'18;display:flex;align-items:center;justify-content:center">'+
-            '<i data-lucide="'+ev.icon+'" style="width:10px;height:10px;color:'+ev.color+'"></i></div>'+
-          (i<events.length-1?'<div style="width:1px;flex:1;min-height:6px;background:rgba(255,255,255,.06)"></div>':'')+
-        '</div>'+
-        '<div style="flex:1;min-width:0;padding-bottom:3px">'+
-          '<p style="font-size:11px;color:#cbd5e1">'+esc(ev.text)+'</p>'+
-          '<p style="font-size:10px;color:#475569">'+when+'</p>'+
-        '</div></div>';
-    }).join('')+'</div></div>';
 }
 
 function renderClientCard(c) {
@@ -812,13 +933,11 @@ function renderClientCard(c) {
     '<div class="flex items-center gap-3 min-w-0 flex-1">' +
     '<div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 flex-shrink-0"><i data-lucide="user" class="w-5 h-5"></i></div>' +
     '<div class="min-w-0">' +
-    '<div style="display:flex;align-items:center;gap:8px;min-width:0">'+
+    '<div style="display:flex;align-items:center;gap:6px;min-width:0">'+
       '<p class="font-semibold text-white truncate">' + esc(displayName) + '</p>'+
       (function(){
         var sibs=getSiblingClients(c);
-        if(sibs.length<=1) return '';
-        return '<span style="background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:5px;font-size:10px;font-weight:700;padding:1px 7px;flex-shrink:0">'+
-          '🏠 '+sibs.length+' units</span>';
+        return sibs.length ? '<span style="background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:4px;font-size:10px;font-weight:700;padding:1px 6px;flex-shrink:0">🏠 '+(sibs.length+1)+'</span>' : '';
       })()+
     '</div>'+
     '<div class="flex items-center gap-2" onclick="event.stopPropagation()">'+
@@ -880,6 +999,24 @@ function renderClientCard(c) {
         '</button>';
       })()+
       '</div>'+
+
+      // ── Other units (siblings) ──
+      (function(){
+        var sibs = getSiblingClients(c);
+        if(!sibs.length) return '';
+        return '<div style="background:rgba(251,191,36,.04);border:1px solid rgba(251,191,36,.12);border-radius:8px;padding:.65rem .9rem;margin-bottom:8px">'+
+          '<p style="font-size:10px;font-weight:700;color:#fbbf24;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em">Other Units</p>'+
+          sibs.map(function(s){
+            var ex2=s.extra_data||{};
+            return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">'+
+              '<i data-lucide="home" style="width:10px;height:10px;color:#64748b;flex-shrink:0"></i>'+
+              '<span style="font-size:11px;color:#e2e8f0;flex:1">'+esc(ex2.unit||'-')+'</span>'+
+              '<span style="font-size:10px;color:#64748b">'+esc(ex2.project||'')+'</span>'+
+              sBadge(s.status)+
+            '</div>';
+          }).join('')+
+        '</div>';
+      })()+
 
       // ── Assign / Reassign / Unassign section (admin only) ──
       buildAssignActions(c, displayName) +
