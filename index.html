@@ -159,10 +159,10 @@
 <script src="js/page-questions.js"></script>
 <script src="js/page-notifications.js"></script>
 <script src="js/page-cleanup.js"></script>
-<script src="js/page-formtracking.js"></script>
-<script src="js/audit.js"></script>
+  <script src="js/page-formtracking.js"></script>
+  <script src="js/audit.js"></script>
 <script src="js/page-activity.js"></script>
-<script src="js/page-teamqa.js"></script>
+  <script src="js/page-teamqa.js"></script>
 <script src="js/animations.js"></script>
 
 <script>
@@ -195,15 +195,14 @@ function hideLoader(){
   setTimeout(function(){ if(el) el.style.display='none'; }, 350);
 }
 
-// Safety fallback: if still loading after 6 seconds → show login
+// Safety fallback: hide loader after 10s max (don't touch login state)
 setTimeout(function(){
   var el = document.getElementById('app-loading');
-  if(el && el.style.display !== 'none' && el.style.opacity !== '0'){
-    hideLoader();
-    var ls = document.getElementById('login-screen');
-    if(ls) ls.classList.remove('hidden');
+  if(el && el.style.display !== 'none'){
+    el.style.opacity = '0';
+    el.style.display = 'none';
   }
-}, 6000);
+}, 10000);
 
 if (!restoreSession()) {
   initializeEmployeeList();
