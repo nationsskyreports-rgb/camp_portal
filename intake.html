@@ -1114,10 +1114,18 @@ function doUpdateExisting(extraData, t) {
       // Send notification to each assigned employee
       var notifName = matchedClients[0] ? (matchedClients[0].name || 'A client') : 'A client';
       var notifPromises = Object.keys(empIds).map(function(empId) {
+        // Count how many units this agent owns that were updated
+        var agentUnits = selectedIds.filter(function(id){
+          var c = matchedClients.find(function(x){ return x.id===id; });
+          return c && c.assigned_employee_id === empId;
+        }).length;
         return sbInsert('notifications', {
           employee_id : empId,
           type        : 'form_submitted',
-          message     : '📝 ' + notifName + ' submitted their data update form',
+          message     : '📝 ' + notifName + ' updated their form data' +
+                        (agentUnits > 1 ? ' (' + agentUnits + ' units)' : '') +
+                        (matchedClients[0] && matchedClients[0].extra_data && matchedClients[0].extra_data.phone
+                          ? ' · ' + matchedClients[0].extra_data.phone : ''),
           read        : false
         });
       });
