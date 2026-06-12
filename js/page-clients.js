@@ -462,6 +462,38 @@ function groupClientsByPhone(clients){
   return groups;
 }
 
+
+// ── Group clients by normalized phone ────────────────────────
+function normPhoneGroup(p){
+  if(!p) return null;
+  var d=String(p).replace(/\D/g,'');
+  return d.length>=7 ? d.slice(-9) : null;
+}
+
+function groupClientsByPhone(clients){
+  var byPhone={}, noPhone=[];
+  clients.forEach(function(c){
+    var k=normPhoneGroup(c.phone);
+    if(!k){noPhone.push(c);return;}
+    if(!byPhone[k]) byPhone[k]=[];
+    byPhone[k].push(c);
+  });
+  var groups=[];
+  Object.keys(byPhone).forEach(function(k){groups.push(byPhone[k]);});
+  noPhone.forEach(function(c){groups.push([c]);});
+  groups.sort(function(a,b){return b.length-a.length;});
+  return groups;
+}
+
+
+// ── Get all units for same phone ─────────────────────────────
+function getSiblingClients(c){
+  var k=normPhoneGroup(c.phone);
+  if(!k) return [c];
+  var siblings=myClients().filter(function(x){return normPhoneGroup(x.phone)===k;});
+  return siblings.length>1 ? siblings : [c];
+}
+
 function renderMyClients() {
   var m   = document.getElementById('main-content');
   var all = myClients();
@@ -857,7 +889,15 @@ function renderClientCard(c) {
     '<div class="flex items-center gap-3 min-w-0 flex-1">' +
     '<div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 flex-shrink-0"><i data-lucide="user" class="w-5 h-5"></i></div>' +
     '<div class="min-w-0">' +
-    '<p class="font-semibold text-white truncate">' + esc(displayName) + '</p>' +
+    '<div style="display:flex;align-items:center;gap:8px;min-width:0">'+
+      '<p class="font-semibold text-white truncate">' + esc(displayName) + '</p>'+
+      (function(){
+        var sibs=getSiblingClients(c);
+        if(sibs.length<=1) return '';
+        return '<span style="background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:5px;font-size:10px;font-weight:700;padding:1px 7px;flex-shrink:0">'+
+          '🏠 '+sibs.length+' units</span>';
+      })()+
+    '</div>'+
     '<div class="flex items-center gap-2" onclick="event.stopPropagation()">'+
       '<p class="text-xs text-slate-500 truncate">' + esc(subInfo) + '</p>'+
       (c.phone ? '<button title="Copy phone" onclick="event.stopPropagation();quickCopy(\''+escHtmlAttr(c.phone)+'\')" '+
