@@ -463,20 +463,18 @@ function groupClientsByPhone(clients){
 }
 
 
-// ── Phone grouping helpers ────────────────────────────────────
-function normPhoneGroup(p){
-  if(!p) return null;
-  var d = String(p).replace(/\D/g,'');
-  return d.length >= 7 ? d.slice(-9) : null;
-}
-
-
-function getSiblingClients(c){
-  var k = normPhoneGroup(c.phone);
-  if(!k) return [];
-  return myClients().filter(function(x){
-    return x.id !== c.id && normPhoneGroup(x.phone) === k;
-  });
+// ── Get units from extra_data.units[] or flat fields ─────────
+function getClientUnits(c){
+  var ex = c.extra_data||{};
+  if(ex.units && Array.isArray(ex.units) && ex.units.length) return ex.units;
+  // Fallback: single unit from flat fields
+  if(ex.unit||ex.contract_number) return [{
+    unit            : ex.unit||'',
+    contract_number : ex.contract_number||'',
+    project         : ex.project||'',
+    deal_type       : ex.deal_type||''
+  }];
+  return [];
 }
 
 // ── Form response section ─────────────────────────────────────
@@ -484,7 +482,7 @@ function buildFormResponseSection(extra){
   var submittedAt = extra.form_submitted_at
     ? new Date(extra.form_submitted_at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
     : '';
-  var FIELDS = [
+  var FIELDS=[
     {key:'name',              label:'Full Name'},
     {key:'phone',             label:'Primary Phone'},
     {key:'old_phone',         label:'Previous Phone'},
@@ -494,7 +492,7 @@ function buildFormResponseSection(extra){
     {key:'preferred_channel', label:'Preferred Channel'},
     {key:'notes',             label:'Notes'}
   ];
-  var rows = FIELDS.filter(function(f){ return extra[f.key]&&String(extra[f.key]).trim(); })
+  var rows=FIELDS.filter(function(f){return extra[f.key]&&String(extra[f.key]).trim();})
     .map(function(f){
       return '<div style="display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)">'+
         '<span style="font-size:11px;color:#64748b;flex-shrink:0">'+esc(f.label)+'</span>'+
@@ -511,12 +509,14 @@ function buildFormResponseSection(extra){
 
 // ── Activity timeline ─────────────────────────────────────────
 function buildClientTimeline(c){
-  var extra = c.extra_data||{}, events = [];
+  var extra=c.extra_data||{}, events=[];
   if(c.created_at) events.push({t:new Date(c.created_at).getTime(),icon:'upload',color:'#06b6d4',text:'Added'+(extra.contract_number?' — '+extra.contract_number:'')});
-  if(c.assigned_employee_id){ var e=empById(c.assigned_employee_id); if(e) events.push({t:new Date(c.created_at||Date.now()).getTime()+1,icon:'user-plus',color:'#8b5cf6',text:'Assigned to '+e.name}); }
+  if(c.assigned_employee_id){var e=empById(c.assigned_employee_id);if(e)events.push({t:new Date(c.created_at||Date.now()).getTime()+1,icon:'user-plus',color:'#8b5cf6',text:'Assigned to '+e.name});}
   if(extra.form_submitted_at) events.push({t:new Date(extra.form_submitted_at).getTime(),icon:'clipboard-check',color:'#10b981',text:'Filled the form'});
   clientHistory(c.id).forEach(function(h){
-    events.push({t:new Date(h.created_at).getTime(),icon:h.outcome==='answered'?'phone-call':'phone-missed',color:h.outcome==='answered'?'#10b981':'#f59e0b',text:(h.outcome==='answered'?'Answered':h.outcome==='wrong_number'?'Wrong number':'Attempt')+(h.note?' — '+h.note:'')});
+    events.push({t:new Date(h.created_at).getTime(),icon:h.outcome==='answered'?'phone-call':'phone-missed',
+      color:h.outcome==='answered'?'#10b981':'#f59e0b',
+      text:(h.outcome==='answered'?'Answered':h.outcome==='wrong_number'?'Wrong number':'Attempt')+(h.note?' — '+h.note:'')});
   });
   if(!events.length) return '';
   events.sort(function(a,b){return b.t-a.t;});
@@ -935,10 +935,9 @@ function renderClientCard(c) {
     '<div class="min-w-0">' +
     '<div style="display:flex;align-items:center;gap:6px;min-width:0">'+
       '<p class="font-semibold text-white truncate">' + esc(displayName) + '</p>'+
-      (function(){
-        var sibs=getSiblingClients(c);
-        return sibs.length ? '<span style="background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:4px;font-size:10px;font-weight:700;padding:1px 6px;flex-shrink:0">🏠 '+(sibs.length+1)+'</span>' : '';
-      })()+
+      (getClientUnits(c).length > 1
+        ? '<span style="background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:4px;font-size:10px;font-weight:700;padding:1px 6px;flex-shrink:0">🏠 '+getClientUnits(c).length+'</span>'
+        : '') +
     '</div>'+
     '<div class="flex items-center gap-2" onclick="event.stopPropagation()">'+
       '<p class="text-xs text-slate-500 truncate">' + esc(subInfo) + '</p>'+
@@ -1000,19 +999,18 @@ function renderClientCard(c) {
       })()+
       '</div>'+
 
-      // ── Other units (siblings) ──
+      // ── All Units panel ──
       (function(){
-        var sibs = getSiblingClients(c);
-        if(!sibs.length) return '';
-        return '<div style="background:rgba(251,191,36,.04);border:1px solid rgba(251,191,36,.12);border-radius:8px;padding:.65rem .9rem;margin-bottom:8px">'+
-          '<p style="font-size:10px;font-weight:700;color:#fbbf24;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em">Other Units</p>'+
-          sibs.map(function(s){
-            var ex2=s.extra_data||{};
-            return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">'+
-              '<i data-lucide="home" style="width:10px;height:10px;color:#64748b;flex-shrink:0"></i>'+
-              '<span style="font-size:11px;color:#e2e8f0;flex:1">'+esc(ex2.unit||'-')+'</span>'+
-              '<span style="font-size:10px;color:#64748b">'+esc(ex2.project||'')+'</span>'+
-              sBadge(s.status)+
+        var units = getClientUnits(c);
+        if(units.length <= 1) return '';
+        return '<div style="background:rgba(251,191,36,.04);border:1px solid rgba(251,191,36,.15);border-radius:10px;padding:.75rem 1rem;margin-bottom:8px">'+
+          '<p style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">🏠 All Units ('+units.length+')</p>'+
+          units.map(function(u,i){
+            return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)">'+
+              '<span style="font-size:10px;color:#64748b;flex-shrink:0">'+(i+1)+'</span>'+
+              '<span style="font-size:12px;color:#e2e8f0;font-weight:600;flex:1">'+esc(u.unit||'-')+'</span>'+
+              '<span style="font-size:11px;color:#64748b">'+esc(u.project||'')+'</span>'+
+              '<span style="font-size:10px;color:#94a3b8">'+esc(u.contract_number||'')+'</span>'+
             '</div>';
           }).join('')+
         '</div>';
