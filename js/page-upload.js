@@ -309,114 +309,109 @@ function readExcelFile(file){
   } else {toast('XLSX library not loaded','error');}
 }
 
-// ── Duplicate detection ──────────────────────────────────────
-function detectDuplicates(rows){
-  if(!U.campaignId) return [];
-  var existing=S.clients.filter(function(c){return c.campaign_id===U.campaignId;});
-  if(!existing.length) return [];
-  var byPhone={},byContract={};
-  existing.forEach(function(c){
-    var p=normalizePhoneDigits(c.phone||'');
-    if(p&&p.length>=7) byPhone[p.slice(-9)]=true;
-    var cn=(c.extra_data||{}).contract_number;
-    if(cn) byContract[cn.trim().toLowerCase()]=true;
-  });
-  return rows.filter(function(r){
-    var rp=normalizePhoneDigits(r.phone||'').slice(-9);
-    var rc=(r.contract_number||'').trim().toLowerCase();
-    return (rp&&byPhone[rp])||(rc&&byContract[rc]);
-  });
-}
+// ════════════════════════════════════════════════════════════
+// MERGE ROWS BY PHONE — one client record with units[] array
+// ════════════════════════════════════════════════════════════
+var UNIT_KEYS = ['unit','contract_number','project','deal_type',
+                 'contract_date','contract_status','property_status'];
 
-function showDupWarning(dupCount,totalRows,onSkip,onOverwrite){
-  var old=document.getElementById('dup-modal');if(old)old.remove();
-  var ov=document.createElement('div');ov.id='dup-modal';
-  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem';
-  ov.innerHTML='<div style="background:#0d1628;border:1px solid rgba(239,68,68,.25);border-radius:14px;max-width:420px;width:100%;padding:1.5rem">'+
-    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">'+
-      '<div style="width:36px;height:36px;border-radius:10px;background:rgba(239,68,68,.1);display:flex;align-items:center;justify-content:center">'+
-        '<i data-lucide="alert-triangle" style="width:18px;height:18px;color:#f87171"></i></div>'+
-      '<div><h3 style="color:#fff;font-size:15px;font-weight:700">Duplicates Detected</h3>'+
-        '<p style="color:#94a3b8;font-size:12px">'+dupCount+' of '+totalRows+' rows already exist in this campaign</p></div>'+
-    '</div>'+
-    '<div style="background:rgba(255,255,255,.03);border-radius:8px;padding:10px 12px;margin-bottom:1rem;font-size:12px;color:#94a3b8;line-height:1.6">'+
-      '• <b style="color:#e2e8f0">Skip</b> — import new records only<br>'+
-      '• <b style="color:#e2e8f0">Overwrite</b> — update existing records<br>'+
-      '• <b style="color:#e2e8f0">Cancel</b> — go back and review</div>'+
-    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-      '<button class="btn btn-primary btn-sm flex-1" id="dup-skip">Skip ('+dupCount+')</button>'+
-      '<button class="btn btn-ghost btn-sm" id="dup-over" style="border-color:rgba(251,191,36,.3);color:#fbbf24">Overwrite</button>'+
-      '<button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'dup-modal\').remove()">Cancel</button>'+
-    '</div></div>';
-  document.body.appendChild(ov);lucide.createIcons();
-  document.getElementById('dup-skip').onclick=function(){ov.remove();onSkip();};
-  document.getElementById('dup-over').onclick=function(){ov.remove();onOverwrite();};
+function mergeRowsByPhone(rawRows, cols){
+  var byPhone = {}, order = [], noPhone = [];
+
+  rawRows.forEach(function(r){
+    var name  = r['customer']||r['Customer']||r[cols[0]?cols[0].key:'']||r['name']||Object.values(r)[0]||'';
+    var phone = r['phone']||r['Phone']||'';
+    var norm  = normalizePhoneDigits(phone).slice(-9);
+
+    // Build extra_data for this row
+    var extra = {};
+    cols.forEach(function(col){ extra[col.key] = r[col.key]||''; });
+
+    // Extract unit info for the units[] array
+    var unitEntry = {};
+    UNIT_KEYS.forEach(function(k){ if(extra[k]) unitEntry[k] = extra[k]; });
+
+    if(!norm || norm.length < 7){
+      // No phone — treat as standalone
+      noPhone.push({ name:name.trim(), phone:phone||null, extra:extra, units:[unitEntry] });
+      return;
+    }
+
+    if(!byPhone[norm]){
+      byPhone[norm] = { name:name.trim(), phone:phone, extra:extra, units:[] };
+      order.push(norm);
+    }
+    // Add unit to this client's units array (avoid exact duplicates)
+    var key = unitEntry.contract_number || unitEntry.unit;
+    var alreadyHas = byPhone[norm].units.some(function(u){ return (u.contract_number||u.unit) === key; });
+    if(!alreadyHas) byPhone[norm].units.push(unitEntry);
+  });
+
+  // Build final records
+  var result = [];
+  order.forEach(function(k){
+    var m = byPhone[k];
+    // Put units[] into extra_data (keep first unit at top level for backwards compat)
+    if(m.units.length > 0){
+      Object.assign(m.extra, m.units[0]); // first unit's data at top level
+      if(m.units.length > 1) m.extra.units = m.units; // multi-unit: add array
+    }
+    result.push({ name:m.name, phone:m.phone, extra_data:m.extra });
+  });
+  noPhone.forEach(function(m){
+    if(m.units.length > 0){
+      Object.assign(m.extra, m.units[0]);
+      if(m.units.length > 1) m.extra.units = m.units;
+    }
+    result.push({ name:m.name, phone:m.phone, extra_data:m.extra });
+  });
+  return result;
 }
 
 function saveWithoutDistribution(){
   if(!U.rows.length){toast('No data to save','error');return;}
   if(!U.campaignId){toast('Select a campaign first','error');return;}
-  var dups=detectDuplicates(U.rows);
-  if(dups.length>0){
-    var dp=new Set(dups.map(function(r){return normalizePhoneDigits(r.phone||'').slice(-9);}));
-    var dc=new Set(dups.map(function(r){return (r.contract_number||'').trim().toLowerCase();}));
-    showDupWarning(dups.length,U.rows.length,
-      function(){U.rows=U.rows.filter(function(r){var p=normalizePhoneDigits(r.phone||'').slice(-9);var c=(r.contract_number||'').trim().toLowerCase();return !(p&&dp.has(p))&&!(c&&dc.has(c));});doSave();},
-      function(){doSave();}
-    );return;
-  }
-  doSave();
-}
-function doSave(){
-  var cols=U.detectedCols||getCurrentUploadCols();
-  var campName=(campById(U.campaignId)||{}).name||'Campaign';
-  var rows=[];
-  U.rows.forEach(function(c){
-    var extraData={};cols.forEach(function(col){extraData[col.key]=c[col.key]||'';});
-    var name=c['customer']||c['Customer']||c[cols[0]?cols[0].key:'']||c['name']||Object.values(c)[0]||'';
-    var phone=c['phone']||c['Phone']||'';
-    rows.push({name:name.trim(),phone:phone||null,extra_data:extraData,status:'New',assigned_employee_id:null,campaign_id:U.campaignId});
+  var cols = U.detectedCols||getCurrentUploadCols();
+  var merged = mergeRowsByPhone(U.rows, cols);
+  var before = U.rows.length, after = merged.length;
+  var rows = merged.map(function(m){
+    return {name:m.name,phone:m.phone||null,extra_data:m.extra_data,status:'New',assigned_employee_id:null,campaign_id:U.campaignId};
   });
   sb.from('clients').insert(rows).then(function(result){
     if(result.error){toast(result.error.message,'error');return;}
-    toast(rows.length+' clients saved without distribution ✓','success');
+    var msg = after+' clients saved';
+    if(before>after) msg += ' ('+before+' rows merged into '+after+' unique clients)';
+    toast(msg+' ✓','success');
     U={campaignId:U.campaignId,rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,isNOSSheet:false};
     fetchAll().then(renderUpload);
   });
 }
 
 function previewDistribute(){
-  var dups=detectDuplicates(U.rows);
-  if(dups.length>0){
-    var dp=new Set(dups.map(function(r){return normalizePhoneDigits(r.phone||'').slice(-9);}));
-    var dc=new Set(dups.map(function(r){return (r.contract_number||'').trim().toLowerCase();}));
-    showDupWarning(dups.length,U.rows.length,
-      function(){U.rows=U.rows.filter(function(r){var p=normalizePhoneDigits(r.phone||'').slice(-9);var c=(r.contract_number||'').trim().toLowerCase();return !(p&&dp.has(p))&&!(c&&dc.has(c));});_doPreview();},
-      function(){_doPreview();}
-    );return;
-  }
-  _doPreview();
-}
-function _doPreview(){
   var firstKey=getCurrentUploadCols()[0]?getCurrentUploadCols()[0].key:'';
-  var valid=U.rows.filter(function(r){return firstKey?r[firstKey]&&r[firstKey].trim():true;});
-  if(!valid.length){toast('Add clients first','error');return;}
+  var cols = U.detectedCols||getCurrentUploadCols();
+  // Merge by phone FIRST so distribution counts are correct
+  var merged = mergeRowsByPhone(U.rows, cols);
+  if(!merged.length){toast('Add clients first','error');return;}
   if(!U.campaignId){toast('Select a campaign','error');return;}
   var actEmps=activeEmps();if(!actEmps.length){toast('No active employees','error');return;}
   var dist={};actEmps.forEach(function(e){dist[e.id]=[];});
-  valid.forEach(function(c,i){dist[actEmps[i%actEmps.length].id].push(c);});
-  U.preview=dist;renderUpload();
+  merged.forEach(function(c,i){dist[actEmps[i%actEmps.length].id].push(c);});
+  U.preview=dist;
+  var before=U.rows.length,after=merged.length;
+  if(before>after) toast(before+' rows merged into '+after+' unique clients','info');
+  renderUpload();
 }
 function confirmDistribute(){
   if(!U.preview||!U.campaignId)return;
   var campName=(campById(U.campaignId)||{}).name||'Campaign';
-  var cols=getCurrentUploadCols();var rows=[];
+  var cols=U.detectedCols||getCurrentUploadCols();
+  var rows=[];
+  // Merge per-employee: group rows by phone within each employee's batch
   Object.keys(U.preview).forEach(function(eid){
-    U.preview[eid].forEach(function(c){
-      var extraData={};cols.forEach(function(col){extraData[col.key]=c[col.key]||'';});
-      var name=c['customer']||c['Customer']||c[cols[0]?cols[0].key:'']||c['name']||Object.values(c)[0]||'';
-      var phone=c['phone']||c['Phone']||'';
-      rows.push({name:name.trim(),phone:phone||null,extra_data:extraData,status:'New',assigned_employee_id:eid,campaign_id:U.campaignId});
+    var merged = mergeRowsByPhone(U.preview[eid], cols);
+    merged.forEach(function(m){
+      rows.push({name:m.name,phone:m.phone||null,extra_data:m.extra_data,status:'New',assigned_employee_id:eid,campaign_id:U.campaignId});
     });
   });
   sb.from('clients').insert(rows).then(function(result){
