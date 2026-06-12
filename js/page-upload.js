@@ -142,8 +142,7 @@ function renderUpload(){
   var previewHtml='';
   if(U.preview){
     var mx=Math.max.apply(null,Object.values(U.preview).map(function(a){return a.length;}).concat([1]));
-    var totalClients = Object.values(U.preview).reduce(function(s,a){return s+a.length;},0);
-    previewHtml='<div class="card border-emerald-500/20 mb-6 fade-in"><h3 class="text-sm font-bold text-white mb-1">Preview - '+totalClients+' clients → active agents</h3><p class="text-xs text-slate-500 mb-4">Inactive agents excluded · duplicates merged by phone</p><div class="space-y-3">'+
+    previewHtml='<div class="card border-emerald-500/20 mb-6 fade-in"><h3 class="text-sm font-bold text-white mb-1">Preview - '+U.rows.length+' clients → active agents</h3><p class="text-xs text-slate-500 mb-4">Inactive agents excluded from distribution</p><div class="space-y-3">'+
     Object.keys(U.preview).map(function(eid){var e=empById(eid);if(!e)return'';var cls=U.preview[eid];return'<div><div class="flex items-center justify-between mb-1"><div class="flex items-center gap-2">'+av(e.name,e.color||'#3b82f6',22)+'<span class="text-xs text-slate-300">'+esc(e.name)+'</span><span class="badge badge-active ml-1" style="font-size:10px">Active</span></div><span class="text-xs font-bold text-white">'+cls.length+'</span></div><div class="w-full h-2 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full bg-emerald-500/70" style="width:'+(cls.length/mx)*100+'%"></div></div></div>';}).join('')+
     '</div><div class="flex gap-2 mt-5"><button class="btn btn-success" onclick="confirmDistribute()"><i data-lucide="check" class="w-4 h-4"></i> Confirm & Distribute</button><button class="btn btn-ghost" onclick="U.preview=null;renderUpload()">Cancel</button></div></div>';
   }
@@ -368,56 +367,19 @@ function saveWithoutDistribution(){
   }
   doSave();
 }
-// ── Group rows by phone — same client with multiple units → one record ──
-function groupRowsByPhone(rawRows, cols) {
-  var CLIENT_KEYS = ['phone','phone_2','phone_3','customer','name','email'];
-  var unitCols    = cols.filter(function(c){ return CLIENT_KEYS.indexOf(c.key) === -1; });
-  var grouped     = {};
-  var order       = [];
-
-  rawRows.forEach(function(r) {
-    var rawPhone = r['phone'] || r['Phone'] || '';
-    var norm     = normalizePhoneDigits(rawPhone).slice(-9);
-    if (!norm || norm.length < 7) norm = rawPhone;
-
-    var unitObj = {};
-    unitCols.forEach(function(c){ if (r[c.key]) unitObj[c.key] = r[c.key]; });
-
-    if (!grouped[norm]) {
-      var clientExtra = { phone: rawPhone };
-      cols.forEach(function(c){
-        if (CLIENT_KEYS.indexOf(c.key) > -1 && c.key !== 'phone' && r[c.key])
-          clientExtra[c.key] = r[c.key];
-      });
-      grouped[norm] = {
-        name  : r['customer'] || r['name'] || Object.values(r)[0] || '',
-        phone : rawPhone,
-        extra : clientExtra,
-        units : []
-      };
-      order.push(norm);
-    }
-    if (Object.keys(unitObj).length) grouped[norm].units.push(unitObj);
-  });
-
-  return order.map(function(norm) {
-    var g     = grouped[norm];
-    var extra = Object.assign({}, g.extra);
-    if (g.units.length) extra.units = g.units;
-    return { name: g.name.trim(), phone: g.phone, extra_data: extra };
-  });
-}
-
 function doSave(){
-  var cols     = U.detectedCols || getCurrentUploadCols();
-  var grouped  = groupRowsByPhone(U.rows, cols);
-  var rows     = grouped.map(function(g){
-    return Object.assign({}, g, { status:'New', assigned_employee_id:null, campaign_id:U.campaignId });
+  var cols=U.detectedCols||getCurrentUploadCols();
+  var campName=(campById(U.campaignId)||{}).name||'Campaign';
+  var rows=[];
+  U.rows.forEach(function(c){
+    var extraData={};cols.forEach(function(col){extraData[col.key]=c[col.key]||'';});
+    var name=c['customer']||c['Customer']||c[cols[0]?cols[0].key:'']||c['name']||Object.values(c)[0]||'';
+    var phone=c['phone']||c['Phone']||'';
+    rows.push({name:name.trim(),phone:phone||null,extra_data:extraData,status:'New',assigned_employee_id:null,campaign_id:U.campaignId});
   });
   sb.from('clients').insert(rows).then(function(result){
     if(result.error){toast(result.error.message,'error');return;}
-    var dedup = U.rows.length - rows.length;
-    toast(rows.length+' client(s) saved'+(dedup?' · '+dedup+' rows merged (duplicates)':'')+' ✓','success');
+    toast(rows.length+' clients saved without distribution ✓','success');
     U={campaignId:U.campaignId,rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,isNOSSheet:false};
     fetchAll().then(renderUpload);
   });
@@ -436,35 +398,45 @@ function previewDistribute(){
   _doPreview();
 }
 function _doPreview(){
-  var cols     = U.detectedCols || getCurrentUploadCols();
-  var grouped  = groupRowsByPhone(U.rows, cols);
-  if(!grouped.length){toast('Add clients first','error');return;}
+  var firstKey=getCurrentUploadCols()[0]?getCurrentUploadCols()[0].key:'';
+  var valid=U.rows.filter(function(r){return firstKey?r[firstKey]&&r[firstKey].trim():true;});
+  if(!valid.length){toast('Add clients first','error');return;}
   if(!U.campaignId){toast('Select a campaign','error');return;}
   var actEmps=activeEmps();if(!actEmps.length){toast('No active employees','error');return;}
   var dist={};actEmps.forEach(function(e){dist[e.id]=[];});
-  grouped.forEach(function(g,i){dist[actEmps[i%actEmps.length].id].push(g);});
+  valid.forEach(function(c,i){dist[actEmps[i%actEmps.length].id].push(c);});
   U.preview=dist;renderUpload();
 }
-
 function confirmDistribute(){
   if(!U.preview||!U.campaignId)return;
   var campName=(campById(U.campaignId)||{}).name||'Campaign';
-  var rows=[];
+  var cols=getCurrentUploadCols();var rows=[];
   Object.keys(U.preview).forEach(function(eid){
-    U.preview[eid].forEach(function(g){
-      rows.push(Object.assign({}, g, { status:'New', assigned_employee_id:eid, campaign_id:U.campaignId }));
+    U.preview[eid].forEach(function(c){
+      var extraData={};cols.forEach(function(col){extraData[col.key]=c[col.key]||'';});
+      var name=c['customer']||c['Customer']||c[cols[0]?cols[0].key:'']||c['name']||Object.values(c)[0]||'';
+      var phone=c['phone']||c['Phone']||'';
+      rows.push({name:name.trim(),phone:phone||null,extra_data:extraData,status:'New',assigned_employee_id:eid,campaign_id:U.campaignId});
     });
   });
   sb.from('clients').insert(rows).then(function(result){
     if(result.error){toast(result.error.message,'error');return;}
-    var notifPromises = Object.keys(U.preview).map(function(eid){
-      if(U.preview[eid].length){
-        return notifyEmployee(eid,'new_clients',
-          'You have '+U.preview[eid].length+' new client(s) assigned in '+campName);
-      }
-      return Promise.resolve();
-    });
-    Promise.all(notifPromises).catch(function(){});
+    var notifs=[];
+    Object.keys(U.preview).forEach(function(eid){if(U.preview[eid].length){notifs.push({employee_id:eid,type:'data_updated',message:'New data - '+U.preview[eid].length+' client(s) in '+campName,read:false});}});
+    // Send notifications to employees
+    if(notifs.length){
+      var notifPromises = Object.keys(U.preview).map(function(eid){
+        if(U.preview[eid].length){
+          return notifyEmployee(
+            eid,
+            'new_clients',
+            'You have '+U.preview[eid].length+' new client(s) assigned in '+campName
+          );
+        }
+        return Promise.resolve();
+      });
+      Promise.all(notifPromises).catch(function(){});
+    }
     toast(rows.length+' clients distributed successfully','success');
     U={campaignId:'',rows:[],preview:null,uploadTab:'paste',colConfig:null};
     fetchAll().then(renderUpload);
