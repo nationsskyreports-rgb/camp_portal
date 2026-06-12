@@ -28,6 +28,13 @@
 <div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-2"></div>
 
 <!-- LOGIN -->
+<!-- ── App Loading Overlay ── -->
+<div id="app-loading" style="position:fixed;inset:0;background:#0b1120;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .3s">
+  <img src="icon-192.png" alt="NOS" style="width:60px;height:60px;border-radius:18px;margin-bottom:20px;box-shadow:0 4px 24px rgba(0,0,0,.4)">
+  <div style="width:32px;height:32px;border:3px solid rgba(59,130,246,.2);border-top:3px solid #3b82f6;border-radius:50%;animation:spin .7s linear infinite"></div>
+  <p style="color:#475569;font-size:12px;margin-top:14px;font-family:system-ui">Loading...</p>
+</div>
+
 <div id="login-screen" class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
   <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.07] scale-[1.8] rotate-12">
     <img src="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-512.png" alt="Watermark" class="w-full max-w-2xl object-contain" style="mix-blend-mode:lighten;">
@@ -179,6 +186,14 @@ setInterval(function(){
 },30000);
 
 // Start
+// Hide loading overlay — called when app is ready to show
+function hideLoader(){
+  var el = document.getElementById('app-loading');
+  if(!el) return;
+  el.style.opacity = '0';
+  setTimeout(function(){ el.style.display='none'; }, 300);
+}
+
 if (!restoreSession()) {
   initializeEmployeeList();
 }
