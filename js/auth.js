@@ -142,7 +142,8 @@ function enterAdminDashboard(fromRestore, targetPage) {
     appShell.classList.remove('hidden'); // show only after data loaded
     navigateTo(targetPage || 'dashboard');
   }).catch(function(e) {
-    toast('Error loading data: ' + e.message, 'error');
+    if(typeof hideLoader==='function') hideLoader();
+    toast('Error loading data: ' + (e&&e.message||'Unknown error'), 'error');
     logout();
   });
 }
@@ -177,7 +178,8 @@ function enterEmployeeDashboard(emp, fromRestore, targetPage) {
     appShell.classList.remove('hidden'); // show only after data loaded
     navigateTo(targetPage || 'my-clients');
   }).catch(function(e) {
-    toast('Error loading data: ' + e.message, 'error');
+    if(typeof hideLoader==='function') hideLoader();
+    toast('Error loading data: ' + (e&&e.message||'Unknown error'), 'error');
     logout();
   });
 }
