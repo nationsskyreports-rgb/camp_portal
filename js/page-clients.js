@@ -6,6 +6,7 @@ var clientsTab       = 'active';
 var editingHistoryId = null;
 var moodFilter       = '';
 var reassignClientId = null; // client being reassigned
+var _visibleClients  = [];   // current filtered+tabbed clients (for export)
 
 // Redistribute state
 var redistPreview = null;
@@ -160,6 +161,7 @@ async function saveReassign(cid, clientName) {
       notifyEmployee(newEmpId, 'new_clients', 'Client "' + clientName + '" has been assigned to you').catch(function(){});
     }
     toast('"' + clientName + '" reassigned to ' + (emp ? emp.name : 'employee'), 'success');
+    logAudit('reassign', 'client', cid, clientName, {to: emp ? emp.name : newEmpId});
     reassignClientId = null;
     fetchAll().then(renderMyClients);
   } catch(e) { toast(e.message, 'error'); }
@@ -639,6 +641,11 @@ function renderMyClients() {
         }).join('') + '</div>'
       : '') +
     (S.role==='admin' ? buildBulkBar(cls) : '') +
+    (S.role==='admin' && cls.length ?
+      '<div class=\"flex justify-end mb-2\">'+
+      '<button class=\"btn btn-ghost btn-sm\" onclick=\"exportVisibleClients()\">'+
+      '<i data-lucide=\"download\" class=\"w-3.5 h-3.5\"></i> Export ('+cls.length+')'+
+      '</button></div>' : '') +
     '<div class="space-y-3 fade-in" id="clients-list">' +
     (cls.length
       ? (function(){
@@ -656,7 +663,44 @@ function renderMyClients() {
       : '<div class="card text-center py-12"><p class="text-slate-500">No clients here</p></div>') +
     '</div>';
 
+  _visibleClients = cls;
   lucide.createIcons();
+}
+
+// ── Export visible (filtered+tabbed) clients to XLSX ─────────
+function exportVisibleClients(){
+  if(!_visibleClients || !_visibleClients.length){toast('No clients to export','info');return;}
+  if(!window.XLSX){toast('XLSX library not loaded','error');return;}
+
+  var rows = _visibleClients.map(function(c){
+    var extra = c.extra_data || {};
+    var camp  = campById(c.campaign_id);
+    var emp   = empById(c.assigned_employee_id);
+    var visCols = camp ? getVisibleCols(camp.id) : DEFAULT_COLUMNS.filter(function(x){return x.visible;});
+    var row = {};
+    visCols.forEach(function(col){
+      row[col.label] = extra[col.key] || c[col.key] || '';
+    });
+    row['Campaign'] = camp ? camp.name : '';
+    row['Employee'] = emp  ? emp.name  : '';
+    row['Status']   = c.status || '';
+    row['Created']  = c.created_at ? c.created_at.slice(0,10) : '';
+    return row;
+  });
+
+  var ws = XLSX.utils.json_to_sheet(rows);
+  if(rows.length && rows[0]){
+    var colWidths = Object.keys(rows[0]).map(function(k){
+      var maxLen = Math.max(k.length, Math.max.apply(null, rows.map(function(r){return String(r[k]||'').length;})));
+      return {wch: Math.min(maxLen + 2, 45)};
+    });
+    ws['!cols'] = colWidths;
+  }
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Clients');
+  var fname = 'Clients_Export_' + new Date().toISOString().slice(0,10) + '.xlsx';
+  XLSX.writeFile(wb, fname);
+  toast('Exported ' + rows.length + ' clients ✓','success');
 }
 
 // ── Single client card ────────────────────────────────────────
@@ -907,6 +951,18 @@ function buildContactFlow(c){
         + 'style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#fca5a5;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:500">📵 Wrong Number</button>';
   html += '</div></div>';
 
+  // Step 3: Client mood — shown only when outcome = answered
+  html += '<div id="cf-mood-'+id+'" style="display:none;margin-bottom:12px">';
+  html += '<p style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Customer Satisfaction</p>';
+  html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+  html += '<button class="cf-mood" data-cid="'+id+'" data-mood="interested" onclick="cfSelectMood(this)" '
+        + 'style="background:rgba(16,185,129,.08);border:2px solid rgba(16,185,129,.25);color:#6ee7b7;border-radius:10px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s">🟢 Interested</button>';
+  html += '<button class="cf-mood" data-cid="'+id+'" data-mood="neutral" onclick="cfSelectMood(this)" '
+        + 'style="background:rgba(245,158,11,.08);border:2px solid rgba(245,158,11,.25);color:#fbbf24;border-radius:10px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s">🟡 Neutral</button>';
+  html += '<button class="cf-mood" data-cid="'+id+'" data-mood="refused" onclick="cfSelectMood(this)" '
+        + 'style="background:rgba(239,68,68,.08);border:2px solid rgba(239,68,68,.25);color:#fca5a5;border-radius:10px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s">🔴 Not Interested</button>';
+  html += '</div></div>';
+
   // Note + Save (hidden)
   html += '<div id="cf-note-'+id+'" style="display:none;margin-bottom:10px">';
   html += '<textarea id="cf-txt-'+id+'" class="input" placeholder="Note (optional)..." rows="2"></textarea>';
@@ -949,8 +1005,31 @@ function cfSelectSub(btn){
   btn.style.opacity='1'; btn.style.boxShadow='0 0 0 2px currentColor';
   if(!_cf[cid]) _cf[cid]={};
   _cf[cid].outcome=outcome;
+  // Show mood row only when answered
+  var moodRow = document.getElementById('cf-mood-'+cid);
+  if(moodRow){
+    moodRow.style.display = outcome==='answered' ? 'block' : 'none';
+    // Reset mood selection when switching away from answered
+    if(outcome !== 'answered'){
+      document.querySelectorAll('.cf-mood[data-cid="'+cid+'"]').forEach(function(b){
+        b.style.opacity='0.6'; b.style.boxShadow='none';
+      });
+      if(_cf[cid]) _cf[cid].mood=null;
+    }
+  }
   document.getElementById('cf-note-'+cid).style.display='block';
   document.getElementById('cf-save-'+cid).style.display='block';
+}
+
+function cfSelectMood(btn){
+  var cid  = btn.dataset.cid;
+  var mood = btn.dataset.mood;
+  document.querySelectorAll('.cf-mood[data-cid="'+cid+'"]').forEach(function(b){
+    b.style.opacity='0.45'; b.style.boxShadow='none';
+  });
+  btn.style.opacity='1'; btn.style.boxShadow='0 0 0 2px currentColor';
+  if(!_cf[cid]) _cf[cid]={};
+  _cf[cid].mood = mood;
 }
 
 async function cfSave(btn){
@@ -965,13 +1044,17 @@ async function cfSave(btn){
     var r1 = await sb.from('clients').update({status:newStatus}).eq('id',cid);
     if(r1.error) throw r1.error;
     if(flow.outcome){
-      var r2 = await sb.from('contact_history').insert({client_id:cid,outcome:flow.outcome,note:note});
+      var entry = {client_id:cid, outcome:flow.outcome, note:note};
+      if(flow.outcome==='answered' && flow.mood) entry.mood = flow.mood;
+      var r2 = await sb.from('contact_history').insert(entry);
       if(r2.error) throw r2.error;
     }
     var c = S.clients.find(function(x){return x.id===cid;});
     if(c&&S.role==='employee'){
       notifyAdmin('status_changed',S.employee.name+' → '+getClientDisplayName(c)+' → '+newStatus+(flow.outcome?' ('+flow.outcome+')':''));
     }
+    var _c = S.clients.find(function(x){return x.id===cid;});
+    logAudit('contact_log', 'client', cid, _c ? getClientDisplayName(_c) : cid, {status: newStatus, outcome: flow.outcome||null, mood: flow.mood||null});
     delete _cf[cid];
     toast('Saved ✓','success');
     fetchAll().then(renderMyClients);

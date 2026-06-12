@@ -388,6 +388,7 @@ function saveWithoutDistribution(){
     var msg = after+' clients saved';
     if(before>after) msg += ' ('+before+' rows merged into '+after+' unique clients)';
     toast(msg+' ✓','success');
+    logAudit('upload_save', 'campaign', U.campaignId, (campById(U.campaignId)||{}).name||'', {clients: after});
     U={campaignId:U.campaignId,rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,isNOSSheet:false};
     fetchAll().then(renderUpload);
   });
@@ -411,12 +412,11 @@ function previewDistribute(){
 function confirmDistribute(){
   if(!U.preview||!U.campaignId)return;
   var campName=(campById(U.campaignId)||{}).name||'Campaign';
-  var cols=U.detectedCols||getCurrentUploadCols();
   var rows=[];
-  // Merge per-employee: group rows by phone within each employee's batch
+  // U.preview[eid] already contains merged records {name, phone, extra_data}
+  // from previewDistribute — do NOT re-merge or extra_data fields will be lost
   Object.keys(U.preview).forEach(function(eid){
-    var merged = mergeRowsByPhone(U.preview[eid], cols);
-    merged.forEach(function(m){
+    U.preview[eid].forEach(function(m){
       rows.push({name:m.name,phone:m.phone||null,extra_data:m.extra_data,status:'New',assigned_employee_id:eid,campaign_id:U.campaignId});
     });
   });
@@ -439,6 +439,7 @@ function confirmDistribute(){
       Promise.all(notifPromises).catch(function(){});
     }
     toast(rows.length+' clients distributed successfully','success');
+    logAudit('upload_distribute', 'campaign', U.campaignId, campName, {clients: rows.length, agents: Object.keys(U.preview).length});
     U={campaignId:'',rows:[],preview:null,uploadTab:'paste',colConfig:null};
     fetchAll().then(renderUpload);
   });

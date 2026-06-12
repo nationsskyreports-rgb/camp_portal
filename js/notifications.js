@@ -43,7 +43,10 @@ function checkDueFollowups(){
     r._notified = true;
     var c = clientById(r.client_id);
     var name = c ? (c.name || (c.extra_data||{}).customer || '') : '';
-    toast('⏰ Follow-up due' + (name ? ': ' + name : ''), 'info');
+    var msg = 'Follow-up due' + (name ? ': ' + name : '') + (r.note ? ' — ' + r.note : '');
+    toast('⏰ ' + msg, 'info');
+    // Save to DB so it appears in the Notifications page
+    notifyEmployee(S.employee.id, 'followup_due', msg);
     updateNotifBadge();
   });
 }

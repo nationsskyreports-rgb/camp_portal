@@ -1,3 +1,21 @@
+// Collect all unique visible columns across all campaigns (used when no campaign filter)
+function getAllCampaignVisCols(){
+  var seenKeys = {};
+  var cols = [];
+  S.campaigns.forEach(function(camp){
+    var campCols = (camp.column_config && camp.column_config.length)
+      ? camp.column_config.filter(function(c){ return c.visible !== false; })
+      : DEFAULT_COLUMNS.filter(function(c){ return c.visible; });
+    campCols.forEach(function(c){
+      if(!seenKeys[c.key]){
+        seenKeys[c.key] = true;
+        cols.push(c);
+      }
+    });
+  });
+  return cols.length ? cols : DEFAULT_COLUMNS.filter(function(c){ return c.visible; });
+}
+
 // ============================================================
 // PAGE REPORTS
 // ============================================================
@@ -13,7 +31,7 @@ function renderReports(){
   var totalPages=Math.ceil(data.length/RPT_PAGE_SIZE)||1;
   if(rptFilter.page>=totalPages)rptFilter.page=0;
   var pageData=data.slice(rptFilter.page*RPT_PAGE_SIZE,(rptFilter.page+1)*RPT_PAGE_SIZE);
-  var visCols=rptFilter.campaign?getVisibleCols(rptFilter.campaign):DEFAULT_COLUMNS.filter(function(c){return c.visible;});
+  var visCols=rptFilter.campaign?getVisibleCols(rptFilter.campaign):getAllCampaignVisCols();
   m.innerHTML=hdr('Reports & Export','Filter and export client data')+
   '<div class="card mb-6 fade-in"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">'+
   '<select class="input" onchange="rptFilter.campaign=this.value;rptFilter.page=0;renderReports()"><option value="">All Campaigns</option>'+S.campaigns.map(function(c){return'<option value="'+c.id+'" '+(rptFilter.campaign===c.id?'selected':'')+'>'+esc(c.name)+'</option>';}).join('')+'</select>'+
@@ -44,6 +62,6 @@ function renderReports(){
   '<p class="text-slate-500 text-sm text-center py-6">No results</p>')+'</div>';
   lucide.createIcons();
 }
-function exportClientsCSV(){var visCols=rptFilter.campaign?getVisibleCols(rptFilter.campaign):DEFAULT_COLUMNS.filter(function(c){return c.visible;});csvExport('clients.csv',visCols.map(function(c){return c.label;}).concat(['Employee','Status']),S.clients.map(function(c){var ep=empById(c.assigned_employee_id);var extra=c.extra_data||{};return visCols.map(function(col){return extra[col.key]||c[col.key]||'';}).concat([ep?ep.name:'',c.status]);}));toast('Exported');}
+function exportClientsCSV(){var visCols=rptFilter.campaign?getVisibleCols(rptFilter.campaign):getAllCampaignVisCols();csvExport('clients.csv',visCols.map(function(c){return c.label;}).concat(['Employee','Status']),S.clients.map(function(c){var ep=empById(c.assigned_employee_id);var extra=c.extra_data||{};return visCols.map(function(col){return extra[col.key]||c[col.key]||'';}).concat([ep?ep.name:'',c.status]);}));toast('Exported');}
 function exportQaCSV(){csvExport('qa.csv',['Employee','Question','Status','Reply','Date'],S.questions.map(function(q){return[q.employee_name||'',q.question_text,q.status,q.admin_reply||'',q.created_at];}));toast('Exported');}
 function exportCampSummaryCSV(){csvExport('campaigns.csv',['Campaign','Type','Status','Clients','New','Contacted','Closed'],S.campaigns.map(function(c){var cc=S.clients.filter(function(cl){return cl.campaign_id===c.id;});return[c.name,c.type,c.status,cc.length,cc.filter(function(x){return x.status==='New';}).length,cc.filter(function(x){return x.status==='Contacted';}).length,cc.filter(function(x){return x.status==='Closed';}).length];}));toast('Exported');}

@@ -115,7 +115,7 @@ function markNotifRead(id){
 
 function markAllRead(){
   var q = S.role==='admin' ?
-    sb.from('notifications').update({read:true}).eq('read',false) :
+    sb.from('notifications').update({read:true}).is('employee_id',null).eq('read',false) :
     sb.from('notifications').update({read:true}).eq('employee_id',S.employee.id).eq('read',false);
   q.then(function(){
     toast('All marked as read');
