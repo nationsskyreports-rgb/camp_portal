@@ -829,6 +829,81 @@ function doMassAssign(){
   });
 }
 
+
+// ── Form Response Section (expanded card) ─────────────────────
+function buildFormResponseSection(extra){
+  var submittedAt = extra.form_submitted_at
+    ? new Date(extra.form_submitted_at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+    : '';
+  var FIELDS = [
+    {key:'name',              label:'Full Name'},
+    {key:'phone',             label:'Primary Phone'},
+    {key:'old_phone',         label:'Previous Phone'},
+    {key:'phone2',            label:'Secondary Phone'},
+    {key:'email',             label:'Email'},
+    {key:'email2',            label:'Secondary Email'},
+    {key:'preferred_channel', label:'Preferred Channel'},
+    {key:'notes',             label:'Notes'}
+  ];
+  var rows = FIELDS
+    .filter(function(f){ return extra[f.key] && String(extra[f.key]).trim(); })
+    .map(function(f){
+      return '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);gap:12px">'+
+        '<span style="font-size:11px;color:#64748b;flex-shrink:0">'+esc(f.label)+'</span>'+
+        '<span style="font-size:11px;color:#6ee7b7;font-weight:500;text-align:right;word-break:break-word">'+esc(String(extra[f.key]))+'</span>'+
+      '</div>';
+    }).join('');
+  if(!rows) return '';
+  return '<div style="background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:.75rem 1rem;margin-bottom:8px">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">'+
+      '<p style="font-size:11px;font-weight:700;color:#6ee7b7;text-transform:uppercase;letter-spacing:.05em">📝 Form Response</p>'+
+      (submittedAt?'<span style="font-size:10px;color:#64748b">'+submittedAt+'</span>':'')+
+    '</div>'+rows+'</div>';
+}
+
+// ── Client Activity Timeline ───────────────────────────────────
+function buildClientTimeline(c){
+  var extra = c.extra_data || {};
+  var events = [];
+  if(c.created_at) events.push({
+    t:new Date(c.created_at).getTime(), icon:'upload', color:'#06b6d4',
+    text:'Added to portal'+(extra.contract_number?' — '+extra.contract_number:'')
+  });
+  if(c.assigned_employee_id){
+    var e=empById(c.assigned_employee_id);
+    if(e) events.push({t:new Date(c.created_at||Date.now()).getTime()+1,icon:'user-plus',color:'#8b5cf6',text:'Assigned to '+e.name});
+  }
+  if(extra.form_submitted_at) events.push({
+    t:new Date(extra.form_submitted_at).getTime(), icon:'clipboard-check', color:'#10b981',
+    text:'Filled the data update form'
+  });
+  clientHistory(c.id).forEach(function(h){
+    events.push({
+      t:new Date(h.created_at).getTime(),
+      icon:h.outcome==='answered'?'phone-call':'phone-missed',
+      color:h.outcome==='answered'?'#10b981':'#f59e0b',
+      text:(h.outcome==='answered'?'Answered call':h.outcome==='wrong_number'?'Wrong number':'Call attempt')+(h.note?' — '+h.note:'')
+    });
+  });
+  if(!events.length) return '';
+  events.sort(function(a,b){return b.t-a.t;});
+  return '<div style="margin-bottom:8px"><p style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Activity</p>'+
+    '<div style="max-height:200px;overflow-y:auto">'+
+    events.map(function(ev,i){
+      var when=new Date(ev.t).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+      return '<div style="display:flex;gap:8px;padding:4px 0">'+
+        '<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">'+
+          '<div style="width:22px;height:22px;border-radius:50%;background:'+ev.color+'18;display:flex;align-items:center;justify-content:center">'+
+            '<i data-lucide="'+ev.icon+'" style="width:10px;height:10px;color:'+ev.color+'"></i></div>'+
+          (i<events.length-1?'<div style="width:1px;flex:1;min-height:6px;background:rgba(255,255,255,.06)"></div>':'')+
+        '</div>'+
+        '<div style="flex:1;min-width:0;padding-bottom:3px">'+
+          '<p style="font-size:11px;color:#cbd5e1">'+esc(ev.text)+'</p>'+
+          '<p style="font-size:10px;color:#475569">'+when+'</p>'+
+        '</div></div>';
+    }).join('')+'</div></div>';
+}
+
 function renderClientCard(c) {
   var isExp   = expandedClientId === c.id;
   var hist    = clientHistory(c.id);
