@@ -50,9 +50,10 @@ function renderNotifPage(){
   '<div class="space-y-2 fade-in">'+
   (filtered.length ?
     filtered.map(function(n){
-      var meta = notifMeta(n.type||'');
-      var icon = meta.icon;
-      var iconBg = meta.color;
+      var meta     = (typeof notifMeta==='function') ? notifMeta(n.type||'') : {icon:'🔔',color:'bg-slate-500/10'};
+      var icon     = meta.icon;
+      var iconBg   = meta.color;
+      var isAnswer = n.type === 'question_answered';
       var borderCls = n.read ? '' : 'border-blue-500/20 bg-blue-500/[0.02]';
 
       return '<div class="card '+borderCls+' cursor-pointer transition-all hover:border-white/15" onclick="markNotifRead(\''+n.id+'\')">'+
