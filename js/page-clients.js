@@ -873,6 +873,112 @@ function doMassAssign(){
   });
 }
 
+
+// ══════════════════════════════════════════════════════════
+// CONTACT FLOW — 2-step UI for employee
+// Step 1: Contacted | Closed
+// Step 2 (if Contacted): Answered | No Answer | Wrong Number
+// ══════════════════════════════════════════════════════════
+function buildContactFlow(c){
+  var id = c.id;
+  var html = '';
+  html += '<div class="pt-4 border-t border-white/5 cf-wrap" data-cf="' + id + '" onclick="event.stopPropagation()">';
+  html += '<p style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Log Outcome</p>';
+
+  // Step 1 buttons
+  html += '<div style="display:flex;gap:8px;margin-bottom:12px">';
+  html += '<button class="btn cf-main flex-1" data-cid="'+id+'" data-action="Contacted" '
+        + 'style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);color:#c4b5fd;font-weight:600" '
+        + 'onclick="cfSelectMain(this)">📞 Contacted</button>';
+  html += '<button class="btn cf-main flex-1" data-cid="'+id+'" data-action="Closed" '
+        + 'style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);color:#6ee7b7;font-weight:600" '
+        + 'onclick="cfSelectMain(this)">✅ Closed</button>';
+  html += '</div>';
+
+  // Step 2: sub-outcomes (hidden)
+  html += '<div id="cf-sub-'+id+'" style="display:none;margin-bottom:12px">';
+  html += '<p style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Call Result</p>';
+  html += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
+  html += '<button class="cf-sub" data-cid="'+id+'" data-outcome="answered" onclick="cfSelectSub(this)" '
+        + 'style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);color:#6ee7b7;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:500">✅ Answered</button>';
+  html += '<button class="cf-sub" data-cid="'+id+'" data-outcome="no_answer" onclick="cfSelectSub(this)" '
+        + 'style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);color:#fbbf24;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:500">🔇 No Answer</button>';
+  html += '<button class="cf-sub" data-cid="'+id+'" data-outcome="wrong_number" onclick="cfSelectSub(this)" '
+        + 'style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#fca5a5;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:500">📵 Wrong Number</button>';
+  html += '</div></div>';
+
+  // Note + Save (hidden)
+  html += '<div id="cf-note-'+id+'" style="display:none;margin-bottom:10px">';
+  html += '<textarea id="cf-txt-'+id+'" class="input" placeholder="Note (optional)..." rows="2"></textarea>';
+  html += '</div>';
+  html += '<div id="cf-save-'+id+'" style="display:none">';
+  html += '<button class="btn btn-primary w-full" data-cid="'+id+'" onclick="cfSave(this)">';
+  html += '<i data-lucide="save" class="w-4 h-4"></i> Save</button>';
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+var _cf = {}; // {cid: {action, outcome}}
+
+function cfSelectMain(btn){
+  var cid    = btn.dataset.cid;
+  var action = btn.dataset.action;
+  // dim all, highlight selected
+  document.querySelectorAll('.cf-main[data-cid="'+cid+'"]').forEach(function(b){
+    b.style.opacity='0.4'; b.style.boxShadow='none';
+  });
+  btn.style.opacity='1'; btn.style.boxShadow='0 0 0 2px currentColor';
+  if(!_cf[cid]) _cf[cid]={};
+  _cf[cid].action=action; _cf[cid].outcome=null;
+  document.getElementById('cf-sub-'+cid).style.display  = action==='Contacted' ? 'block' : 'none';
+  document.getElementById('cf-note-'+cid).style.display = action==='Closed'    ? 'block' : 'none';
+  document.getElementById('cf-save-'+cid).style.display = action==='Closed'    ? 'block' : 'none';
+  // Reset sub buttons
+  document.querySelectorAll('.cf-sub[data-cid="'+cid+'"]').forEach(function(b){
+    b.style.opacity='0.4'; b.style.boxShadow='none';
+  });
+}
+
+function cfSelectSub(btn){
+  var cid     = btn.dataset.cid;
+  var outcome = btn.dataset.outcome;
+  document.querySelectorAll('.cf-sub[data-cid="'+cid+'"]').forEach(function(b){
+    b.style.opacity='0.4'; b.style.boxShadow='none';
+  });
+  btn.style.opacity='1'; btn.style.boxShadow='0 0 0 2px currentColor';
+  if(!_cf[cid]) _cf[cid]={};
+  _cf[cid].outcome=outcome;
+  document.getElementById('cf-note-'+cid).style.display='block';
+  document.getElementById('cf-save-'+cid).style.display='block';
+}
+
+async function cfSave(btn){
+  var cid  = btn.dataset.cid;
+  var flow = _cf[cid]||{};
+  var note = (document.getElementById('cf-txt-'+cid)||{}).value||'';
+  note = note.trim();
+  if(!flow.action){toast('Choose Contacted or Closed first','info');return;}
+  if(flow.action==='Contacted'&&!flow.outcome){toast('Select the call result','info');return;}
+  try{
+    var newStatus = flow.action==='Closed' ? 'Closed' : 'Contacted';
+    var r1 = await sb.from('clients').update({status:newStatus}).eq('id',cid);
+    if(r1.error) throw r1.error;
+    if(flow.outcome){
+      var r2 = await sb.from('contact_history').insert({client_id:cid,outcome:flow.outcome,note:note});
+      if(r2.error) throw r2.error;
+    }
+    var c = S.clients.find(function(x){return x.id===cid;});
+    if(c&&S.role==='employee'){
+      notifyAdmin('status_changed',S.employee.name+' → '+getClientDisplayName(c)+' → '+newStatus+(flow.outcome?' ('+flow.outcome+')':''));
+    }
+    delete _cf[cid];
+    toast('Saved ✓','success');
+    fetchAll().then(renderMyClients);
+  }catch(e){toast('Error: '+(e&&e.message||''),'error');}
+}
+
+
 function renderClientCard(c) {
   var isExp   = expandedClientId === c.id;
   var hist    = clientHistory(c.id);
@@ -1054,31 +1160,9 @@ function renderClientCard(c) {
         : '<p class="text-slate-500 text-xs">No contact attempts yet</p>') +
       '</div>' +
 
-      // Log new attempt (employee only)
+      // ── Employee Action: 2-step contact logging ──
       (S.role === 'employee'
-        ? '<div onclick="event.stopPropagation()">' +
-          '<p class="text-xs text-slate-500 mb-3 font-medium">Log Contact Attempt</p>' +
-          '<div class="space-y-3">' +
-          outcomeSelector(c.id, null, null) +
-          '<div class="flex gap-2">' +
-          '<textarea id="note-' + c.id + '" class="input flex-1" placeholder="Note (optional)..." rows="2"></textarea>' +
-          '<button class="btn btn-primary self-end" onclick="saveClient(\'' + c.id + '\')">'+
-          '<i data-lucide="save" class="w-4 h-4"></i> Save</button>' +
-          '</div></div></div>'
-        : '') +
-
-      // Set Follow-up Reminder (employee only)
-      (S.role === 'employee'
-        ? '<div class="pt-4 border-t border-white/5" onclick="event.stopPropagation()">' +
-          '<p class="text-xs text-slate-500 mb-3 font-medium">Schedule Follow-up</p>' +
-          '<div class="space-y-2">' +
-          '<input type="date" id="followup-date-' + c.id + '" class="input" value="' + (c.next_followup_date ? new Date(c.next_followup_date).toISOString().split('T')[0] : '') + '">' +
-          '<input type="time" id="followup-time-' + c.id + '" class="input" value="' + (c.next_followup_date ? new Date(c.next_followup_date).toTimeString().split(' ')[0].substring(0, 5) : '09:00') + '">' +
-          '<textarea id="followup-note-' + c.id + '" class="input" placeholder="Follow-up note (optional)..." rows="2">' + esc(c.followup_note || '') + '</textarea>' +
-          '<div class="flex gap-2">' +
-          '<button class="btn btn-primary flex-1" onclick="saveFollowupFromClient(\'' + c.id + '\')"><i data-lucide="bell" class="w-4 h-4"></i> Set Reminder</button>' +
-          (c.next_followup_date ? '<button class="btn btn-ghost" onclick="clearFollowupFromClient(\'' + c.id + '\')"><i data-lucide="trash" class="w-4 h-4"></i> Clear</button>' : '') +
-          '</div></div></div>'
+        ? buildContactFlow(c)
         : '') +
 
       '</div>' : '') +
