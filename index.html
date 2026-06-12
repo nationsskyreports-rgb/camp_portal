@@ -186,13 +186,24 @@ setInterval(function(){
 },30000);
 
 // Start
-// Hide loading overlay — called when app is ready to show
+// Hide loading overlay
 function hideLoader(){
   var el = document.getElementById('app-loading');
   if(!el) return;
   el.style.opacity = '0';
-  setTimeout(function(){ el.style.display='none'; }, 300);
+  el.style.pointerEvents = 'none';
+  setTimeout(function(){ if(el) el.style.display='none'; }, 350);
 }
+
+// Safety fallback: if still loading after 6 seconds → show login
+setTimeout(function(){
+  var el = document.getElementById('app-loading');
+  if(el && el.style.display !== 'none' && el.style.opacity !== '0'){
+    hideLoader();
+    var ls = document.getElementById('login-screen');
+    if(ls) ls.classList.remove('hidden');
+  }
+}, 6000);
 
 if (!restoreSession()) {
   initializeEmployeeList();
