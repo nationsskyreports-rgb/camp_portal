@@ -14,6 +14,48 @@ function renderDashboard(){
   var newCount         = S.clients.filter(function(c){return c.status==='New';}).length;
   var interestedCount  = S.clients.filter(function(c){return c.status==='Interested';}).length;
 
+  // ── Reachability per campaign ──────────────────────────────
+  var reachStats = S.campaigns.map(function(camp){
+    var campClients = S.clients.filter(function(c){ return c.campaign_id === camp.id; });
+    var campClientIds = {};
+    campClients.forEach(function(c){ campClientIds[c.id] = true; });
+
+    var campHistory = (S.contactHistory||[]).filter(function(h){ return campClientIds[h.client_id]; });
+
+    var totalCalls    = campHistory.length;
+    var answeredCalls = campHistory.filter(function(h){ return h.outcome === 'answered'; }).length;
+
+    // unique clients with at least 1 answered call
+    var reachedIds = {};
+    campHistory.filter(function(h){ return h.outcome === 'answered'; })
+               .forEach(function(h){ reachedIds[h.client_id] = true; });
+    var reachedClients = Object.keys(reachedIds).length;
+
+    // unique clients with any call attempt
+    var touchedIds = {};
+    campHistory.forEach(function(h){ touchedIds[h.client_id] = true; });
+    var touchedClients = Object.keys(touchedIds).length;
+
+    var totalClients    = campClients.length;
+    var untouched       = totalClients - touchedClients;
+    var closedCl        = campClients.filter(function(c){ return c.status === 'Closed'; }).length;
+
+    // Reachability = unique clients answered ÷ total clients (client-level reach)
+    var reachability = totalClients > 0 ? Math.round(reachedClients / totalClients * 100) : 0;
+    // Contact Rate  = answered calls ÷ total calls (call-level efficiency)
+    var contactRate  = totalCalls > 0 ? Math.round(answeredCalls / totalCalls * 100) : 0;
+    var closeRate    = totalClients > 0 ? Math.round(closedCl / totalClients * 100) : 0;
+
+    return {
+      id: camp.id, name: camp.name, status: camp.status,
+      totalClients: totalClients, reachedClients: reachedClients,
+      reachability: reachability, totalCalls: totalCalls,
+      answeredCalls: answeredCalls, contactRate: contactRate,
+      untouched: untouched, closedClients: closedCl, closeRate: closeRate
+    };
+  }).filter(function(r){ return r.totalClients > 0; })
+    .sort(function(a,b){ return b.reachability - a.reachability; });
+
   m.innerHTML=hdr('Dashboard','Overview')+
   '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px" class="fade-in">'+
 
@@ -71,6 +113,64 @@ function renderDashboard(){
       '<div class="h-full rounded-full progress-fill" style="width:'+(d.count/mx)*100+'%;background:'+d.color+'"></div></div></div>';
   }).join('')+(dist.length?'':'<p class="text-slate-500 text-sm">No active employees</p>')+
   '</div></div></div>'+
+
+  // ── Campaign Reachability Section ─────────────────────────
+  '<div class="card fade-in" style="margin-top:20px">'+
+    '<div class="flex items-center gap-2 mb-1">'+
+      '<i data-lucide="radio" class="w-5 h-5" style="color:#a78bfa"></i>'+
+      '<h3 class="text-sm font-bold text-white">Campaign Reachability</h3>'+
+    '</div>'+
+    '<p class="text-xs text-slate-500 mb-4" style="padding-right:4px">'+
+      '<strong style="color:#a78bfa">Reachability</strong> = % من العملاء اللي اتكلمنا معاهم فعلاً (ولو مرة واحدة) &nbsp;·&nbsp; '+
+      '<strong style="color:#93c5fd">Contact Rate</strong> = % المكالمات اللي ردوا فيها من إجمالي المحاولات'+
+    '</p>'+
+    (reachStats.length
+      ? '<div class="tbl-wrap"><table class="w-full text-sm">'+
+          '<thead><tr class="text-left text-slate-500 text-xs uppercase border-b border-white/5">'+
+            '<th class="pb-3 pr-4 whitespace-nowrap">Campaign</th>'+
+            '<th class="pb-3 pr-4 text-center whitespace-nowrap">Clients</th>'+
+            '<th class="pb-3 pr-4 text-center whitespace-nowrap">Reached</th>'+
+            '<th class="pb-3 pr-4 text-center whitespace-nowrap">Reachability %</th>'+
+            '<th class="pb-3 pr-4 text-center whitespace-nowrap">Calls Made</th>'+
+            '<th class="pb-3 pr-4 text-center whitespace-nowrap">Answered</th>'+
+            '<th class="pb-3 pr-4 text-center whitespace-nowrap">Contact Rate %</th>'+
+            '<th class="pb-3 pr-4 text-center whitespace-nowrap">Closed</th>'+
+            '<th class="pb-3 pr-4 text-center whitespace-nowrap">Close %</th>'+
+            '<th class="pb-3 text-center whitespace-nowrap">Untouched</th>'+
+          '</tr></thead><tbody>'+
+          reachStats.map(function(r){
+            var rColor = r.reachability >= 60 ? '#6ee7b7' : r.reachability >= 30 ? '#fbbf24' : '#f87171';
+            var cColor = r.contactRate  >= 50 ? '#93c5fd' : r.contactRate  >= 25 ? '#fbbf24' : '#f87171';
+            var clColor = r.closeRate   >= 50 ? '#6ee7b7' : r.closeRate    >= 20 ? '#fbbf24' : '#94a3b8';
+            var rPct   = r.totalClients > 0 ? Math.round(r.reachedClients / r.totalClients * 100) : 0;
+            return '<tr class="table-row border-b border-white/[0.03]">'+
+              '<td class="py-3 pr-4">'+
+                '<div class="flex items-center gap-2">'+
+                  '<div class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:'+(r.status==='Active'?'#10b981':r.status==='Paused'?'#f59e0b':'#ef4444')+'"></div>'+
+                  '<span class="text-sm text-slate-200 font-medium">'+esc(r.name)+'</span>'+
+                '</div>'+
+              '</td>'+
+              '<td class="py-3 pr-4 text-center text-slate-300 font-semibold">'+r.totalClients+'</td>'+
+              '<td class="py-3 pr-4 text-center" style="color:#a78bfa;font-weight:600">'+r.reachedClients+'</td>'+
+              '<td class="py-3 pr-4 text-center">'+
+                '<div>'+
+                  '<span style="font-size:13px;font-weight:700;color:'+rColor+'">'+r.reachability+'%</span>'+
+                  '<div class="w-full h-1 bg-white/5 rounded-full mt-1" style="min-width:60px">'+
+                    '<div style="width:'+r.reachability+'%;height:4px;border-radius:2px;background:'+rColor+';transition:width .3s"></div>'+
+                  '</div>'+
+                '</div>'+
+              '</td>'+
+              '<td class="py-3 pr-4 text-center text-slate-400">'+r.totalCalls+'</td>'+
+              '<td class="py-3 pr-4 text-center" style="color:#34d399">'+r.answeredCalls+'</td>'+
+              '<td class="py-3 pr-4 text-center"><span style="font-size:12px;font-weight:600;color:'+cColor+'">'+r.contactRate+'%</span></td>'+
+              '<td class="py-3 pr-4 text-center" style="color:#60a5fa;font-weight:600">'+r.closedClients+'</td>'+
+              '<td class="py-3 pr-4 text-center"><span style="font-size:12px;font-weight:600;color:'+clColor+'">'+r.closeRate+'%</span></td>'+
+              '<td class="py-3 text-center">'+(r.untouched>0?'<span style="color:#fca5a5;font-weight:700">'+r.untouched+'</span>':'<span style="color:#6ee7b7">0</span>')+'</td>'+
+            '</tr>';
+          }).join('')+
+        '</tbody></table></div>'
+      : '<p class="text-slate-500 text-sm py-4 text-center">No campaign data yet</p>')+
+  '</div>'+
 
   '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:20px" class="fade-in">'+
   '<div class="card"><div class="flex items-center justify-between mb-4"><h3 class="text-sm font-bold text-white">Active Now</h3><span class="badge badge-active">'+onlineEmps.length+'</span></div>'+
