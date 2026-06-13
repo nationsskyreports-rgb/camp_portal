@@ -25,6 +25,7 @@ function getEmployeeMetrics(empId) {
   var closedClients  = empClients.filter(function(c){ return c.status === 'Closed'; }).length;
   var totalCalls     = empHistory.length;
   var answeredCalls  = empHistory.filter(function(h){ return h.outcome === 'answered'; }).length;
+  var noAnswerCalls  = empHistory.filter(function(h){ return h.outcome === 'no_answer'; }).length;
   var wrongNumber    = empHistory.filter(function(h){ return h.outcome === 'wrong_number'; }).length;
 
   // clients with at least 1 attempt
@@ -33,7 +34,9 @@ function getEmployeeMetrics(empId) {
   var touchedCount  = Object.keys(touchedIds).length;
   var untouched     = totalClients - touchedCount;
 
-  var answerRate    = totalCalls > 0 ? Math.round(answeredCalls / totalCalls * 100) : 0;
+  // Answer Rate = Answered ÷ (Answered + No Answer) — Wrong Number excluded
+  var validCalls    = answeredCalls + noAnswerCalls;
+  var answerRate    = validCalls > 0 ? Math.round(answeredCalls / validCalls * 100) : 0;
   var contactRate   = totalClients > 0 ? Math.round(touchedCount / totalClients * 100) : 0;
   var closeRate     = totalClients > 0 ? Math.round(closedClients / totalClients * 100) : 0;
   // productivity = average calls per client
