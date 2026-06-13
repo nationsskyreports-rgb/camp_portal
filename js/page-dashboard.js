@@ -9,7 +9,10 @@ function renderDashboard(){
   var dist=onlineEmps.map(function(e){return{name:e.name,color:e.color,count:S.clients.filter(function(c){return c.assigned_employee_id===e.id;}).length};}).sort(function(a,b){return b.count-a.count;});
   var mx=Math.max.apply(null,dist.map(function(d){return d.count;}).concat([1]));
   var offList=S.employees.filter(function(e){return!e.is_active;});
-  var closedCount=S.clients.filter(function(c){return c.status==='Closed';}).length;
+  var closedCount      = S.clients.filter(function(c){return c.status==='Closed';}).length;
+  var contactedCount   = S.clients.filter(function(c){return c.status==='Contacted';}).length;
+  var newCount         = S.clients.filter(function(c){return c.status==='New';}).length;
+  var interestedCount  = S.clients.filter(function(c){return c.status==='Interested';}).length;
 
   m.innerHTML=hdr('Dashboard','Overview')+
   '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px" class="fade-in">'+
@@ -24,7 +27,12 @@ function renderDashboard(){
   '<div class="card stat-card green">'+
     '<p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Clients</p>'+
     '<p class="text-3xl font-bold text-white stat-num" data-counter="'+S.clients.length+'">'+S.clients.length+'</p>'+
-    '<p class="text-xs text-emerald-400 mt-1">'+closedCount+' closed</p>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">'+
+    '<span style="font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(59,130,246,0.12);color:#93c5fd">🆕 '+newCount+' New</span>'+
+    '<span style="font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(139,92,246,0.12);color:#c4b5fd">📞 '+contactedCount+' Contacted</span>'+
+    '<span style="font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(245,158,11,0.12);color:#fbbf24">⭐ '+interestedCount+' Interested</span>'+
+    '<span style="font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(16,185,129,0.12);color:#34d399">✅ '+closedCount+' Closed</span>'+
+    '</div>'+
   '</div>'+
 
   '<div class="card stat-card amber">'+
