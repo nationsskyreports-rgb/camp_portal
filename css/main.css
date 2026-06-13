@@ -133,10 +133,10 @@ body.light-mode .cf-mood.cf-refused{color:#dc2626;background:rgba(239,68,68,.08)
 .progress-fill{height:100%;background:linear-gradient(90deg,#3b82f6,#10b981);border-radius:4px;transition:width .3s ease}
 .mode-toggle{position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:50%;background:#3b82f6;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;z-index:40;transition:all .2s;box-shadow:0 4px 12px rgba(59,130,246,0.3)}
 .mode-toggle:hover{transform:scale(1.1);box-shadow:0 6px 16px rgba(59,130,246,0.4)}
-.refresh-btn{position:fixed;top:16px;right:16px;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#94a3b8;z-index:45;transition:all .2s}
-.refresh-btn:hover{background:rgba(255,255,255,0.12);color:#e2e8f0;border-color:rgba(255,255,255,0.2)}
-body.light-mode .refresh-btn{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.1);color:#64748b}
-body.light-mode .refresh-btn:hover{background:rgba(0,0,0,0.09);color:#1e293b}
+.refresh-btn{position:fixed;bottom:80px;right:20px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#94a3b8;z-index:40;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+.refresh-btn:hover{background:rgba(255,255,255,0.14);color:#e2e8f0;border-color:rgba(255,255,255,0.2);transform:scale(1.08)}
+body.light-mode .refresh-btn{background:rgba(0,0,0,0.06);border-color:rgba(0,0,0,0.12);color:#64748b;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+body.light-mode .refresh-btn:hover{background:rgba(0,0,0,0.1);color:#1e293b}
 #main-content{min-width:0;max-width:100%}
 .card{min-width:0;max-width:100%}
 .tbl-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border-radius:8px;max-width:100%;max-height:70vh}
@@ -216,6 +216,7 @@ body.light-mode{--dropdown-bg:#ffffff;--text-primary:#0f172a;}
   .modal{max-width:100%;margin:0;border-radius:12px 12px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:90vh}
   .modal-overlay{align-items:flex-end;padding:0}
   .mode-toggle{bottom:80px}
+  .refresh-btn{bottom:136px}
   body::before{content:'';position:fixed;top:0;left:0;right:0;height:52px;background:#080e1a;border-bottom:1px solid rgba(255,255,255,0.05);z-index:44}
 }
 @media(min-width:769px) and (max-width:1200px){
