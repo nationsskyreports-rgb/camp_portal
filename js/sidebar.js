@@ -50,10 +50,6 @@ function buildSidebar(){
       '<p class="text-sm font-semibold text-white">'+esc(e.name)+'</p>'+
       '<p class="text-[11px] '+(e.is_active?'text-emerald-400':'text-slate-500')+'">'+esc(e.is_active?'Active':'Inactive')+'</p></div>';
     ta.classList.remove('hidden');
-    // Read-only display — only admin can change is_active from Team Management
-    document.getElementById('active-toggle-btn').style.cursor = 'default';
-    document.getElementById('active-toggle-btn').style.pointerEvents = 'none';
-    document.getElementById('active-toggle-btn').onclick = null;
     updateActiveToggleUI();
   }
 
@@ -137,7 +133,7 @@ function updateActiveToggleUI(){
   thumb.className='toggle-thumb '+(active?'on':'off');
   label.textContent=active?'Active':'Set Active';
   label.style.color=active?'#10b981':'#94a3b8';
-  sub.textContent  = active ? 'Online — set by admin' : 'Offline — contact admin to activate';
+  sub.textContent  = active ? 'You're online & receiving clients' : 'You're currently offline';
   badge.textContent=active?'Online':'Offline';
   badge.style.background=active?'rgba(16,185,129,0.15)':'rgba(100,116,139,0.15)';
   badge.style.color      =active?'#10b981':'#64748b';
