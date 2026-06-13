@@ -104,41 +104,63 @@ function updateNotifBadge(){
 }
 
 function fetchAll(){
-  return Promise.all([
-    sb.from('employees').select('*').order('name'),
-    sb.from('campaigns').select('*').order('created_at',{ascending:false}),
-    sb.from('clients').select('*').order('created_at',{ascending:false}),
-    sb.from('questions').select('*').order('created_at',{ascending:false})
-  ]).then(function(res){
-    S.employees  = res[0].data||[];
-    S.campaigns  = res[1].data||[];
-    S.clients    = res[2].data||[];
-    S.questions  = res[3].data||[];
+  if(S.role === 'admin'){
+    // ── Admin: all 7 queries in ONE parallel round-trip ──────
+    return Promise.all([
+      sb.from('employees').select('*').order('name'),
+      sb.from('campaigns').select('*').order('created_at',{ascending:false}),
+      sb.from('clients').select('*').order('created_at',{ascending:false}),
+      sb.from('questions').select('*').order('created_at',{ascending:false}).limit(300),
+      sb.from('notifications').select('*').is('employee_id',null).order('created_at',{ascending:false}).limit(100),
+      sb.from('contact_history').select('*').order('created_at',{ascending:false}).limit(1000),
+      sb.from('reminders').select('*').order('remind_at',{ascending:true})
+    ]).then(function(res){
+      S.employees      = res[0].data||[];
+      S.campaigns      = res[1].data||[];
+      S.clients        = res[2].data||[];
+      S.questions      = res[3].data||[];
+      S.notifications  = res[4].data||[];
+      S.contactHistory = res[5].data||[];
+      S.reminders      = res[6].data||[];
+    }).then(function(){
+      if(typeof checkDueFollowups === 'function') checkDueFollowups();
+      updateNotifBadge();
+    }).catch(function(e){console.error('Fetch error:',e);});
 
-    if(S.role==='employee'&&S.employee){
-      var fresh=S.employees.find(function(e){return e.id===S.employee.id;});
-      if(fresh)S.employee=fresh;
-    }
+  } else {
+    // ── Employee: phase 1 parallel (need client IDs for history) ──
+    return Promise.all([
+      sb.from('employees').select('*').order('name'),
+      sb.from('campaigns').select('*').order('created_at',{ascending:false}),
+      sb.from('clients').select('*').order('created_at',{ascending:false}),
+      sb.from('questions').select('*').order('created_at',{ascending:false}).limit(300),
+      sb.from('notifications').select('*').eq('employee_id',S.employee.id).order('created_at',{ascending:false}),
+      sb.from('reminders').select('*').eq('employee_id',S.employee.id).order('remind_at',{ascending:true})
+    ]).then(function(res){
+      S.employees     = res[0].data||[];
+      S.campaigns     = res[1].data||[];
+      S.clients       = res[2].data||[];
+      S.questions     = res[3].data||[];
+      S.notifications = res[4].data||[];
+      S.reminders     = res[5].data||[];
 
-    if(S.role==='employee'&&S.employee){
-      var ids=S.clients.filter(function(c){return c.assigned_employee_id===S.employee.id;}).map(function(c){return c.id;});
-      return Promise.all([
-        sb.from('notifications').select('*').eq('employee_id',S.employee.id).order('created_at',{ascending:false}),
-        ids.length?sb.from('contact_history').select('*').in('client_id',ids).order('created_at',{ascending:false}):Promise.resolve({data:[]}),
-        sb.from('reminders').select('*').eq('employee_id',S.employee.id).order('remind_at',{ascending:true})
-      ]).then(function(r2){S.notifications=r2[0].data||[];S.contactHistory=r2[1].data||[];S.reminders=r2[2].data||[];});
-    } else if(S.role==='admin'){
-      return Promise.all([
-        sb.from('notifications').select('*').is('employee_id',null).order('created_at',{ascending:false}).limit(100),
-        sb.from('contact_history').select('*').order('created_at',{ascending:false}),
-        sb.from('reminders').select('*').order('remind_at',{ascending:true})
-      ]).then(function(r2){S.notifications=r2[0].data||[];S.contactHistory=r2[1].data||[];S.reminders=r2[2].data||[];});
-    } else {S.notifications=[];S.contactHistory=[];}
-  }).then(function(){
-    // Check for due follow-ups after data loads
-    if(typeof checkDueFollowups === 'function') checkDueFollowups();
-    updateNotifBadge();
-  }).catch(function(e){console.error('Fetch error:',e);});
+      var fresh = S.employees.find(function(e){return e.id===S.employee.id;});
+      if(fresh) S.employee = fresh;
+
+      var ids = S.clients
+        .filter(function(c){return c.assigned_employee_id===S.employee.id;})
+        .map(function(c){return c.id;});
+
+      return ids.length
+        ? sb.from('contact_history').select('*').in('client_id',ids).order('created_at',{ascending:false})
+            .then(function(r){S.contactHistory = r.data||[];})
+        : (S.contactHistory=[], Promise.resolve());
+
+    }).then(function(){
+      if(typeof checkDueFollowups === 'function') checkDueFollowups();
+      updateNotifBadge();
+    }).catch(function(e){console.error('Fetch error:',e);});
+  }
 }
 
 // ============================================================
