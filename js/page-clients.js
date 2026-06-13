@@ -30,11 +30,12 @@ var MOODS = [
 function getClientTab(c) {
   if (c.status === 'Closed') return 'closed';
   var hist = clientHistory(c.id);
-  if (!hist.length) return 'active';
+  if (!hist.length) return 'not_called';
   var latest = hist[0];
   if (latest.outcome === 'answered')     return 'answered';
   if (latest.outcome === 'wrong_number') return 'wrong_number';
-  return 'active';
+  if (latest.outcome === 'no_answer')    return 'no_answer';
+  return 'not_called';
 }
 
 // ── Badges ────────────────────────────────────────────────────
@@ -556,7 +557,7 @@ function renderMyClients() {
   var allBeforeStatus = all;
   if (statusFilter) all = all.filter(function(c) { return c.status === statusFilter; });
 
-  var tabs = { active: [], answered: [], wrong_number: [], closed: [] };
+  var tabs = { not_called: [], no_answer: [], answered: [], wrong_number: [], closed: [] };
   all.forEach(function(c) { tabs[getClientTab(c)].push(c); });
 
   var cls = clientsTab === 'all' ? all : (tabs[clientsTab] || []);
@@ -580,10 +581,11 @@ function renderMyClients() {
 
   var tabDefs = [
     { key: 'all',          label: 'All',          icon: 'list',         cls: 'btn-primary' },
-    { key: 'active',       label: 'Active',        icon: 'users',        cls: 'btn-primary' },
-    { key: 'answered',     label: 'Answered',      icon: 'phone-call',   cls: 'btn-success' },
-    { key: 'wrong_number', label: 'Wrong Number',  icon: 'phone-missed', cls: 'btn-danger'  },
-    { key: 'closed',       label: 'Closed',        icon: 'check-circle', cls: 'btn-ghost'   }
+    { key: 'not_called',   label: 'Not Called',   icon: 'phone-off',    cls: 'btn-primary' },
+    { key: 'no_answer',    label: 'No Answer',    icon: 'phone-missed', cls: 'btn-warning'  },
+    { key: 'answered',     label: 'Answered',     icon: 'phone-call',   cls: 'btn-success' },
+    { key: 'wrong_number', label: 'Wrong Number', icon: 'x-circle',     cls: 'btn-danger'  },
+    { key: 'closed',       label: 'Closed',       icon: 'check-circle', cls: 'btn-ghost'   }
   ];
 
   m.innerHTML =
@@ -611,7 +613,7 @@ function renderMyClients() {
     // ── Status filter tabs (works for both admin & employee) ──
     '<div class="mb-4 fade-in" style="display:flex;gap:6px;flex-wrap:wrap">' +
       (function(){
-        var statuses = ['','New','Contacted','Interested','Closed'];
+        var statuses = ['','New','Contacted','Closed'];
         var colors = {'':'#3b82f6','New':'#3b82f6','Contacted':'#8b5cf6','Interested':'#f59e0b','Closed':'#10b981'};
         return statuses.map(function(st){
           var cnt = st ? allBeforeStatus.filter(function(c){return c.status===st;}).length : allBeforeStatus.length;
