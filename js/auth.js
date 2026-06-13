@@ -226,8 +226,8 @@ function logout() {
   }
 
   if (empIdToDeactivate) {
-    sb.from('employees').update({ is_active: false }).eq('id', empIdToDeactivate)
-      .then(reloadDropdown).catch(reloadDropdown);
+    // Employee stays active after logout — no deactivation
+    reloadDropdown();
   } else {
     reloadDropdown();
   }
