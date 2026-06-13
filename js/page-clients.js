@@ -2,7 +2,7 @@
 // PAGE CLIENTS
 // ============================================================
 
-var clientsTab       = 'active';
+var clientsTab       = 'all';
 var editingHistoryId = null;
 var moodFilter       = '';
 var reassignClientId = null; // client being reassigned
@@ -559,7 +559,7 @@ function renderMyClients() {
   var tabs = { active: [], answered: [], wrong_number: [], closed: [] };
   all.forEach(function(c) { tabs[getClientTab(c)].push(c); });
 
-  var cls = tabs[clientsTab] || [];
+  var cls = clientsTab === 'all' ? all : (tabs[clientsTab] || []);
   if (clientsTab === 'answered' && moodFilter) {
     cls = cls.filter(function(c) {
       var hist   = clientHistory(c.id);
@@ -579,7 +579,8 @@ function renderMyClients() {
   });
 
   var tabDefs = [
-    { key: 'active',       label: 'Active',       icon: 'users',        cls: 'btn-primary' },
+    { key: 'all',          label: 'All',          icon: 'list',         cls: 'btn-primary' },
+    { key: 'active',       label: 'Active',        icon: 'users',        cls: 'btn-primary' },
     { key: 'answered',     label: 'Answered',      icon: 'phone-call',   cls: 'btn-success' },
     { key: 'wrong_number', label: 'Wrong Number',  icon: 'phone-missed', cls: 'btn-danger'  },
     { key: 'closed',       label: 'Closed',        icon: 'check-circle', cls: 'btn-ghost'   }
@@ -616,14 +617,14 @@ function renderMyClients() {
           var cnt = st ? allBeforeStatus.filter(function(c){return c.status===st;}).length : allBeforeStatus.length;
           var active = statusFilter === st;
           return '<button class="btn btn-sm ' + (active?'btn-primary':'btn-ghost') + '" ' +
-            'onclick="statusFilter=statusFilter===\''+st+'\'?String():\''+st+'\';renderMyClients()">' +
+            'onclick="statusFilter=statusFilter===\''+st+'\'?String():\''+st+'\';clientsTab=\'all\';renderMyClients()">' +
             (st||'All') + ' <span style="opacity:.7;font-size:10px;margin-right:2px">(' + cnt + ')</span></button>';
         }).join('');
       })() +
     '</div>' +
     '<div class="flex gap-2 mb-4 flex-wrap border-b border-white/10 pb-2">' +
     tabDefs.map(function(t) {
-      var count  = tabs[t.key].length;
+      var count  = t.key === 'all' ? all.length : tabs[t.key].length;
       var active = clientsTab === t.key;
       return '<button class="btn btn-sm ' + (active ? t.cls : 'btn-ghost') + '" ' +
         'onclick="clientsTab=\'' + t.key + '\';moodFilter=\'\';expandedClientId=null;renderMyClients()">' +
@@ -1087,13 +1088,17 @@ function renderClientCard(c) {
     ? MOODS.find(function(x) { return x.value === latestAnswered.mood; }) : null;
 
   var statsBar = totalAttempts > 0
-    ? '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">' +
-      '<span style="font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(99,102,241,0.12);color:#818cf8;border:1px solid rgba(99,102,241,0.15)">📞 ' + totalAttempts + '</span>' +
-      (answeredCount ? '<span style="font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(16,185,129,0.12);color:#10b981">✅ ' + answeredCount + '</span>' : '') +
-      (wrongCount    ? '<span style="font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(239,68,68,0.12);color:#ef4444">📵 ' + wrongCount + '</span>' : '') +
-      (noAnsCount    ? '<span style="font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(245,158,11,0.12);color:#f59e0b">🔇 ' + noAnsCount + '</span>' : '') +
-      (latestMoodObj ? '<span style="font-size:14px" title="' + latestMoodObj.label + '">' + latestMoodObj.emoji + '</span>' : '') +
-      '</div>'
+    ? (function(){
+        var lastH = hist[0];
+        var outcomeMap = { answered:'✅ Answered', no_answer:'🔇 No Answer', wrong_number:'📵 Wrong Number' };
+        var lastText = lastH ? (outcomeMap[lastH.outcome] || lastH.outcome) : '';
+        var lastDate = lastH ? fmtDT(lastH.created_at) : '';
+        var moodText = latestMoodObj ? ' · ' + latestMoodObj.emoji + ' ' + latestMoodObj.label : '';
+        return '<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:6px">' +
+          '<span style="font-size:11px;padding:2px 8px;border-radius:6px;background:rgba(99,102,241,0.12);color:#818cf8;border:1px solid rgba(99,102,241,0.15)">📞 ' + totalAttempts + ' attempt' + (totalAttempts>1?'s':'') + '</span>' +
+          (lastText ? '<span style="font-size:11px;color:#94a3b8">' + lastText + moodText + ' — ' + lastDate + '</span>' : '') +
+          '</div>';
+      })()
     : '';
 
   // Assignment badge on card header (admin only)
