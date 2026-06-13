@@ -598,6 +598,66 @@ function renderMyClients() {
       : totalRecords + ' records · ' + uniqueClients + ' unique clients';
     return hdr(S.role === 'admin' ? 'All Clients' : 'My Clients', subtitle);
   })() +
+    // ── Reachability KPI banner (employee view only) ──────────
+    (S.role !== 'admin' ? (function(){
+      var myAll = myClients();
+      var myIds = {};
+      myAll.forEach(function(c){ myIds[c.id] = true; });
+      var myHist = (S.contactHistory||[]).filter(function(h){ return myIds[h.client_id]; });
+
+      var totCl   = myAll.length;
+      var totCall = myHist.length;
+      var ansCall = myHist.filter(function(h){ return h.outcome === 'answered'; }).length;
+
+      var rIds = {};
+      myHist.filter(function(h){ return h.outcome === 'answered'; })
+            .forEach(function(h){ rIds[h.client_id] = true; });
+      var reached = Object.keys(rIds).length;
+
+      var tIds = {};
+      myHist.forEach(function(h){ tIds[h.client_id] = true; });
+      var untch    = totCl - Object.keys(tIds).length;
+      var closedCl = myAll.filter(function(c){ return c.status === 'Closed'; }).length;
+
+      var reachPct   = totCl   > 0 ? Math.round(reached  / totCl   * 100) : 0;
+      var contactPct = totCall > 0 ? Math.round(ansCall   / totCall * 100) : 0;
+      var closePct   = totCl   > 0 ? Math.round(closedCl  / totCl   * 100) : 0;
+      var rColor  = reachPct   >= 60 ? '#a78bfa' : reachPct   >= 30 ? '#fbbf24' : '#f87171';
+      var cColor  = contactPct >= 50 ? '#93c5fd' : contactPct >= 25 ? '#fbbf24' : '#f87171';
+
+      return '<div class="card fade-in mb-4" style="padding:14px 16px">'+
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">'+
+          '<i data-lucide="radio" style="width:14px;height:14px;color:#a78bfa"></i>'+
+          '<span class="text-xs font-bold text-white" style="letter-spacing:.04em">MY REACHABILITY</span>'+
+          '<span class="text-xs text-slate-500" style="margin-right:auto">كام عميل اتكلمنا معاه فعلاً؟</span>'+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px">'+
+          '<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.18)">'+
+            '<p class="text-xs text-slate-400 mb-1">Reachability</p>'+
+            '<p style="font-size:22px;font-weight:800;color:'+rColor+'">'+reachPct+'%</p>'+
+            '<div style="width:100%;height:3px;background:rgba(255,255,255,0.06);border-radius:2px;margin:4px 0">'+
+              '<div style="width:'+reachPct+'%;height:3px;border-radius:2px;background:'+rColor+'"></div>'+
+            '</div>'+
+            '<p style="font-size:10px;color:#64748b">'+reached+' / '+totCl+' clients</p>'+
+          '</div>'+
+          '<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(147,197,253,0.06);border:1px solid rgba(147,197,253,0.12)">'+
+            '<p class="text-xs text-slate-400 mb-1">Contact Rate</p>'+
+            '<p style="font-size:22px;font-weight:800;color:'+cColor+'">'+contactPct+'%</p>'+
+            '<p style="font-size:10px;color:#64748b;margin-top:4px">'+ansCall+' / '+totCall+' calls</p>'+
+          '</div>'+
+          '<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12)">'+
+            '<p class="text-xs text-slate-400 mb-1">Close Rate</p>'+
+            '<p style="font-size:22px;font-weight:800;color:'+(closePct>=30?'#6ee7b7':'#fbbf24')+'">'+closePct+'%</p>'+
+            '<p style="font-size:10px;color:#64748b;margin-top:4px">'+closedCl+' / '+totCl+' closed</p>'+
+          '</div>'+
+          '<div style="text-align:center;padding:10px;border-radius:8px;background:'+(untch>0?'rgba(239,68,68,0.07)':'rgba(16,185,129,0.06)')+';border:1px solid '+(untch>0?'rgba(239,68,68,0.18)':'rgba(16,185,129,0.12)')+'">'+
+            '<p class="text-xs text-slate-400 mb-1">Untouched</p>'+
+            '<p style="font-size:22px;font-weight:800;color:'+(untch>0?'#fca5a5':'#6ee7b7')+'">'+untch+'</p>'+
+            '<p style="font-size:10px;color:#64748b;margin-top:4px">'+(untch>0?'need a call':'all touched ✅')+'</p>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    })() : '') +
     buildRedistributePanel() +
     '<div class="mb-4 fade-in" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
       searchBox('client-search', clientSearch, 'setClientSearch', 'Search name, phone, unit, contract...') +
