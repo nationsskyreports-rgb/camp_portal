@@ -34,9 +34,15 @@ function getEmployeeMetrics(empId) {
   var touchedCount  = Object.keys(touchedIds).length;
   var untouched     = totalClients - touchedCount;
 
-  // Answer Rate = Answered ÷ (Answered + No Answer) — Wrong Number excluded
-  var validCalls    = answeredCalls + noAnswerCalls;
-  var answerRate    = validCalls > 0 ? Math.round(answeredCalls / validCalls * 100) : 0;
+  // clients with at least 1 ANSWERED call (Reachability)
+  var reachedIds = {};
+  empHistory.filter(function(h){ return h.outcome === 'answered'; })
+            .forEach(function(h){ reachedIds[h.client_id] = true; });
+  var reachedClients   = Object.keys(reachedIds).length;
+  var reachabilityRate = totalClients > 0 ? Math.round(reachedClients / totalClients * 100) : 0;
+
+  // Contact Rate = Answered ÷ Total Calls (industry standard — includes all attempts)
+  var answerRate    = totalCalls > 0 ? Math.round(answeredCalls / totalCalls * 100) : 0;
   var contactRate   = totalClients > 0 ? Math.round(touchedCount / totalClients * 100) : 0;
   var closeRate     = totalClients > 0 ? Math.round(closedClients / totalClients * 100) : 0;
   // productivity = average calls per client
@@ -62,6 +68,8 @@ function getEmployeeMetrics(empId) {
     totalClients: totalClients,
     closedClients: closedClients,
     untouched: untouched,
+    reachedClients: reachedClients,
+    reachabilityRate: reachabilityRate,
     totalCalls: totalCalls,
     answeredCalls: answeredCalls,
     wrongNumber: wrongNumber,
@@ -148,7 +156,8 @@ function renderAgentPerformance() {
           '</div>'+
           '<div class="flex items-center gap-3 flex-wrap justify-end">'+
             '<div class="text-right"><p class="text-sm font-bold text-emerald-400">'+s.closeRate+'%</p><p class="text-xs text-slate-500">Close</p></div>'+
-            '<div class="text-right"><p class="text-sm font-bold text-blue-400">'+s.answerRate+'%</p><p class="text-xs text-slate-500">Answer</p></div>'+
+            '<div class="text-right"><p class="text-sm font-bold" style="color:#a78bfa">'+s.reachabilityRate+'%</p><p class="text-xs text-slate-500">Reach</p></div>'+
+            '<div class="text-right"><p class="text-sm font-bold text-blue-400">'+s.answerRate+'%</p><p class="text-xs text-slate-500">Contact</p></div>'+
             (s.untouched > 0 ? '<span class="badge" style="background:rgba(239,68,68,.12);color:#fca5a5;font-size:10px">'+s.untouched+' untouched</span>' : '')+
             sBadge(s.isActive ? 'online' : 'offline')+
           '</div>'+
@@ -169,7 +178,8 @@ function renderAgentPerformance() {
           '<th class="pb-3 pr-4 text-center whitespace-nowrap">Clients</th>'+
           '<th class="pb-3 pr-4 text-center whitespace-nowrap">Calls</th>'+
           '<th class="pb-3 pr-4 text-center whitespace-nowrap">Answered</th>'+
-          '<th class="pb-3 pr-4 text-center whitespace-nowrap">Answer %</th>'+
+          '<th class="pb-3 pr-4 text-center whitespace-nowrap">Contact %</th>'+
+          '<th class="pb-3 pr-4 text-center whitespace-nowrap">Reachability %</th>'+
           '<th class="pb-3 pr-4 text-center whitespace-nowrap">Contacted %</th>'+
           '<th class="pb-3 pr-4 text-center whitespace-nowrap">Closed</th>'+
           '<th class="pb-3 pr-4 text-center whitespace-nowrap">Close %</th>'+
@@ -186,6 +196,15 @@ function renderAgentPerformance() {
             '<td class="py-3 pr-4 text-center text-slate-400">'+s.totalCalls+'</td>'+
             '<td class="py-3 pr-4 text-center text-emerald-400">'+s.answeredCalls+'</td>'+
             '<td class="py-3 pr-4 text-center">'+perfPct(s.answerRate,'blue')+'</td>'+
+            '<td class="py-3 pr-4 text-center">'+
+              '<div>'+
+                '<span style="font-size:13px;font-weight:700;color:'+(s.reachabilityRate>=60?'#a78bfa':s.reachabilityRate>=30?'#fbbf24':'#f87171')+'">'+s.reachabilityRate+'%</span>'+
+                '<div style="width:100%;height:3px;background:rgba(255,255,255,0.06);border-radius:2px;margin-top:3px">'+
+                  '<div style="width:'+s.reachabilityRate+'%;height:3px;border-radius:2px;background:'+(s.reachabilityRate>=60?'#a78bfa':s.reachabilityRate>=30?'#fbbf24':'#f87171')+'"></div>'+
+                '</div>'+
+                '<span style="font-size:10px;color:#64748b">'+s.reachedClients+'/'+s.totalClients+' clients</span>'+
+              '</div>'+
+            '</td>'+
             '<td class="py-3 pr-4 text-center">'+perfPct(s.contactRate,'violet')+'</td>'+
             '<td class="py-3 pr-4 text-center text-blue-400 font-bold">'+s.closedClients+'</td>'+
             '<td class="py-3 pr-4 text-center">'+perfPct(s.closeRate, s.closeRate>=50?'emerald':'amber')+'</td>'+
