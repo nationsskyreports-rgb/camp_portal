@@ -84,28 +84,49 @@ textarea.input{resize:vertical;min-height:70px}
 ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.2)}
 .client-card{cursor:pointer;transition:all .2s}
 .client-card:hover{border-color:rgba(59,130,246,0.25)}
-/* Outcome & Mood buttons */
-.outcome-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;border:2px solid rgba(0,0,0,0.1);background:rgba(0,0,0,0.04);cursor:pointer;font-size:12px;font-weight:500;color:#475569;transition:all .15s;white-space:nowrap}
-.outcome-btn:hover{background:rgba(0,0,0,0.08);color:#1e293b}
-.outcome-btn.selected-answered{border-color:#10b981;background:rgba(16,185,129,0.1);color:#10b981}
-.outcome-btn.selected-no_answer{border-color:#f59e0b;background:rgba(245,158,11,0.1);color:#f59e0b}
-.outcome-btn.selected-wrong_number{border-color:#ef4444;background:rgba(239,68,68,0.1);color:#ef4444}
-.mood-btn{font-size:20px;padding:4px 10px;border-radius:8px;border:2px solid transparent;background:rgba(0,0,0,0.04);cursor:pointer;transition:all .15s}
-.mood-btn:hover{background:rgba(0,0,0,0.08)}
-.mood-btn.selected-interested{border-color:#10b981;background:rgba(16,185,129,0.1)}
-.mood-btn.selected-neutral{border-color:#f59e0b;background:rgba(245,158,11,0.1)}
-.mood-btn.selected-refused{border-color:#ef4444;background:rgba(239,68,68,0.1)}
-/* Dark mode overrides for outcome/mood buttons */
-body:not(.light-mode) .outcome-btn{border-color:rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#94a3b8}
-body:not(.light-mode) .outcome-btn:hover{background:rgba(255,255,255,0.08);color:#e2e8f0}
-body:not(.light-mode) .outcome-btn.selected-answered{border-color:#10b981;background:rgba(16,185,129,0.15);color:#10b981}
-body:not(.light-mode) .outcome-btn.selected-no_answer{border-color:#f59e0b;background:rgba(245,158,11,0.15);color:#f59e0b}
-body:not(.light-mode) .outcome-btn.selected-wrong_number{border-color:#ef4444;background:rgba(239,68,68,0.15);color:#ef4444}
-body:not(.light-mode) .mood-btn{background:rgba(255,255,255,0.04)}
-body:not(.light-mode) .mood-btn:hover{background:rgba(255,255,255,0.08)}
-body:not(.light-mode) .mood-btn.selected-interested{border-color:#10b981;background:rgba(16,185,129,0.15)}
-body:not(.light-mode) .mood-btn.selected-neutral{border-color:#f59e0b;background:rgba(245,158,11,0.15)}
-body:not(.light-mode) .mood-btn.selected-refused{border-color:#ef4444;background:rgba(239,68,68,0.15)}
+/* ── Outcome & Mood buttons (edit history) ── */
+.outcome-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:2px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);cursor:pointer;font-size:13px;font-weight:600;color:#94a3b8;transition:all .15s;white-space:nowrap}
+.outcome-btn:hover{background:rgba(255,255,255,0.1);color:#e2e8f0;border-color:rgba(255,255,255,0.2)}
+.outcome-btn.selected-answered{border-color:#10b981;background:rgba(16,185,129,0.15);color:#34d399}
+.outcome-btn.selected-no_answer{border-color:#f59e0b;background:rgba(245,158,11,0.15);color:#fbbf24}
+.outcome-btn.selected-wrong_number{border-color:#ef4444;background:rgba(239,68,68,0.15);color:#f87171}
+.mood-btn{font-size:20px;padding:5px 12px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.05);cursor:pointer;transition:all .15s}
+.mood-btn:hover{background:rgba(255,255,255,0.1)}
+.mood-btn.selected-interested{border-color:#10b981;background:rgba(16,185,129,0.15)}
+.mood-btn.selected-neutral{border-color:#f59e0b;background:rgba(245,158,11,0.15)}
+.mood-btn.selected-refused{border-color:#ef4444;background:rgba(239,68,68,0.15)}
+/* Light mode — edit history buttons */
+body.light-mode .outcome-btn{border-color:rgba(0,0,0,0.12);background:rgba(0,0,0,0.04);color:#475569}
+body.light-mode .outcome-btn:hover{background:rgba(0,0,0,0.08);color:#1e293b;border-color:rgba(0,0,0,0.2)}
+body.light-mode .outcome-btn.selected-answered{border-color:#059669;background:rgba(16,185,129,0.12);color:#059669}
+body.light-mode .outcome-btn.selected-no_answer{border-color:#b45309;background:rgba(245,158,11,0.12);color:#b45309}
+body.light-mode .outcome-btn.selected-wrong_number{border-color:#dc2626;background:rgba(239,68,68,0.12);color:#dc2626}
+body.light-mode .mood-btn{background:rgba(0,0,0,0.04)}
+body.light-mode .mood-btn:hover{background:rgba(0,0,0,0.08)}
+body.light-mode .mood-btn.selected-interested{border-color:#059669;background:rgba(16,185,129,0.12)}
+body.light-mode .mood-btn.selected-neutral{border-color:#b45309;background:rgba(245,158,11,0.12)}
+body.light-mode .mood-btn.selected-refused{border-color:#dc2626;background:rgba(239,68,68,0.12)}
+/* ── Contact Flow buttons (cf-main / cf-sub / cf-mood) ── */
+.cf-main{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700;border:2px solid transparent;transition:all .15s}
+.cf-main.cf-contacted{background:rgba(139,92,246,.12);border-color:rgba(139,92,246,.35);color:#a78bfa}
+.cf-main.cf-closed{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);color:#34d399}
+.cf-sub{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;border:2px solid transparent;transition:all .15s}
+.cf-sub.cf-answered{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);color:#34d399}
+.cf-sub.cf-no-answer{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);color:#fbbf24}
+.cf-sub.cf-wrong{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#f87171}
+.cf-mood{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;border:2px solid transparent;transition:all .15s}
+.cf-mood.cf-satisfied{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);color:#34d399}
+.cf-mood.cf-normal{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);color:#fbbf24}
+.cf-mood.cf-refused{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#f87171}
+/* Light mode — contact flow buttons */
+body.light-mode .cf-main.cf-contacted{color:#7c3aed;background:rgba(139,92,246,.08);border-color:rgba(139,92,246,.3)}
+body.light-mode .cf-main.cf-closed{color:#059669;background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.3)}
+body.light-mode .cf-sub.cf-answered{color:#059669;background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.3)}
+body.light-mode .cf-sub.cf-no-answer{color:#b45309;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3)}
+body.light-mode .cf-sub.cf-wrong{color:#dc2626;background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3)}
+body.light-mode .cf-mood.cf-satisfied{color:#059669;background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.3)}
+body.light-mode .cf-mood.cf-normal{color:#b45309;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3)}
+body.light-mode .cf-mood.cf-refused{color:#dc2626;background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3)}
 #sidebar{transition:transform .25s ease}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:40}
 .progress-bar{width:100%;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;margin-top:8px}
