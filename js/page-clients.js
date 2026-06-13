@@ -21,9 +21,9 @@ var OUTCOMES = [
 ];
 
 var MOODS = [
-  { value: 'interested', label: 'Interested', emoji: '🟢' },
-  { value: 'neutral',    label: 'Neutral',    emoji: '🟡' },
-  { value: 'refused',    label: 'Refused',    emoji: '🔴' }
+  { value: 'interested', label: 'Satisfied',     emoji: '🟢' },
+  { value: 'neutral',    label: 'Normal',         emoji: '🟡' },
+  { value: 'refused',    label: 'Not Satisfied',  emoji: '🔴' }
 ];
 
 // ── Which tab does a client belong to? ───────────────────────
@@ -931,36 +931,26 @@ function buildContactFlow(c){
 
   // Step 1 buttons
   html += '<div style="display:flex;gap:8px;margin-bottom:12px">';
-  html += '<button class="btn cf-main flex-1" data-cid="'+id+'" data-action="Contacted" '
-        + 'style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);color:#c4b5fd;font-weight:600" '
-        + 'onclick="cfSelectMain(this)">📞 Contacted</button>';
-  html += '<button class="btn cf-main flex-1" data-cid="'+id+'" data-action="Closed" '
-        + 'style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);color:#6ee7b7;font-weight:600" '
-        + 'onclick="cfSelectMain(this)">✅ Closed</button>';
+  html += '<button class="cf-main cf-contacted" data-cid="'+id+'" data-action="Contacted" onclick="cfSelectMain(this)">📞 Contacted</button>';
+  html += '<button class="cf-main cf-closed"    data-cid="'+id+'" data-action="Closed"    onclick="cfSelectMain(this)">✅ Closed</button>';
   html += '</div>';
 
   // Step 2: sub-outcomes (hidden)
   html += '<div id="cf-sub-'+id+'" style="display:none;margin-bottom:12px">';
   html += '<p style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Call Result</p>';
   html += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
-  html += '<button class="cf-sub" data-cid="'+id+'" data-outcome="answered" onclick="cfSelectSub(this)" '
-        + 'style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);color:#6ee7b7;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:500">✅ Answered</button>';
-  html += '<button class="cf-sub" data-cid="'+id+'" data-outcome="no_answer" onclick="cfSelectSub(this)" '
-        + 'style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);color:#fbbf24;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:500">🔇 No Answer</button>';
-  html += '<button class="cf-sub" data-cid="'+id+'" data-outcome="wrong_number" onclick="cfSelectSub(this)" '
-        + 'style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#fca5a5;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:500">📵 Wrong Number</button>';
+  html += '<button class="cf-sub cf-answered"  data-cid="'+id+'" data-outcome="answered"     onclick="cfSelectSub(this)">✅ Answered</button>';
+  html += '<button class="cf-sub cf-no-answer" data-cid="'+id+'" data-outcome="no_answer"    onclick="cfSelectSub(this)">🔇 No Answer</button>';
+  html += '<button class="cf-sub cf-wrong"     data-cid="'+id+'" data-outcome="wrong_number" onclick="cfSelectSub(this)">📵 Wrong Number</button>';
   html += '</div></div>';
 
-  // Step 3: Client mood — shown only when outcome = answered
+  // Step 3: Customer Satisfaction — shown only when outcome = answered
   html += '<div id="cf-mood-'+id+'" style="display:none;margin-bottom:12px">';
   html += '<p style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Customer Satisfaction</p>';
   html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
-  html += '<button class="cf-mood" data-cid="'+id+'" data-mood="interested" onclick="cfSelectMood(this)" '
-        + 'style="background:rgba(16,185,129,.08);border:2px solid rgba(16,185,129,.25);color:#6ee7b7;border-radius:10px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s">🟢 Interested</button>';
-  html += '<button class="cf-mood" data-cid="'+id+'" data-mood="neutral" onclick="cfSelectMood(this)" '
-        + 'style="background:rgba(245,158,11,.08);border:2px solid rgba(245,158,11,.25);color:#fbbf24;border-radius:10px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s">🟡 Neutral</button>';
-  html += '<button class="cf-mood" data-cid="'+id+'" data-mood="refused" onclick="cfSelectMood(this)" '
-        + 'style="background:rgba(239,68,68,.08);border:2px solid rgba(239,68,68,.25);color:#fca5a5;border-radius:10px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s">🔴 Not Interested</button>';
+  html += '<button class="cf-mood cf-satisfied" data-cid="'+id+'" data-mood="interested" onclick="cfSelectMood(this)">🟢 Satisfied</button>';
+  html += '<button class="cf-mood cf-normal"    data-cid="'+id+'" data-mood="neutral"    onclick="cfSelectMood(this)">🟡 Normal</button>';
+  html += '<button class="cf-mood cf-refused"   data-cid="'+id+'" data-mood="refused"    onclick="cfSelectMood(this)">🔴 Not Satisfied</button>';
   html += '</div></div>';
 
   // Note + Save (hidden)
@@ -1161,12 +1151,9 @@ function renderClientCard(c) {
           '</div>';
       }).join('') +
       '<div><p class="text-xs text-slate-500 mb-1">Status</p>' +
-      (S.role === 'employee'
-        ? '<select id="status-' + c.id + '" class="input text-sm" onclick="event.stopPropagation()">' +
-          ['New','Contacted','Interested','Closed'].map(function(s) {
-            return '<option value="' + s + '" ' + (c.status === s ? 'selected' : '') + '>' + s + '</option>';
-          }).join('') + '</select>'
-        : '<p class="text-sm text-white">' + esc(c.status||'-') + '</p>') +
+      '<p class="text-sm font-semibold" style="color:' +
+        ({'New':'#3b82f6','Contacted':'#8b5cf6','Interested':'#f59e0b','Closed':'#10b981'}[c.status]||'#94a3b8') +
+      '">' + esc(c.status||'-') + '</p>' +
       '</div></div>' +
 
       // ── Form Response Section ──
