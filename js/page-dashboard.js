@@ -121,8 +121,8 @@ function renderDashboard(){
       '<h3 class="text-sm font-bold text-white">Campaign Reachability</h3>'+
     '</div>'+
     '<p class="text-xs text-slate-500 mb-4" style="padding-right:4px">'+
-      '<strong style="color:#a78bfa">Reachability</strong> = % من العملاء اللي اتكلمنا معاهم فعلاً (ولو مرة واحدة) &nbsp;·&nbsp; '+
-      '<strong style="color:#93c5fd">Contact Rate</strong> = % المكالمات اللي ردوا فيها من إجمالي المحاولات'+
+    '<strong style="color:#a78bfa">Reachability</strong> = % of clients actually reached (at least once) &nbsp;·&nbsp; '+
+'<strong style="color:#93c5fd">Contact Rate</strong> = % of calls answered out of total attempts'+
     '</p>'+
     (reachStats.length
       ? '<div class="tbl-wrap"><table class="w-full text-sm">'+
