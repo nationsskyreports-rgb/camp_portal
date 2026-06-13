@@ -138,3 +138,16 @@ function updateActiveToggleUI(){
   badge.style.background=active?'rgba(16,185,129,0.15)':'rgba(100,116,139,0.15)';
   badge.style.color      =active?'#10b981':'#64748b';
 }
+
+
+// ── Hard Refresh ──────────────────────────────────────────────
+function hardRefresh() {
+  var btn = document.querySelector('.refresh-btn');
+  if (btn) {
+    btn.style.transform = 'rotate(360deg)';
+    btn.style.transition = 'transform 0.5s ease';
+  }
+  setTimeout(function() {
+    window.location.href = window.location.pathname + '?v=' + Date.now();
+  }, 400);
+}
