@@ -1129,6 +1129,19 @@ function doUpdateExisting(extraData, t) {
           read        : false
         });
       });
+      // Notify admin about form submission
+      var adminMsg = '📝 ' + (matchedClients[0] ? matchedClients[0].name || 'A client' : 'A client') +
+        ' submitted their form' +
+        (matchedClients[0] && matchedClients[0].extra_data && matchedClients[0].extra_data.phone
+          ? ' · ' + matchedClients[0].extra_data.phone : '');
+      notifPromises.push(
+        sbInsert('notifications', {
+          employee_id : null,
+          type        : 'form_submitted',
+          message     : adminMsg,
+          read        : false
+        }).catch(function(){})
+      );
       return Promise.all(notifPromises).catch(function(){});
     })
     .then(function() {
