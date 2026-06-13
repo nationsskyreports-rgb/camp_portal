@@ -133,7 +133,7 @@ function updateActiveToggleUI(){
   thumb.className='toggle-thumb '+(active?'on':'off');
   label.textContent=active?'Active':'Set Active';
   label.style.color=active?'#10b981':'#94a3b8';
-  sub.textContent  = active ? 'You're online & receiving clients' : 'You're currently offline';
+  sub.textContent  = active ? 'You\'re online & receiving clients' : 'You\'re currently offline';
   badge.textContent=active?'Online':'Offline';
   badge.style.background=active?'rgba(16,185,129,0.15)':'rgba(100,116,139,0.15)';
   badge.style.color      =active?'#10b981':'#64748b';
