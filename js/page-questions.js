@@ -50,9 +50,24 @@ function renderAskQuestion(){
   var filteredClients = qSelectedCampaign ? cls.filter(function(c){return c.campaign_id===qSelectedCampaign;}) : cls;
   var searchResults = [];
   if(qClientSearch.length >= 1){
-    var q = qClientSearch.toLowerCase();
+    var q = qClientSearch.toLowerCase().trim();
+    var qDigits = q.replace(/\D/g,'');
     searchResults = filteredClients.filter(function(c){
-      return getClientDisplayName(c).toLowerCase().indexOf(q) !== -1;
+      var extra = c.extra_data || {};
+      // name
+      if(getClientDisplayName(c).toLowerCase().indexOf(q) !== -1) return true;
+      // phone (direct fields)
+      if(c.phone && c.phone.toLowerCase().indexOf(q) !== -1) return true;
+      if(c.phone2 && c.phone2.toLowerCase().indexOf(q) !== -1) return true;
+      // digits-only phone match
+      if(qDigits.length >= 4){
+        if(c.phone && c.phone.replace(/\D/g,'').indexOf(qDigits) !== -1) return true;
+        if(c.phone2 && c.phone2.replace(/\D/g,'').indexOf(qDigits) !== -1) return true;
+      }
+      // unit / project from extra_data
+      if(extra.unit    && String(extra.unit).toLowerCase().indexOf(q)    !== -1) return true;
+      if(extra.project && String(extra.project).toLowerCase().indexOf(q) !== -1) return true;
+      return false;
     }).slice(0,8);
   }
 
@@ -83,12 +98,12 @@ function renderAskQuestion(){
   '</div>'+
 
   '<div>'+
-    '<label class="text-xs text-slate-400 mb-2 block font-medium uppercase tracking-wider">Related Client <span class="text-slate-600">(optional)</span></label>'+
+    '<label class="text-xs text-slate-400 mb-2 block font-medium uppercase tracking-wider">Related Client <span class="text-red-400">*</span> <span class="text-slate-600 normal-case font-normal">(required to send)</span></label>'+
     (qSelectedClient ? selectedClientHtml :
       '<div class="relative">'+
         '<div class="relative">'+
           '<i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>'+
-          '<input id="client-search-input" type="text" class="input pl-9" placeholder="Search client name..." '+
+          '<input id="client-search-input" type="text" class="input pl-9" placeholder="Search by name, phone, or unit number..." '+
             'value="'+esc(qClientSearch)+'" '+
             'oninput="qClientSearch=this.value;renderAskQuestion()" '+
             'onkeydown="if(event.key===\'Escape\'){qClientSearch=\'\';renderAskQuestion()}">'+
@@ -97,8 +112,12 @@ function renderAskQuestion(){
           '<div class="absolute z-10 w-full mt-1 rounded-xl overflow-hidden shadow-2xl" style="background:var(--dropdown-bg,#0d1628);border:1px solid rgba(128,128,128,0.2)">'+
             (searchResults.length ?
               searchResults.map(function(c){
-                var cp = campById(c.campaign_id);
-                var name = getClientDisplayName(c);
+                var cp    = campById(c.campaign_id);
+                var name  = getClientDisplayName(c);
+                var extra = c.extra_data || {};
+                var unit  = extra.unit  ? 'Unit: '+extra.unit  : '';
+                var phone = c.phone     ? c.phone              : '';
+                var meta  = [unit, phone].filter(Boolean).join(' · ');
                 return '<div class="flex items-center gap-3 px-4 py-3 cursor-pointer border-b border-white/5 transition-colors" '+
                   'style="border-bottom:1px solid rgba(128,128,128,0.1)" '+
                   'onmouseover="this.style.background=\'rgba(59,130,246,0.08)\'" '+
@@ -107,9 +126,12 @@ function renderAskQuestion(){
                   '<div class="w-8 h-8 rounded-full bg-blue-500/15 flex items-center justify-center text-blue-400 text-xs font-bold flex-shrink-0">'+
                     initials(name)+
                   '</div>'+
-                  '<div class="min-w-0">'+
+                  '<div class="min-w-0 flex-1">'+
                     '<p class="text-sm font-medium truncate" style="color:var(--text-primary,#fff)">'+esc(name)+'</p>'+
-                    '<p class="text-xs text-slate-500">'+(cp?esc(cp.name):'')+'</p>'+
+                    '<div class="flex items-center gap-2 flex-wrap">'+
+                      (meta ? '<p class="text-xs" style="color:#60a5fa">'+esc(meta)+'</p>' : '')+
+                      (cp   ? '<p class="text-xs text-slate-500">'+esc(cp.name)+'</p>' : '')+
+                    '</div>'+
                   '</div>'+
                 '</div>';
               }).join('') :
@@ -126,9 +148,14 @@ function renderAskQuestion(){
     '<textarea id="qtext" class="input" rows="4" placeholder="Type your question here..."></textarea>'+
   '</div>'+
 
-  '<button class="btn btn-primary w-full" onclick="submitQuestion()">'+
-    '<i data-lucide="send" class="w-4 h-4"></i> Submit Question'+
-  '</button>'+
+  (qSelectedClient
+    ? '<button class="btn btn-primary w-full" onclick="submitQuestion()">'+
+        '<i data-lucide="send" class="w-4 h-4"></i> Submit Question'+
+      '</button>'
+    : '<button class="btn w-full" disabled style="opacity:.4;cursor:not-allowed;background:rgba(255,255,255,0.05);color:#64748b;border:1px solid rgba(255,255,255,0.08)">'+
+        '<i data-lucide="lock" class="w-4 h-4"></i> Select a client first to submit'+
+      '</button>'
+  )+
 
   '</div></div>';
 
@@ -140,6 +167,7 @@ function renderAskQuestion(){
 }
 
 async function submitQuestion(){
+  if(!qSelectedClient){toast('Select a client first','error');return;}
   var text=document.getElementById('qtext').value.trim();
   if(!text){toast('Type a question first','error');return;}
 
