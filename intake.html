@@ -880,12 +880,14 @@ function attachDraftListeners() {
 
 // ── PHONE LOOKUP ─────────────────────────────────────────────
 function digitsOnly(s) { return String(s || '').replace(/\D/g, ''); }
+// Normalize phone: strip non-digits, keep last 10 (handles +20 / 020 / 0 prefixes)
+function normalizePhone(raw) { return digitsOnly(raw).slice(-10); }
 function lookupPhone() {
   var raw = val('inp-phone');
   if (!raw || !campaignId) return;
   if (digitsOnly(raw).length < 7) return;
 
-  sbRpc('lookup_client_by_phone', { p_campaign_id: campaignId, p_phone: raw })
+  sbRpc('lookup_client_by_phone', { p_campaign_id: campaignId, p_phone: normalizePhone(raw) })
     .then(function(clients) {
       matchedClients = clients || [];
       var panel  = document.getElementById('phone-lookup-panel');
@@ -915,8 +917,15 @@ function renderLookupUnits() {
   document.getElementById('lookup-units-lbl').textContent =
     currentLang === 'ar' ? 'اختار وحدتك / وحداتك' : 'Select your unit(s)';
 
+  // خلي بس الريكوردز اللي عندها unit حقيقي يظهروا للعميل
+  var realClients = matchedClients.filter(function(c) {
+    var ex = c.extra_data || {};
+    return !!(ex.unit || ex.contract_number || ex.Unit);
+  });
+  var clientsToShow = realClients.length > 0 ? realClients : matchedClients;
+
   var byProject = {};
-  matchedClients.forEach(function(c) {
+  clientsToShow.forEach(function(c) {
     var proj = (c.extra_data || {}).project || (currentLang === 'ar' ? 'وحدات أخرى' : 'Other Units');
     if (!byProject[proj]) byProject[proj] = [];
     byProject[proj].push(c);
@@ -940,7 +949,8 @@ function renderLookupUnits() {
     });
   });
   document.getElementById('lookup-units-container').innerHTML = html;
-  selectedIds = matchedClients.map(function(c) { return c.id; });
+  // selectedIds بس للـ real clients
+  selectedIds = clientsToShow.map(function(c) { return c.id; });
 }
 
 function toggleLookupUnit(id) {
@@ -993,11 +1003,12 @@ function submitForm() {
     return;
   }
 
-  var finalPhone = newPhone || phone;
-  var phoneKey   = campaignId + '_' + finalPhone.replace(/\s/g,'');
+  var finalPhone  = newPhone || phone;
+  var storedPhone = normalizePhone(finalPhone);          // last 10 digits — consistent for DB
+  var phoneKey    = campaignId + '_' + storedPhone;
 
   // Build extra data (used in both UPDATE and INSERT paths)
-  var extraData = { name: name, phone: finalPhone };
+  var extraData = { name: name, phone: finalPhone };     // keep original for display
   if (newPhone) extraData.old_phone = phone;
   if (phone2)   extraData.phone2    = phone2;
   if (email)    extraData.email     = email;
@@ -1034,8 +1045,8 @@ function submitForm() {
   isSubmitting = true;
   setBtnLoading(true, 'btn-submit', 'btn-label', 'btn-progress', t.btnSending);
 
-  // ── Anti-Duplicate: check DB too ──
-  sbGet('clients', 'phone=eq.' + encodeURIComponent(finalPhone) + '&campaign_id=eq.' + campaignId + '&select=id&limit=1')
+  // ── Anti-Duplicate: check DB too (normalized match) ──
+  sbGet('clients', 'phone=eq.' + encodeURIComponent(storedPhone) + '&campaign_id=eq.' + campaignId + '&select=id&limit=1')
     .then(function(existing) {
       if (existing && existing.length) {
         // Already registered in DB
@@ -1054,7 +1065,7 @@ function submitForm() {
     .then(function(employee) {
       var record = {
         name                 : name,
-        phone                : finalPhone,
+        phone                : storedPhone,       // normalized — consistent with DB lookups
         extra_data           : extraData,
         status               : 'New',
         campaign_id          : campaignId,
