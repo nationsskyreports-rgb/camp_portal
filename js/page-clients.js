@@ -545,6 +545,13 @@ function renderMyClients() {
   var m   = document.getElementById('main-content');
   var all = myClients();
 
+  // ── Employees: Closed clients go to their own page ──
+  var closedCount = 0;
+  if (S.role !== 'admin') {
+    closedCount = all.filter(function(c){ return c.status === 'Closed'; }).length;
+    all = all.filter(function(c){ return c.status !== 'Closed'; });
+  }
+
   if (empClientFilter) all = all.filter(function(c) { return c.campaign_id === empClientFilter; });
 
   if (S.role === 'admin' && formFilter === 'submitted') {
@@ -598,66 +605,14 @@ function renderMyClients() {
       : totalRecords + ' records · ' + uniqueClients + ' unique clients';
     return hdr(S.role === 'admin' ? 'All Clients' : 'My Clients', subtitle);
   })() +
-    // ── Reachability KPI banner (employee view only) ──────────
-    (S.role !== 'admin' ? (function(){
-      var myAll = myClients();
-      var myIds = {};
-      myAll.forEach(function(c){ myIds[c.id] = true; });
-      var myHist = (S.contactHistory||[]).filter(function(h){ return myIds[h.client_id]; });
-
-      var totCl   = myAll.length;
-      var totCall = myHist.length;
-      var ansCall = myHist.filter(function(h){ return h.outcome === 'answered'; }).length;
-
-      var rIds = {};
-      myHist.filter(function(h){ return h.outcome === 'answered'; })
-            .forEach(function(h){ rIds[h.client_id] = true; });
-      var reached = Object.keys(rIds).length;
-
-      var tIds = {};
-      myHist.forEach(function(h){ tIds[h.client_id] = true; });
-      var untch    = totCl - Object.keys(tIds).length;
-      var closedCl = myAll.filter(function(c){ return c.status === 'Closed'; }).length;
-
-      var reachPct   = totCl   > 0 ? Math.round(reached  / totCl   * 100) : 0;
-      var contactPct = totCall > 0 ? Math.round(ansCall   / totCall * 100) : 0;
-      var closePct   = totCl   > 0 ? Math.round(closedCl  / totCl   * 100) : 0;
-      var rColor  = reachPct   >= 60 ? '#a78bfa' : reachPct   >= 30 ? '#fbbf24' : '#f87171';
-      var cColor  = contactPct >= 50 ? '#93c5fd' : contactPct >= 25 ? '#fbbf24' : '#f87171';
-
-      return '<div class="card fade-in mb-4" style="padding:14px 16px">'+
-        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">'+
-          '<i data-lucide="radio" style="width:14px;height:14px;color:#a78bfa"></i>'+
-          '<span class="text-xs font-bold text-white" style="letter-spacing:.04em">MY REACHABILITY</span>'+
-          '<span class="text-xs text-slate-500" style="margin-right:auto">How many clients were actually reached</span>'+
-        '</div>'+
-        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px">'+
-          '<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.18)">'+
-            '<p class="text-xs text-slate-400 mb-1">Reachability</p>'+
-            '<p style="font-size:22px;font-weight:800;color:'+rColor+'">'+reachPct+'%</p>'+
-            '<div style="width:100%;height:3px;background:rgba(255,255,255,0.06);border-radius:2px;margin:4px 0">'+
-              '<div style="width:'+reachPct+'%;height:3px;border-radius:2px;background:'+rColor+'"></div>'+
-            '</div>'+
-            '<p style="font-size:10px;color:#64748b">'+reached+' / '+totCl+' clients</p>'+
-          '</div>'+
-          '<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(147,197,253,0.06);border:1px solid rgba(147,197,253,0.12)">'+
-            '<p class="text-xs text-slate-400 mb-1">Contact Rate</p>'+
-            '<p style="font-size:22px;font-weight:800;color:'+cColor+'">'+contactPct+'%</p>'+
-            '<p style="font-size:10px;color:#64748b;margin-top:4px">'+ansCall+' / '+totCall+' calls</p>'+
-          '</div>'+
-          '<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12)">'+
-            '<p class="text-xs text-slate-400 mb-1">Close Rate</p>'+
-            '<p style="font-size:22px;font-weight:800;color:'+(closePct>=30?'#6ee7b7':'#fbbf24')+'">'+closePct+'%</p>'+
-            '<p style="font-size:10px;color:#64748b;margin-top:4px">'+closedCl+' / '+totCl+' closed</p>'+
-          '</div>'+
-          '<div style="text-align:center;padding:10px;border-radius:8px;background:'+(untch>0?'rgba(239,68,68,0.07)':'rgba(16,185,129,0.06)')+';border:1px solid '+(untch>0?'rgba(239,68,68,0.18)':'rgba(16,185,129,0.12)')+'">'+
-            '<p class="text-xs text-slate-400 mb-1">Untouched</p>'+
-            '<p style="font-size:22px;font-weight:800;color:'+(untch>0?'#fca5a5':'#6ee7b7')+'">'+untch+'</p>'+
-            '<p style="font-size:10px;color:#64748b;margin-top:4px">'+(untch>0?'need a call':'all touched ✅')+'</p>'+
-          '</div>'+
-        '</div>'+
-      '</div>';
-    })() : '') +
+    // ── Closed clients notice (employee only) ────────────────
+    (S.role !== 'admin' && closedCount > 0
+      ? '<div class="fade-in mb-3" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.18);cursor:pointer" onclick="navigate(\'closed-clients\')">'+
+          '<i data-lucide="check-circle" style="width:15px;height:15px;color:#6ee7b7;flex-shrink:0"></i>'+
+          '<span style="font-size:13px;color:#a7f3d0"><strong style="color:#6ee7b7">'+closedCount+'</strong> closed client'+(closedCount>1?'s':'')+' moved to <strong style="color:#6ee7b7;text-decoration:underline">Closed</strong></span>'+
+          '<i data-lucide="arrow-right" style="width:13px;height:13px;color:#6ee7b7;margin-right:auto"></i>'+
+        '</div>'
+      : '') +
     buildRedistributePanel() +
     '<div class="mb-4 fade-in" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
       searchBox('client-search', clientSearch, 'setClientSearch', 'Search name, phone, unit, contract...') +
@@ -1378,4 +1333,72 @@ async function clearFollowupFromClient(cid) {
     toast('Follow-up reminder cleared', 'success');
     fetchAll().then(renderMyClients);
   } catch(e) { toast(e.message, 'error'); }
+}
+
+// ============================================================
+// CLOSED CLIENTS PAGE
+// ============================================================
+function renderClosedClients() {
+  var m      = document.getElementById('main-content');
+  var closed = myClients().filter(function(c){ return c.status === 'Closed'; });
+
+  m.innerHTML = hdr('Closed', closed.length + ' closed client' + (closed.length !== 1 ? 's' : '')) +
+
+    // ── Back notice ──
+    '<div class="fade-in mb-4" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);cursor:pointer" onclick="navigate(\'my-clients\')">'+
+      '<i data-lucide="arrow-left" style="width:14px;height:14px;color:#94a3b8"></i>'+
+      '<span style="font-size:13px;color:#94a3b8">Back to My Clients</span>'+
+    '</div>'+
+
+    (closed.length === 0
+      ? '<div class="card fade-in" style="text-align:center;padding:48px 24px">'+
+          '<i data-lucide="check-circle" style="width:40px;height:40px;color:#10b981;margin:0 auto 12px"></i>'+
+          '<p style="color:#94a3b8;font-size:14px">No closed clients yet</p>'+
+        '</div>'
+      : '<div class="space-y-3 fade-in">'+
+          closed.map(function(c){
+            var extra   = c.extra_data || {};
+            var unit    = extra.unit || extra.Unit || '';
+            var project = extra.project || '';
+            var phone   = c.phone || extra.phone || '';
+            var phone2  = c.phone2 || extra.phone2 || '';
+            var contract= extra.contract_number || '';
+            var closedAt= c.updated_at ? new Date(c.updated_at).toLocaleDateString('en-GB') : '';
+            var cp      = campById(c.campaign_id);
+
+            return '<div class="card" style="padding:14px 16px">'+
+              '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">'+
+
+                '<div style="display:flex;align-items:center;gap:10px;min-width:0">'+
+                  av(c.name, '#10b981', 36)+
+                  '<div>'+
+                    '<p style="font-weight:600;color:#fff;font-size:14px">'+esc(c.name)+'</p>'+
+                    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:3px">'+
+                      (phone  ? '<span style="font-size:12px;color:#60a5fa">📞 '+esc(phone)+'</span>'  : '')+
+                      (phone2 ? '<span style="font-size:12px;color:#94a3b8">📞 '+esc(phone2)+'</span>' : '')+
+                    '</div>'+
+                  '</div>'+
+                '</div>'+
+
+                '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">'+
+                  sBadge('Closed')+
+                  (closedAt ? '<span style="font-size:10px;color:#64748b">'+closedAt+'</span>' : '')+
+                '</div>'+
+              '</div>'+
+
+              // unit / project / contract
+              ((unit || project || contract || cp)
+                ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.05)">'+
+                    (unit     ? '<span style="font-size:11px;padding:2px 8px;border-radius:6px;background:rgba(16,185,129,0.1);color:#6ee7b7">🏠 '+esc(unit)+'</span>'     : '')+
+                    (project  ? '<span style="font-size:11px;padding:2px 8px;border-radius:6px;background:rgba(59,130,246,0.1);color:#93c5fd">'+esc(project)+'</span>'    : '')+
+                    (contract ? '<span style="font-size:11px;padding:2px 8px;border-radius:6px;background:rgba(139,92,246,0.1);color:#c4b5fd">'+esc(contract)+'</span>'  : '')+
+                    (cp       ? '<span style="font-size:11px;padding:2px 8px;border-radius:6px;background:rgba(255,255,255,0.05);color:#64748b">'+esc(cp.name)+'</span>' : '')+
+                  '</div>'
+                : '')+
+            '</div>';
+          }).join('')+
+        '</div>'
+    );
+
+  lucide.createIcons();
 }
