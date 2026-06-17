@@ -910,47 +910,85 @@ function lookupPhone() {
 
 function renderLookupUnits() {
   var clientName = matchedClients[0].name ||
-                   (matchedClients[0].extra_data || {}).customer || '—';
+                   (matchedClients[0].extra_data || {}).customer || '\u2014';
   document.getElementById('lookup-name').textContent = clientName;
   document.getElementById('lookup-greeting').textContent =
-    currentLang === 'ar' ? 'أهلاً بك!' : 'Welcome!';
+    currentLang === 'ar' ? '\u0623\u0647\u0644\u0627\u064b \u0628\u0643!' : 'Welcome!';
   document.getElementById('lookup-units-lbl').textContent =
-    currentLang === 'ar' ? 'اختار وحدتك / وحداتك' : 'Select your unit(s)';
+    currentLang === 'ar' ? '\u0627\u062e\u062a\u0627\u0631 \u0648\u062d\u062f\u062a\u0643 / \u0648\u062d\u062f\u0627\u062a\u0643' : 'Select your unit(s)';
 
-  // خلي بس الريكوردز اللي عندها unit حقيقي يظهروا للعميل
-  var realClients = matchedClients.filter(function(c) {
+  // Build flat list of units from all matched records
+  // Supports both extra_data.units[] array AND flat extra_data.unit field
+  var unitItems = []; // [{clientId, unit, contract, project}]
+  matchedClients.forEach(function(c) {
     var ex = c.extra_data || {};
-    return !!(ex.unit || ex.contract_number || ex.Unit);
+    if (ex.units && Array.isArray(ex.units) && ex.units.length) {
+      // Multi-unit record — iterate the array
+      ex.units.forEach(function(u) {
+        if (u.unit || u.contract_number) {
+          unitItems.push({ clientId: c.id, unit: u.unit || '', contract: u.contract_number || '', project: u.project || '' });
+        }
+      });
+    } else if (ex.unit || ex.contract_number) {
+      // Single-unit flat record
+      unitItems.push({ clientId: c.id, unit: ex.unit || ex.Unit || '', contract: ex.contract_number || '', project: ex.project || '' });
+    }
   });
-  var clientsToShow = realClients.length > 0 ? realClients : matchedClients;
 
+  // If no real units found, fall back to showing all records
+  if (!unitItems.length) {
+    matchedClients.forEach(function(c) {
+      unitItems.push({ clientId: c.id, unit: '', contract: '', project: '' });
+    });
+  }
+
+  // Group by project
   var byProject = {};
-  clientsToShow.forEach(function(c) {
-    var proj = (c.extra_data || {}).project || (currentLang === 'ar' ? 'وحدات أخرى' : 'Other Units');
+  unitItems.forEach(function(u) {
+    var proj = u.project || (currentLang === 'ar' ? '\u0648\u062d\u062f\u0627\u062a \u0623\u062e\u0631\u0649' : 'Other Units');
     if (!byProject[proj]) byProject[proj] = [];
-    byProject[proj].push(c);
+    byProject[proj].push(u);
   });
 
   var html = '';
   Object.keys(byProject).forEach(function(proj) {
     html += '<div class="lookup-proj-lbl">' + escHtml(proj) + '</div>';
-    byProject[proj].forEach(function(c) {
-      var unit     = (c.extra_data || {}).unit
-                 || (c.extra_data || {}).contract_number
-                 || (c.extra_data || {}).Unit
-                 || '';
-      var contract = (c.extra_data || {}).contract_number || '';
-      if (!unit) unit = currentLang === 'ar' ? 'وحدة ' + (byProject[proj].indexOf(c) + 1) : 'Unit ' + (byProject[proj].indexOf(c) + 1);
-      html += '<label class="lookup-unit-item sel" id="lui-' + c.id + '" onclick="toggleLookupUnit(\'' + c.id + '\')">';
-      html += '<input type="checkbox" checked id="lchk-' + c.id + '" onclick="event.stopPropagation()">';
-      html += '<div><div class="lookup-unit-code">' + escHtml(unit) + '</div>';
-      if (contract) html += '<div class="lookup-unit-con">' + escHtml(contract) + '</div>';
+    byProject[proj].forEach(function(u, idx) {
+      var uid    = u.clientId + '_' + idx;
+      var label  = u.unit || (currentLang === 'ar' ? '\u0648\u062d\u062f\u0629 ' + (idx + 1) : 'Unit ' + (idx + 1));
+      html += '<label class="lookup-unit-item sel" id="lui-' + uid + '" onclick="toggleLookupUnitItem(\'' + uid + '\',\'' + u.clientId + '\')">';
+      html += '<input type="checkbox" checked id="lchk-' + uid + '" onclick="event.stopPropagation()">';
+      html += '<div><div class="lookup-unit-code">' + escHtml(label) + '</div>';
+      if (u.contract) html += '<div class="lookup-unit-con">' + escHtml(u.contract) + '</div>';
       html += '</div></label>';
     });
   });
   document.getElementById('lookup-units-container').innerHTML = html;
-  // selectedIds بس للـ real clients
-  selectedIds = clientsToShow.map(function(c) { return c.id; });
+
+  // selectedIds = unique client IDs with at least one unit checked (all checked by default)
+  var seen = {};
+  unitItems.forEach(function(u) { seen[u.clientId] = true; });
+  selectedIds = Object.keys(seen);
+}
+
+function toggleLookupUnitItem(uid, clientId) {
+  var chk = document.getElementById('lchk-' + uid);
+  var lbl = document.getElementById('lui-' + uid);
+  if (!chk) return;
+  chk.checked = !chk.checked;
+  lbl.classList.toggle('sel', chk.checked);
+
+  // Rebuild selectedIds: include clientId if ANY of its unit checkboxes are checked
+  var allCheckboxes = document.querySelectorAll('[id^="lchk-"]');
+  var checkedByClient = {};
+  allCheckboxes.forEach(function(cb) {
+    // uid format: clientId_idx — extract clientId
+    var parts = cb.id.replace('lchk-', '').split('_');
+    // clientId is a UUID (has 4 dashes = 5 parts), idx is last
+    var cid = parts.slice(0, -1).join('_');
+    if (cb.checked) checkedByClient[cid] = true;
+  });
+  selectedIds = Object.keys(checkedByClient);
 }
 
 function toggleLookupUnit(id) {
