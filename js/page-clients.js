@@ -667,7 +667,7 @@ function renderMyClients() {
     })() : '') +
     // ── Closed clients notice (employee only) ────────────────
     (S.role !== 'admin' && closedCount > 0
-      ? '<div class="fade-in mb-3" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.18);cursor:pointer" onclick="navigate(\'closed-clients\')">'+
+      ? '<div class="fade-in mb-3" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.18);cursor:pointer" onclick="navigateTo(\'closed-clients\')">'+
           '<i data-lucide="check-circle" style="width:15px;height:15px;color:#6ee7b7;flex-shrink:0"></i>'+
           '<span style="font-size:13px;color:#a7f3d0"><strong style="color:#6ee7b7">'+closedCount+'</strong> closed client'+(closedCount>1?'s':'')+' moved to <strong style="color:#6ee7b7;text-decoration:underline">Closed</strong></span>'+
           '<i data-lucide="arrow-right" style="width:13px;height:13px;color:#6ee7b7;margin-right:auto"></i>'+
@@ -1405,7 +1405,7 @@ function renderClosedClients() {
   m.innerHTML = hdr('Closed', closed.length + ' closed client' + (closed.length !== 1 ? 's' : '')) +
 
     // ── Back notice ──
-    '<div class="fade-in mb-4" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);cursor:pointer" onclick="navigate(\'my-clients\')">'+
+    '<div class="fade-in mb-4" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);cursor:pointer" onclick="navigateTo(\'my-clients\')">'+
       '<i data-lucide="arrow-left" style="width:14px;height:14px;color:#94a3b8"></i>'+
       '<span style="font-size:13px;color:#94a3b8">Back to My Clients</span>'+
     '</div>'+
