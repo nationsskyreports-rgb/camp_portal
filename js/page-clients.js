@@ -636,7 +636,7 @@ function renderMyClients() {
         '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">'+
           '<i data-lucide="radio" style="width:14px;height:14px;color:#a78bfa"></i>'+
           '<span class="text-xs font-bold text-white" style="letter-spacing:.04em">MY REACHABILITY</span>'+
-          '<span class="text-xs text-slate-500" style="margin-right:auto">كام عميل اتكلمنا معاه فعلاً؟</span>'+
+          '<span class="text-xs text-slate-500" style="margin-right:auto">How many clients have we actually spoken with?</span>'+
         '</div>'+
         '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px">'+
           '<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.18)">'+
