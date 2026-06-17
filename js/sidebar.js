@@ -87,6 +87,7 @@ function renderPage(){
       dashboard:renderDashboard,campaigns:renderCampaigns,
       upload:renderUpload,qa:renderQA,reports:renderReports,
       team:renderTeam,'my-clients':renderMyClients,
+      'closed-clients':renderClosedClients,
       'ask-question':renderAskQuestion,'my-questions':renderMyQuestions,
       notifications:renderNotifPage,cleanup:renderCleanup,
       'form-tracking':renderFormTracking,
