@@ -546,7 +546,7 @@
         <div id="kids-details" style="display:none">
           <div class="field" id="field-kids-count">
             <label id="lbl-kids-count">كم عدد أطفالك؟ <span class="req">*</span></label>
-            <select id="inp-kids-count" class="select-arrow">
+            <select id="inp-kids-count" class="select-arrow" onchange="handleKidsCountChange()">
               <option value="">اختار... / Select...</option>
               <option value="1">1</option>
               <option value="2">2</option>
@@ -556,24 +556,11 @@
             </select>
             <div class="err-msg" id="err-kids-count">هذا الحقل مطلوب</div>
           </div>
+          <div id="kids-names-container"></div>
 
           <div class="field" id="field-kids-hobbies">
             <label id="lbl-kids-hobbies">هوايات أطفالك <span class="req">*</span></label>
-            <select id="inp-kids-hobbies" class="select-arrow" onchange="handleOtherSelect('kids-hobbies')">
-              <option value="">اختار... / Select...</option>
-              <option value="Sports">Sports | رياضة</option>
-              <option value="Arts">Arts | فنون</option>
-              <option value="Music">Music | موسيقى</option>
-              <option value="Reading">Reading | قراءة</option>
-              <option value="Technology">Technology | تكنولوجيا</option>
-              <option value="Outdoor">Outdoor | أنشطة خارجية</option>
-              <option value="Other">Other | أخرى</option>
-            </select>
-            <div id="other-kids-hobbies-display" style="display:none;margin-top:8px;padding:8px 12px;border-radius:8px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);color:#93c5fd;font-size:13px;align-items:center;gap:8px;">
-              <span>✏️</span>
-              <span id="other-kids-hobbies-text" style="flex:1;"></span>
-              <span onclick="reOpenOtherModal('kids-hobbies')" style="cursor:pointer;opacity:0.7;font-size:12px;text-decoration:underline;">تعديل</span>
-            </div>
+            <div id="kids-hobbies-container"></div>
             <div class="err-msg" id="err-kids-hobbies">هذا الحقل مطلوب</div>
           </div>
 
@@ -1251,7 +1238,7 @@ function submitForm() {
   if (!kidaValue)                          { setErr('field-kida');        valid = false; }
   if (kidaValue === 'yes') {
     if (!val('inp-kids-count'))            { setErr('field-kids-count');   valid = false; }
-    if (!getHobbiesVal('kids-hobbies'))    { setErr('field-kids-hobbies'); valid = false; }
+    if (!validateKidsHobbies())             { setErr('field-kids-hobbies'); valid = false; }
     if (!val('inp-kids-ages'))             { setErr('field-kids-ages');    valid = false; }
   }
   if (!getHobbiesVal('hobbies'))           { setErr('field-hobbies');      valid = false; }
@@ -1288,7 +1275,8 @@ function submitForm() {
   extraData.has_kids  = kidaValue;
   if (kidaValue === 'yes') {
     extraData.kids_count   = val('inp-kids-count');
-    extraData.kids_hobbies = getHobbiesVal('kids-hobbies');
+    extraData.kids_names   = getKidNamesString();
+    extraData.kids_hobbies = getKidsHobbiesString();
     extraData.kids_ages    = val('inp-kids-ages');
   }
   extraData.hobbies   = getHobbiesVal('hobbies');
@@ -1616,19 +1604,46 @@ function closeOtherModal(confirm) {
       inp.focus();
       return;
     }
-    if (otherFieldActive === 'hobbies') otherHobbiesText = text;
-    else otherKidsHobbiesText = text;
-    overlay.style.display = 'none';
-    showOtherDisplay(otherFieldActive, text);
+    if (otherFieldActive === 'hobbies') {
+      otherHobbiesText = text;
+      overlay.style.display = 'none';
+      showOtherDisplay('hobbies', text);
+    } else if (otherFieldActive.indexOf('kid-hobby-') === 0) {
+      var kidIdx = parseInt(otherFieldActive.replace('kid-hobby-', ''));
+      kidsOtherHobbiesData[kidIdx] = text;
+      kidsHobbiesData[kidIdx]      = text;
+      overlay.style.display = 'none';
+      var kDisp = document.getElementById('kid-other-display-' + kidIdx);
+      var kSpan = document.getElementById('kid-other-text-'    + kidIdx);
+      if (kDisp) kDisp.style.display = 'flex';
+      if (kSpan) kSpan.textContent   = text;
+    } else {
+      otherKidsHobbiesText = text;
+      overlay.style.display = 'none';
+      showOtherDisplay('kids-hobbies', text);
+    }
     saveDraft();
   } else {
     // cancelled — revert select to empty
-    var selectId = otherFieldActive === 'hobbies' ? 'inp-hobbies' : 'inp-kids-hobbies';
-    var sel = document.getElementById(selectId);
-    if (sel) sel.value = '';
-    if (otherFieldActive === 'hobbies') otherHobbiesText = '';
-    else otherKidsHobbiesText = '';
-    hideOtherDisplay(otherFieldActive);
+    if (otherFieldActive === 'hobbies') {
+      var sel = document.getElementById('inp-hobbies');
+      if (sel) sel.value = '';
+      otherHobbiesText = '';
+      hideOtherDisplay('hobbies');
+    } else if (otherFieldActive.indexOf('kid-hobby-') === 0) {
+      var kidIdx = parseInt(otherFieldActive.replace('kid-hobby-', ''));
+      var sel = document.getElementById('inp-kid-hobby-' + kidIdx);
+      if (sel) sel.value = '';
+      kidsHobbiesData[kidIdx]      = '';
+      kidsOtherHobbiesData[kidIdx] = '';
+      var kDisp = document.getElementById('kid-other-display-' + kidIdx);
+      if (kDisp) kDisp.style.display = 'none';
+    } else {
+      var sel = document.getElementById('inp-kids-hobbies');
+      if (sel) sel.value = '';
+      otherKidsHobbiesText = '';
+      hideOtherDisplay('kids-hobbies');
+    }
     overlay.style.display = 'none';
   }
 }
@@ -1641,6 +1656,206 @@ function getHobbiesVal(fieldKey) {
     return (fieldKey === 'hobbies' ? otherHobbiesText : otherKidsHobbiesText) || '';
   }
   return sel.value.trim();
+}
+
+
+// ── Kids Names + Per-Kid Hobbies ──────────────────────────────────────────
+var kidsNamesData        = [];   // ['Ahmed','Sara',...]
+var kidsHobbiesData      = {};   // { 0:'Sports', 1:'Other custom text' }
+var kidsOtherHobbiesData = {};   // { 0:'', 1:'custom text' }
+
+var HOBBY_OPTIONS = [
+  { value:'Sports',     label:'Sports | رياضة' },
+  { value:'Arts',       label:'Arts | فنون' },
+  { value:'Music',      label:'Music | موسيقى' },
+  { value:'Reading',    label:'Reading | قراءة' },
+  { value:'Technology', label:'Technology | تكنولوجيا' },
+  { value:'Outdoor',    label:'Outdoor | أنشطة خارجية' },
+  { value:'Other',      label:'Other | أخرى' }
+];
+var HOBBY_STD = ['Sports','Arts','Music','Reading','Technology','Outdoor'];
+
+var AR_ORDINALS = ['الأول','الثاني','الثالث','الرابع','الخامس'];
+
+function getKidsCount() {
+  var v = val('inp-kids-count');
+  if (!v) return 0;
+  return v === '5+' ? 5 : parseInt(v, 10);
+}
+
+function handleKidsCountChange() {
+  var count = getKidsCount();
+  // reset data arrays when count changes
+  kidsNamesData        = [];
+  kidsHobbiesData      = {};
+  kidsOtherHobbiesData = {};
+  if (!count) {
+    document.getElementById('kids-names-container').innerHTML    = '';
+    document.getElementById('kids-hobbies-container').innerHTML  = '';
+    return;
+  }
+  renderKidsNameFields(count);
+}
+
+function renderKidsNameFields(count) {
+  var isAr = currentLang === 'ar';
+  var html  = '<div style="margin-top:12px;display:flex;flex-direction:column;gap:10px;">';
+  for (var i = 0; i < count; i++) {
+    var lbl  = isAr ? ('الطفل ' + AR_ORDINALS[i]) : ('Child ' + (i + 1));
+    var ph   = isAr ? ('اسم ' + lbl) : ('Name of child ' + (i + 1));
+    html += '<div style="display:flex;align-items:center;gap:10px;">';
+    html += '<span style="font-size:13px;color:var(--muted);min-width:85px;flex-shrink:0;">' + lbl + '</span>';
+    html += '<input type="text" id="inp-kid-name-' + i + '" data-kid-index="' + i + '"'
+          + ' oninput="onKidNameInput()"'
+          + ' placeholder="' + ph + '"'
+          + ' style="flex:1;padding:9px 12px;border-radius:8px;'
+          + 'border:1.5px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);'
+          + 'color:#e2e8f0;font-size:14px;outline:none;width:100%;box-sizing:border-box;">';
+    html += '</div>';
+  }
+  html += '</div>';
+  document.getElementById('kids-names-container').innerHTML = html;
+  // restore saved names
+  for (var j = 0; j < count; j++) {
+    var el = document.getElementById('inp-kid-name-' + j);
+    if (el && kidsNamesData[j]) el.value = kidsNamesData[j];
+  }
+  renderKidsHobbies(count);
+}
+
+function onKidNameInput() {
+  var count = getKidsCount();
+  for (var i = 0; i < count; i++) {
+    var el = document.getElementById('inp-kid-name-' + i);
+    kidsNamesData[i] = el ? el.value.trim() : '';
+  }
+  // update hobby cards labels only (re-render)
+  renderKidsHobbies(count);
+  saveDraft();
+}
+
+function renderKidsHobbies(count) {
+  var isAr = currentLang === 'ar';
+  if (!count) count = getKidsCount();
+  if (!count) { document.getElementById('kids-hobbies-container').innerHTML = ''; return; }
+
+  var html = '<div style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">';
+  for (var i = 0; i < count; i++) {
+    var kidName = kidsNamesData[i] || (isAr ? 'الطفل ' + AR_ORDINALS[i] : 'Child ' + (i + 1));
+    var selectId = 'inp-kid-hobby-' + i;
+    var opts = '';
+    HOBBY_OPTIONS.forEach(function(opt) {
+      opts += '<option value="' + opt.value + '">' + opt.label + '</option>';
+    });
+
+    var otherTxt = kidsOtherHobbiesData[i] || '';
+    var otherDisplayStyle = otherTxt ? 'display:flex' : 'display:none';
+
+    html += '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);'
+          + 'border-radius:10px;padding:12px 14px;">';
+    html += '<div style="font-size:13px;font-weight:600;color:#93c5fd;margin-bottom:8px;">👦 ' + escHtml(kidName) + '</div>';
+    html += '<select id="' + selectId + '" class="select-arrow" '
+          + 'data-kid-index="' + i + '" onchange="handleKidHobbyChange(' + i + ')" style="width:100%;">';
+    html += '<option value="">' + (isAr ? 'اختار الهواية...' : 'Select hobby...') + '</option>';
+    html += opts;
+    html += '</select>';
+    html += '<div id="kid-other-display-' + i + '" style="' + otherDisplayStyle + ';margin-top:8px;'
+          + 'padding:7px 11px;border-radius:8px;background:rgba(59,130,246,0.1);'
+          + 'border:1px solid rgba(59,130,246,0.25);color:#93c5fd;font-size:13px;align-items:center;gap:8px;">'
+          + '<span>✏️</span>'
+          + '<span id="kid-other-text-' + i + '" style="flex:1;">' + escHtml(otherTxt) + '</span>'
+          + '<span onclick="reOpenKidOtherModal(' + i + ')" '
+          + 'style="cursor:pointer;opacity:0.7;font-size:12px;text-decoration:underline;">تعديل</span>'
+          + '</div>';
+    html += '</div>';
+  }
+  html += '</div>';
+  document.getElementById('kids-hobbies-container').innerHTML = html;
+
+  // Restore selected hobbies
+  for (var j = 0; j < count; j++) {
+    var sel = document.getElementById('inp-kid-hobby-' + j);
+    if (!sel) continue;
+    var storedVal = kidsHobbiesData[j];
+    if (!storedVal) continue;
+    if (HOBBY_STD.indexOf(storedVal) > -1 || storedVal === 'Other') {
+      sel.value = storedVal;
+    } else {
+      // custom text → show Other selected
+      sel.value = 'Other';
+    }
+  }
+}
+
+function handleKidHobbyChange(kidIndex) {
+  var sel = document.getElementById('inp-kid-hobby-' + kidIndex);
+  if (!sel) return;
+  if (sel.value === 'Other') {
+    openKidOtherModal(kidIndex);
+  } else {
+    kidsHobbiesData[kidIndex]      = sel.value;
+    kidsOtherHobbiesData[kidIndex] = '';
+    var disp = document.getElementById('kid-other-display-' + kidIndex);
+    if (disp) disp.style.display = 'none';
+    saveDraft();
+  }
+}
+
+function openKidOtherModal(kidIndex) {
+  var isAr    = currentLang === 'ar';
+  var kidName = kidsNamesData[kidIndex] || (isAr ? 'الطفل ' + (kidIndex + 1) : 'Child ' + (kidIndex + 1));
+  var title   = document.getElementById('other-modal-title');
+  var inp     = document.getElementById('other-modal-input');
+  var err     = document.getElementById('other-modal-err');
+
+  title.textContent = isAr ? ('ما هي هواية ' + kidName + '؟') : ("What is " + kidName + "'s hobby?");
+  inp.placeholder   = isAr ? 'مثال: رسم، سباحة، ألعاب إلكترونية...' : 'e.g. Drawing, Swimming, Gaming...';
+  inp.value         = kidsOtherHobbiesData[kidIndex] || '';
+  err.style.display = 'none';
+  inp.style.borderColor = 'rgba(255,255,255,0.15)';
+
+  otherFieldActive = 'kid-hobby-' + kidIndex;
+
+  var overlay = document.getElementById('other-modal-overlay');
+  overlay.style.display = 'flex';
+  setTimeout(function() { inp.focus(); if (inp.value) inp.select(); }, 80);
+  inp.onkeydown = function(e) {
+    if (e.key === 'Enter')  { e.preventDefault(); closeOtherModal(true); }
+    if (e.key === 'Escape') { closeOtherModal(false); }
+  };
+}
+
+function reOpenKidOtherModal(kidIndex) {
+  openKidOtherModal(kidIndex);
+}
+
+function getKidNamesString() {
+  var count = getKidsCount();
+  var names = [];
+  for (var i = 0; i < count; i++) {
+    names.push(kidsNamesData[i] || ('طفل ' + (i + 1)));
+  }
+  return names.join(', ');
+}
+
+function getKidsHobbiesString() {
+  var count = getKidsCount();
+  var parts = [];
+  for (var i = 0; i < count; i++) {
+    var kidName = kidsNamesData[i] || ('طفل ' + (i + 1));
+    var hobby   = kidsHobbiesData[i] || '';
+    if (hobby) parts.push(kidName + ': ' + hobby);
+  }
+  return parts.join(' | ');
+}
+
+function validateKidsHobbies() {
+  var count = getKidsCount();
+  if (!count) return false;
+  for (var i = 0; i < count; i++) {
+    if (!kidsHobbiesData[i]) return false;
+  }
+  return true;
 }
 
 function showOtherDisplay(fieldKey, text) {
