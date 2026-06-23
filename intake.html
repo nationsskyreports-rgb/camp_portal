@@ -569,6 +569,11 @@
               <option value="Outdoor">Outdoor | أنشطة خارجية</option>
               <option value="Other">Other | أخرى</option>
             </select>
+            <div id="other-kids-hobbies-display" style="display:none;margin-top:8px;padding:8px 12px;border-radius:8px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);color:#93c5fd;font-size:13px;align-items:center;gap:8px;">
+              <span>✏️</span>
+              <span id="other-kids-hobbies-text" style="flex:1;"></span>
+              <span onclick="reOpenOtherModal('kids-hobbies')" style="cursor:pointer;opacity:0.7;font-size:12px;text-decoration:underline;">تعديل</span>
+            </div>
             <div class="err-msg" id="err-kids-hobbies">هذا الحقل مطلوب</div>
           </div>
 
@@ -602,6 +607,11 @@
             <option value="Business">Business | أعمال</option>
             <option value="Other">Other | أخرى</option>
           </select>
+          <div id="other-hobbies-display" style="display:none;margin-top:8px;padding:8px 12px;border-radius:8px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);color:#93c5fd;font-size:13px;align-items:center;gap:8px;">
+            <span>✏️</span>
+            <span id="other-hobbies-text" style="flex:1;"></span>
+            <span onclick="reOpenOtherModal('hobbies')" style="cursor:pointer;opacity:0.7;font-size:12px;text-decoration:underline;">تعديل</span>
+          </div>
           <div class="err-msg" id="err-hobbies">هذا الحقل مطلوب</div>
         </div>
 
@@ -1555,6 +1565,7 @@ function handleOtherSelect(fieldKey) {
     // reset stored custom text if user picks a real option
     if (fieldKey === 'hobbies') otherHobbiesText = '';
     else otherKidsHobbiesText = '';
+    hideOtherDisplay(fieldKey);
   }
 }
 
@@ -1608,6 +1619,7 @@ function closeOtherModal(confirm) {
     if (otherFieldActive === 'hobbies') otherHobbiesText = text;
     else otherKidsHobbiesText = text;
     overlay.style.display = 'none';
+    showOtherDisplay(otherFieldActive, text);
     saveDraft();
   } else {
     // cancelled — revert select to empty
@@ -1616,6 +1628,7 @@ function closeOtherModal(confirm) {
     if (sel) sel.value = '';
     if (otherFieldActive === 'hobbies') otherHobbiesText = '';
     else otherKidsHobbiesText = '';
+    hideOtherDisplay(otherFieldActive);
     overlay.style.display = 'none';
   }
 }
@@ -1628,6 +1641,27 @@ function getHobbiesVal(fieldKey) {
     return (fieldKey === 'hobbies' ? otherHobbiesText : otherKidsHobbiesText) || '';
   }
   return sel.value.trim();
+}
+
+function showOtherDisplay(fieldKey, text) {
+  var displayId = fieldKey === 'hobbies' ? 'other-hobbies-display' : 'other-kids-hobbies-display';
+  var textId    = fieldKey === 'hobbies' ? 'other-hobbies-text'    : 'other-kids-hobbies-text';
+  var disp = document.getElementById(displayId);
+  var span = document.getElementById(textId);
+  if (disp && span) {
+    span.textContent    = text;
+    disp.style.display  = 'flex';
+  }
+}
+
+function hideOtherDisplay(fieldKey) {
+  var displayId = fieldKey === 'hobbies' ? 'other-hobbies-display' : 'other-kids-hobbies-display';
+  var disp = document.getElementById(displayId);
+  if (disp) disp.style.display = 'none';
+}
+
+function reOpenOtherModal(fieldKey) {
+  openOtherModal(fieldKey);
 }
 </script>
 
