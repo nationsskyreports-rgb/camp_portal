@@ -979,6 +979,9 @@ function saveDraft() {
       notes       : val('inp-notes'),
       kida        : kidaValue,
       kidsCount   : val('inp-kids-count'),
+      kidsNames   : kidsNamesData,
+      kidsAgesData: kidsAgesData,
+      kidsTalentsData: kidsTalentsData,
       kidsHobbies : val('inp-kids-hobbies'),
       kidsAges    : val('inp-kids-ages'),
       hobbies     : val('inp-hobbies'),
@@ -1004,7 +1007,16 @@ function loadDraft() {
     if (draft.email2) { var el = document.getElementById('inp-email2'); if (el) el.value = draft.email2; }
     if (draft.notes)  { var el = document.getElementById('inp-notes');  if (el) el.value = draft.notes; }
     if (draft.kida)   { setKida(draft.kida); }
-    if (draft.kidsCount)   { var el = document.getElementById('inp-kids-count');   if (el) el.value = draft.kidsCount; }
+    if (draft.kidsNames)   kidsNamesData = draft.kidsNames;
+    if (draft.kidsAgesData) kidsAgesData = draft.kidsAgesData;
+    if (draft.kidsTalentsData) kidsTalentsData = draft.kidsTalentsData;
+    if (draft.kidsCount)   { 
+      var el = document.getElementById('inp-kids-count'); 
+      if (el) {
+        el.value = draft.kidsCount;
+        handleKidsCountChange();
+      }
+    }
     if (draft.kidsHobbies) { var el = document.getElementById('inp-kids-hobbies'); if (el) el.value = draft.kidsHobbies; }
     if (draft.kidsAges)    { var el = document.getElementById('inp-kids-ages');    if (el) el.value = draft.kidsAges; }
     if (draft.hobbies)     { var el = document.getElementById('inp-hobbies');      if (el) el.value = draft.hobbies; }
@@ -1272,13 +1284,15 @@ function submitForm() {
   if (email)    extraData.email     = email;
   if (email2)   extraData.email2    = email2;
   // ── New fields ──
-  extraData.has_kids  = kidaValue;
-  if (kidaValue === 'yes') {
-    extraData.kids_count   = val('inp-kids-count');
-    extraData.kids_names   = getKidNamesString();
-    extraData.kids_hobbies = getKidsHobbiesString();
-    extraData.kids_ages    = val('inp-kids-ages');
-  }
+    extraData.has_kids  = kidaValue;
+    if (kidaValue === 'yes') {
+      extraData.kids_count   = val('inp-kids-count');
+      extraData.kids_names   = getKidNamesString();
+      extraData.kids_hobbies = getKidsHobbiesString();
+      extraData.kids_ages    = val('inp-kids-ages');
+      extraData.kids_ages_list = kidsAgesData.filter(Boolean).join(', ');
+      extraData.kids_talents   = kidsTalentsData.filter(Boolean).join(', ');
+    }
   extraData.hobbies   = getHobbiesVal('hobbies');
   extraData.job_title = val('inp-job-title');
   document.querySelectorAll('[data-col-key]').forEach(function(inp) {
@@ -1661,6 +1675,8 @@ function getHobbiesVal(fieldKey) {
 
 // ── Kids Names + Per-Kid Hobbies ──────────────────────────────────────────
 var kidsNamesData        = [];   // ['Ahmed','Sara',...]
+var kidsAgesData         = [];   // ['5','3',...]
+var kidsTalentsData      = [];   // ['Football','Drawing',...]
 var kidsHobbiesData      = {};   // { 0:'Sports', 1:'Other custom text' }
 var kidsOtherHobbiesData = {};   // { 0:'', 1:'custom text' }
 
@@ -1687,6 +1703,8 @@ function handleKidsCountChange() {
   var count = getKidsCount();
   // reset data arrays when count changes
   kidsNamesData        = [];
+  kidsAgesData         = [];
+  kidsTalentsData      = [];
   kidsHobbiesData      = {};
   kidsOtherHobbiesData = {};
   if (!count) {
@@ -1699,26 +1717,38 @@ function handleKidsCountChange() {
 
 function renderKidsNameFields(count) {
   var isAr = currentLang === 'ar';
-  var html  = '<div style="margin-top:12px;display:flex;flex-direction:column;gap:10px;">';
+  var html  = '<div style="margin-top:12px;display:flex;flex-direction:column;gap:15px;">';
   for (var i = 0; i < count; i++) {
     var lbl  = isAr ? ('الطفل ' + AR_ORDINALS[i]) : ('Child ' + (i + 1));
-    var ph   = isAr ? ('اسم ' + lbl) : ('Name of child ' + (i + 1));
-    html += '<div style="display:flex;align-items:center;gap:10px;">';
-    html += '<span style="font-size:13px;color:var(--text);font-weight:600;min-width:85px;flex-shrink:0;">' + lbl + '</span>';
-    html += '<input type="text" id="inp-kid-name-' + i + '" data-kid-index="' + i + '"'
-          + ' oninput="onKidNameInput()"'
-          + ' placeholder="' + ph + '"'
-          + ' style="flex:1;padding:9px 12px;border-radius:8px;'
-          + 'border:1.5px solid var(--border);background:#fff;'
-          + 'color:var(--text);font-size:14px;font-weight:600;outline:none;width:100%;box-sizing:border-box;">';
+    var phName = isAr ? 'الاسم' : 'Name';
+    var phAge  = isAr ? 'السن' : 'Age';
+    var phTalent = isAr ? 'الموهبة' : 'Talent';
+    
+    html += '<div style="background:#f9fafb; padding:12px; border-radius:10px; border:1px solid var(--border);">';
+    html += '<div style="font-size:13px;color:var(--blue-dark);font-weight:700;margin-bottom:8px;">👦 ' + lbl + '</div>';
+    
+    html += '<div style="display:flex; flex-direction:column; gap:8px;">';
+    // Name
+    html += '<input type="text" id="inp-kid-name-' + i + '" oninput="onKidNameInput()" placeholder="' + phName + '" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;font-weight:600;outline:none;box-sizing:border-box;">';
+    // Age & Talent Row
+    html += '<div style="display:flex;gap:8px;">';
+    html += '<input type="text" id="inp-kid-age-' + i + '" oninput="onKidNameInput()" placeholder="' + phAge + '" style="flex:1;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;outline:none;box-sizing:border-box;">';
+    html += '<input type="text" id="inp-kid-talent-' + i + '" oninput="onKidNameInput()" placeholder="' + phTalent + '" style="flex:2;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;outline:none;box-sizing:border-box;">';
+    html += '</div>';
+    html += '</div>';
+    
     html += '</div>';
   }
   html += '</div>';
   document.getElementById('kids-names-container').innerHTML = html;
-  // restore saved names
+  // restore saved values
   for (var j = 0; j < count; j++) {
-    var el = document.getElementById('inp-kid-name-' + j);
-    if (el && kidsNamesData[j]) el.value = kidsNamesData[j];
+    var elN = document.getElementById('inp-kid-name-' + j);
+    var elA = document.getElementById('inp-kid-age-' + j);
+    var elT = document.getElementById('inp-kid-talent-' + j);
+    if (elN && kidsNamesData[j]) elN.value = kidsNamesData[j];
+    if (elA && kidsAgesData[j]) elA.value = kidsAgesData[j];
+    if (elT && kidsTalentsData[j]) elT.value = kidsTalentsData[j];
   }
   renderKidsHobbies(count);
 }
@@ -1726,8 +1756,12 @@ function renderKidsNameFields(count) {
 function onKidNameInput() {
   var count = getKidsCount();
   for (var i = 0; i < count; i++) {
-    var el = document.getElementById('inp-kid-name-' + i);
-    kidsNamesData[i] = el ? el.value.trim() : '';
+    var elN = document.getElementById('inp-kid-name-' + i);
+    var elA = document.getElementById('inp-kid-age-' + i);
+    var elT = document.getElementById('inp-kid-talent-' + i);
+    kidsNamesData[i] = elN ? elN.value.trim() : '';
+    kidsAgesData[i]  = elA ? elA.value.trim() : '';
+    kidsTalentsData[i] = elT ? elT.value.trim() : '';
   }
   // update hobby cards labels only (re-render)
   renderKidsHobbies(count);
@@ -1831,11 +1865,22 @@ function reOpenKidOtherModal(kidIndex) {
 
 function getKidNamesString() {
   var count = getKidsCount();
-  var names = [];
+  var parts = [];
   for (var i = 0; i < count; i++) {
-    names.push(kidsNamesData[i] || ('طفل ' + (i + 1)));
+    var name = kidsNamesData[i] || (currentLang === 'ar' ? 'طفل ' + (i + 1) : 'Child ' + (i + 1));
+    var age = kidsAgesData[i] || '';
+    var talent = kidsTalentsData[i] || '';
+    var s = name;
+    if (age || talent) {
+      s += ' (';
+      if (age) s += (currentLang === 'ar' ? 'السن: ' : 'Age: ') + age;
+      if (age && talent) s += ' - ';
+      if (talent) s += (currentLang === 'ar' ? 'الموهبة: ' : 'Talent: ') + talent;
+      s += ')';
+    }
+    parts.push(s);
   }
-  return names.join(', ');
+  return parts.join(', ');
 }
 
 function getKidsHobbiesString() {
