@@ -57,7 +57,7 @@ var HOBBY_OPTIONS = [
 ];
 
 // ── Hobby State ──────────────────────────────────────────────
-var selectedHobby = '';
+var selectedHobbies = [];
 
 // ── Translations ─────────────────────────────────────────────
 var T = {
