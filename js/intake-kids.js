@@ -2,15 +2,17 @@
    intake-kids.js
    ──────────────
    Children (sons) yes/no toggle, per-child name/age/hobby cards,
-   and the "Other" hobbies modal.
+   family avatar builder, hobby card selection, and "Other" modal.
    
-   Depends on: intake-config.js (T, currentLang, kidaValue)
+   Depends on: intake-config.js (T, currentLang, kidaValue,
+                                  HOBBY_OPTIONS, selectedHobby)
                intake-helpers.js (escHtml, val, saveDraft)
    
    EDIT HERE when you need to:
-   - Add/remove per-child fields (name, age, hobby)
-   - Change max children count
-   - Change the "Other" hobby modal behavior
+   - Add/remove per-child fields
+   - Change hobby card options       → use HOBBY_OPTIONS in config
+   - Change avatar appearance
+   - Change the "Other" hobby modal
    ══════════════════════════════════════════════════════════════ */
 
 // ── Kids state ───────────────────────────────────────────────
@@ -20,7 +22,103 @@ var kidsTalentsData = [];
 
 var AR_ORDINALS = ['الأول','الثاني','الثالث','الرابع','الخامس'];
 
-// ── Yes/No Toggle ────────────────────────────────────────────
+
+/* ══════════════════════════════════════════════════════════════
+   Hobby Cards
+   ══════════════════════════════════════════════════════════════ */
+function renderHobbyCards() {
+  var lang = currentLang;
+  var html = '';
+  HOBBY_OPTIONS.forEach(function(h) {
+    var label = lang === 'ar' ? h.ar : h.en;
+    var sel   = selectedHobby === h.value ? ' selected' : '';
+    html += '<div class="hobby-card' + sel + '" data-value="' + escHtml(h.value) + '" onclick="selectHobby(\'' + escHtml(h.value) + '\')">';
+    html += '<span class="hobby-card-emoji">' + h.emoji + '</span>';
+    html += '<span class="hobby-card-label">' + escHtml(label) + '</span>';
+    html += '</div>';
+  });
+  document.getElementById('hobby-cards-container').innerHTML = html;
+}
+
+function selectHobby(value) {
+  // Deselect all
+  var cards = document.querySelectorAll('.hobby-card');
+  cards.forEach(function(c) { c.classList.remove('selected'); });
+
+  if (value === 'Other') {
+    selectedHobby = 'Other';
+    var card = document.querySelector('.hobby-card[data-value="Other"]');
+    if (card) card.classList.add('selected');
+    document.getElementById('inp-hobbies').value = 'Other';
+    openOtherModal('hobbies');
+    return;
+  }
+
+  // Toggle: if same value clicked again, deselect
+  if (selectedHobby === value) {
+    selectedHobby = '';
+    document.getElementById('inp-hobbies').value = '';
+    otherHobbiesText = '';
+    hideOtherDisplay();
+  } else {
+    selectedHobby = value;
+    document.getElementById('inp-hobbies').value = value;
+    var card = document.querySelector('.hobby-card[data-value="' + value + '"]');
+    if (card) card.classList.add('selected');
+    otherHobbiesText = '';
+    hideOtherDisplay();
+  }
+
+  var field = document.getElementById('field-hobbies');
+  if (field) field.classList.remove('has-err');
+  saveDraft();
+}
+
+function getHobbiesVal(fieldKey) {
+  if (selectedHobby === 'Other') return otherHobbiesText || '';
+  return selectedHobby || '';
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   Family Avatar Builder
+   ══════════════════════════════════════════════════════════════ */
+function renderFamilyAvatar() {
+  var container = document.getElementById('family-avatar');
+  if (!container) return;
+
+  var count = getKidsCount();
+  if (!count && kidaValue !== 'yes') {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'flex';
+  var html = '';
+
+  // Parent figures
+  html += '<div class="avatar-figure avatar-parent"><div class="avatar-head"></div><div class="avatar-body"></div></div>';
+  html += '<span class="avatar-heart">❤️</span>';
+  html += '<div class="avatar-figure avatar-parent"><div class="avatar-head"></div><div class="avatar-body"></div></div>';
+
+  // Child figures
+  for (var i = 0; i < count; i++) {
+    var name = kidsNamesData[i] || '';
+    var displayName = name.length > 6 ? name.substring(0, 6) + '..' : name;
+    html += '<div class="avatar-figure avatar-child">';
+    html += '<div class="avatar-head"></div>';
+    html += '<div class="avatar-body"></div>';
+    if (displayName) html += '<div class="avatar-name">' + escHtml(displayName) + '</div>';
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   Yes/No Toggle
+   ══════════════════════════════════════════════════════════════ */
 function setKida(v) {
   kidaValue = v;
   var yesBtn  = document.getElementById('btn-kida-yes');
@@ -31,10 +129,14 @@ function setKida(v) {
   if (details) details.style.display = v === 'yes' ? 'block' : 'none';
   var field = document.getElementById('field-kida');
   if (field) field.classList.remove('has-err');
+  renderFamilyAvatar();
   saveDraft();
 }
 
-// ── Kids count ───────────────────────────────────────────────
+
+/* ══════════════════════════════════════════════════════════════
+   Kids Count
+   ══════════════════════════════════════════════════════════════ */
 function getKidsCount() {
   var v = val('inp-kids-count');
   if (!v) return 0;
@@ -48,13 +150,18 @@ function handleKidsCountChange() {
   kidsTalentsData = [];
   if (!count) {
     document.getElementById('kids-names-container').innerHTML = '';
+    renderFamilyAvatar();
     return;
   }
   renderKidsNameFields(count);
+  renderFamilyAvatar();
   saveDraft();
 }
 
-// ── Render per-child cards ───────────────────────────────────
+
+/* ══════════════════════════════════════════════════════════════
+   Per-Child Cards
+   ══════════════════════════════════════════════════════════════ */
 function renderKidsNameFields(count) {
   var t    = T[currentLang];
   var isAr = currentLang === 'ar';
@@ -66,19 +173,16 @@ function renderKidsNameFields(count) {
       : (t.kidLabel + ' ' + (i + 1));
 
     html += '<div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;">';
-    html += '<div style="font-size:13px;color:var(--blue-dark);font-weight:700;margin-bottom:10px;">👦 ' + escHtml(lbl) + '</div>';
+    html += '<div style="font-size:13px;color:var(--gold-dark);font-weight:700;margin-bottom:10px;">👦 ' + escHtml(lbl) + '</div>';
     html += '<div style="display:flex;flex-direction:column;gap:8px;">';
 
-    // Name
     html += '<input type="text" class="kid-field-input" id="inp-kid-name-' + i + '" '
           + 'oninput="onKidNameInput()" placeholder="' + escHtml(t.kidName) + '">';
 
-    // Age
     html += '<input type="text" class="kid-field-input" id="inp-kid-age-' + i + '" '
           + 'oninput="onKidNameInput()" placeholder="' + escHtml(t.kidAge) + '" '
           + 'inputmode="numeric" style="max-width:160px;">';
 
-    // Hobby
     html += '<input type="text" class="kid-field-input" id="inp-kid-talent-' + i + '" '
           + 'oninput="onKidNameInput()" placeholder="' + escHtml(t.kidHobby) + '">';
 
@@ -87,7 +191,6 @@ function renderKidsNameFields(count) {
   html += '</div>';
   document.getElementById('kids-names-container').innerHTML = html;
 
-  // Restore saved values
   for (var j = 0; j < count; j++) {
     var elN = document.getElementById('inp-kid-name-'   + j);
     var elA = document.getElementById('inp-kid-age-'    + j);
@@ -97,7 +200,6 @@ function renderKidsNameFields(count) {
     if (elT && kidsTalentsData[j]) elT.value = kidsTalentsData[j];
   }
 
-  // Attach draft save
   var container = document.getElementById('kids-names-container');
   if (container) container.addEventListener('input', saveDraft);
 }
@@ -112,6 +214,7 @@ function onKidNameInput() {
     kidsAgesData[i]    = elA ? elA.value.trim() : '';
     kidsTalentsData[i] = elT ? elT.value.trim() : '';
   }
+  renderFamilyAvatar();
 }
 
 function getKidNamesString() {
@@ -143,8 +246,7 @@ var otherFieldActive = null;
 var otherHobbiesText = '';
 
 function handleOtherSelect(fieldKey) {
-  var sel = document.getElementById('inp-hobbies');
-  if (sel && sel.value === 'Other') {
+  if (selectedHobby === 'Other') {
     openOtherModal(fieldKey);
   } else {
     otherHobbiesText = '';
@@ -192,23 +294,25 @@ function closeOtherModal(confirm) {
       return;
     }
     otherHobbiesText      = text;
+    selectedHobby         = 'Other';
+    document.getElementById('inp-hobbies').value = 'Other';
     overlay.style.display = 'none';
     showOtherDisplay(text);
+    // Highlight "Other" card
+    var cards = document.querySelectorAll('.hobby-card');
+    cards.forEach(function(c) { c.classList.toggle('selected', c.getAttribute('data-value') === 'Other'); });
     saveDraft();
   } else {
-    var sel = document.getElementById('inp-hobbies');
-    if (sel) sel.value = '';
-    otherHobbiesText      = '';
+    // If no text was entered, deselect Other
+    if (!otherHobbiesText) {
+      selectedHobby = '';
+      document.getElementById('inp-hobbies').value = '';
+      var cards = document.querySelectorAll('.hobby-card');
+      cards.forEach(function(c) { c.classList.remove('selected'); });
+    }
     overlay.style.display = 'none';
-    hideOtherDisplay();
+    if (!otherHobbiesText) hideOtherDisplay();
   }
-}
-
-function getHobbiesVal(fieldKey) {
-  var sel = document.getElementById('inp-hobbies');
-  if (!sel) return '';
-  if (sel.value === 'Other') return otherHobbiesText || '';
-  return sel.value.trim();
 }
 
 function showOtherDisplay(text) {
