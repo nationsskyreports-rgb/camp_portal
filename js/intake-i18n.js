@@ -37,7 +37,7 @@ function setLang(lang) {
   // Section labels
   document.getElementById('lbl-basic').textContent = t.lblBasic;
   var lifestyleSec = document.getElementById('lbl-lifestyle-section');
-  if (lifestyleSec) lifestyleSec.textContent = lang === 'ar' ? 'العائلة وأسلوب الحياة' : 'Family & Lifestyle';
+  if (lifestyleSec) lifestyleSec.textContent = t.lblLifestyle;
 
   // Field labels
   setLabelText('lbl-name',      t.lblName,     true);
