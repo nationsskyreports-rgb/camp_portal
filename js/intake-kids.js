@@ -31,7 +31,7 @@ function renderHobbyCards() {
   var html = '';
   HOBBY_OPTIONS.forEach(function(h) {
     var label = lang === 'ar' ? h.ar : h.en;
-    var sel   = selectedHobby === h.value ? ' selected' : '';
+    var sel   = selectedHobbies.indexOf(h.value) !== -1 ? ' selected' : '';
     html += '<div class="hobby-card' + sel + '" data-value="' + escHtml(h.value) + '" onclick="selectHobby(\'' + escHtml(h.value) + '\')">';
     html += '<span class="hobby-card-emoji">' + h.emoji + '</span>';
     html += '<span class="hobby-card-label">' + escHtml(label) + '</span>';
