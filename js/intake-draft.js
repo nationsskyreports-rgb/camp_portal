@@ -28,7 +28,8 @@ function saveDraft() {
       kidsNames      : kidsNamesData,
       kidsAgesData   : kidsAgesData,
       kidsTalentsData: kidsTalentsData,
-      hobbies        : val('inp-hobbies'),
+      hobbies        : selectedHobby,
+      otherHobbies   : otherHobbiesText,
       jobTitle       : val('inp-job-title')
     };
     document.querySelectorAll('[data-col-key]').forEach(function(inp) {
@@ -50,7 +51,15 @@ function loadDraft() {
     if (draft.email)    setV('inp-email',     draft.email);
     if (draft.email2)   setV('inp-email2',    draft.email2);
     if (draft.notes)    setV('inp-notes',     draft.notes);
-    if (draft.hobbies)  setV('inp-hobbies',   draft.hobbies);
+    if (draft.hobbies) {
+      selectedHobby = draft.hobbies;
+      document.getElementById('inp-hobbies').value = draft.hobbies;
+      if (draft.hobbies === 'Other' && draft.otherHobbies) {
+        otherHobbiesText = draft.otherHobbies;
+        showOtherDisplay(draft.otherHobbies);
+      }
+      renderHobbyCards();
+    }
     if (draft.jobTitle) setV('inp-job-title', draft.jobTitle);
     if (draft.kida)     { setKida(draft.kida); }
     if (draft.kidsNames)       kidsNamesData    = draft.kidsNames;
