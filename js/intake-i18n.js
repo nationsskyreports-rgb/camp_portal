@@ -24,11 +24,22 @@ function setLang(lang) {
   document.getElementById('btn-ar').classList.toggle('active', lang === 'ar');
   document.getElementById('btn-en').classList.toggle('active', lang === 'en');
 
-  document.getElementById('brand-sub').textContent  = t.brandSub;
+  // Brand
+  var brandSub = document.getElementById('brand-sub');
+  if (brandSub) brandSub.textContent = t.brandSub.replace(/\\n/g, '\n');
+
+  // Form header
   document.getElementById('form-title').textContent = t.formTitle;
   document.getElementById('form-desc').textContent  = t.formDesc;
-  document.getElementById('lbl-basic').textContent  = t.lblBasic;
+  var formTimeText = document.getElementById('form-time-text');
+  if (formTimeText) formTimeText.textContent = t.formTime;
 
+  // Section labels
+  document.getElementById('lbl-basic').textContent = t.lblBasic;
+  var lifestyleSec = document.getElementById('lbl-lifestyle-section');
+  if (lifestyleSec) lifestyleSec.textContent = lang === 'ar' ? 'العائلة وأسلوب الحياة' : 'Family & Lifestyle';
+
+  // Field labels
   setLabelText('lbl-name',      t.lblName,     true);
   setLabelText('lbl-phone',     t.lblPhone,    true);
   setLabelText('lbl-new-phone', t.lblNewPhone, false, t.lblOptional);
@@ -55,23 +66,25 @@ function setLang(lang) {
   var chEm   = document.getElementById('lbl-ch-email'); if (chEm)    chEm.textContent    = t.lblChEmail;
   var chSms  = document.getElementById('lbl-ch-sms');   if (chSms)   chSms.textContent   = t.lblChSms;
 
-  // Acknowledgment
+  // Acknowledgment — show both languages or just active one
   var ackTitle = document.getElementById('lbl-ack-title');
   if (ackTitle) ackTitle.textContent = t.lblAckTitle;
   var ackEn = document.getElementById('ack-text-en');
   var ackAr = document.getElementById('ack-text-ar');
-  if (ackEn) ackEn.style.display = lang === 'en' ? 'block' : 'none';
-  if (ackAr) ackAr.style.display = lang === 'ar' ? 'block' : 'none';
+  if (ackEn) { ackEn.textContent = t.lblAckTextEn; ackEn.style.display = lang === 'en' ? 'block' : 'none'; }
+  if (ackAr) { ackAr.textContent = t.lblAckTextAr; ackAr.style.display = lang === 'ar' ? 'block' : 'none'; }
 
   // Edit hobby link
   var editHobby = document.getElementById('lbl-edit-hobby');
   if (editHobby) editHobby.textContent = t.lblEditHobby;
 
+  // Placeholders
   document.getElementById('inp-name').placeholder  = t.namePlaceholder;
   document.getElementById('btn-label').textContent = t.btnSubmit;
   var jobInp = document.getElementById('inp-job-title');
   if (jobInp) jobInp.placeholder = t.phJobTitle;
 
+  // Error messages
   document.getElementById('err-name').textContent      = t.errRequired;
   document.getElementById('err-phone').textContent     = t.errPhone;
   document.getElementById('err-new-phone').textContent = t.errPhone;
@@ -89,6 +102,7 @@ function setLang(lang) {
   if (document.getElementById('wa-label-form'))document.getElementById('wa-label-form').textContent = t.waLabel;
   if (document.getElementById('wa-label'))     document.getElementById('wa-label').textContent      = t.waLabel;
 
+  // Not found
   if (document.getElementById('nf-title')) document.getElementById('nf-title').textContent = t.nfTitle;
   if (document.getElementById('nf-sub'))   document.getElementById('nf-sub').innerHTML     = t.nfSub;
   document.getElementById('footer-txt').textContent = t.footerTxt;
@@ -112,13 +126,6 @@ function setLabelText(id, text, required, optionalText) {
 
 /* ══════════════════════════════════════════════════════════════
    Dynamic Fields Builder
-   ──────────────────────
-   Reads campaign.column_config and renders extra form fields
-   (dropdowns or text inputs) into #dynamic-fields.
-   
-   EDIT HERE when you need to:
-   - Skip additional fields from dynamic rendering  → DYNAMIC_SKIP
-   - Change how dropdowns vs text inputs are chosen
    ══════════════════════════════════════════════════════════════ */
 
 function buildDynamicFields(camp) {
@@ -140,7 +147,7 @@ function buildDynamicFields(camp) {
     var label = labelMap[col.key] || col.label;
     var opts  = DROPDOWN_KEYS[col.key];
     if (opts) {
-      var arrowStyle = 'appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'%236b7280\'%3E%3Cpath d=\'M7 10l5 5 5-5z\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center;padding-left:2rem;';
+      var arrowStyle = 'appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'%2378716c\'%3E%3Cpath d=\'M7 10l5 5 5-5z\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center;padding-left:2rem;';
       html += '<div class="field">' +
         '<label>' + escHtml(label) + ' <span style="color:var(--muted);font-weight:400">' + escHtml(t.lblOptional) + '</span></label>' +
         '<select id="inp-' + escHtml(col.key) + '" data-col-key="' + escHtml(col.key) + '" style="' + arrowStyle + '">' +
