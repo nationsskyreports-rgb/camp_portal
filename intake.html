@@ -559,7 +559,7 @@
 
           <div class="field" id="field-kids-hobbies">
             <label id="lbl-kids-hobbies">هوايات أطفالك <span class="req">*</span></label>
-            <select id="inp-kids-hobbies" class="select-arrow">
+            <select id="inp-kids-hobbies" class="select-arrow" onchange="handleOtherSelect('kids-hobbies')">
               <option value="">اختار... / Select...</option>
               <option value="Sports">Sports | رياضة</option>
               <option value="Arts">Arts | فنون</option>
@@ -589,7 +589,7 @@
         <!-- Hobbies (client's own) -->
         <div class="field" id="field-hobbies">
           <label id="lbl-hobbies">هواياتك <span class="req">*</span></label>
-          <select id="inp-hobbies" class="select-arrow">
+          <select id="inp-hobbies" class="select-arrow" onchange="handleOtherSelect('hobbies')">
             <option value="">اختار... / Select...</option>
             <option value="Sports">Sports | رياضة</option>
             <option value="Travel">Travel | سفر</option>
@@ -1241,10 +1241,10 @@ function submitForm() {
   if (!kidaValue)                          { setErr('field-kida');        valid = false; }
   if (kidaValue === 'yes') {
     if (!val('inp-kids-count'))            { setErr('field-kids-count');   valid = false; }
-    if (!val('inp-kids-hobbies'))          { setErr('field-kids-hobbies'); valid = false; }
+    if (!getHobbiesVal('kids-hobbies'))    { setErr('field-kids-hobbies'); valid = false; }
     if (!val('inp-kids-ages'))             { setErr('field-kids-ages');    valid = false; }
   }
-  if (!val('inp-hobbies'))                 { setErr('field-hobbies');      valid = false; }
+  if (!getHobbiesVal('hobbies'))           { setErr('field-hobbies');      valid = false; }
   if (!val('inp-job-title'))               { setErr('field-job-title');    valid = false; }
 
   var privacy = document.getElementById('inp-privacy').checked;
@@ -1278,10 +1278,10 @@ function submitForm() {
   extraData.has_kids  = kidaValue;
   if (kidaValue === 'yes') {
     extraData.kids_count   = val('inp-kids-count');
-    extraData.kids_hobbies = val('inp-kids-hobbies');
+    extraData.kids_hobbies = getHobbiesVal('kids-hobbies');
     extraData.kids_ages    = val('inp-kids-ages');
   }
-  extraData.hobbies   = val('inp-hobbies');
+  extraData.hobbies   = getHobbiesVal('hobbies');
   extraData.job_title = val('inp-job-title');
   document.querySelectorAll('[data-col-key]').forEach(function(inp) {
     if (inp.value.trim()) extraData[inp.getAttribute('data-col-key')] = inp.value.trim();
@@ -1540,6 +1540,127 @@ function escHtml(str) {
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ── Other-option modal ──────────────────────────────────────────────────────
+var otherFieldActive     = null;   // 'hobbies' | 'kids-hobbies'
+var otherHobbiesText     = '';
+var otherKidsHobbiesText = '';
+
+function handleOtherSelect(fieldKey) {
+  var selectId = fieldKey === 'hobbies' ? 'inp-hobbies' : 'inp-kids-hobbies';
+  var sel = document.getElementById(selectId);
+  if (sel && sel.value === 'Other') {
+    openOtherModal(fieldKey);
+  } else {
+    // reset stored custom text if user picks a real option
+    if (fieldKey === 'hobbies') otherHobbiesText = '';
+    else otherKidsHobbiesText = '';
+  }
+}
+
+function openOtherModal(fieldKey) {
+  otherFieldActive = fieldKey;
+  var isAr = currentLang === 'ar';
+  var title = document.getElementById('other-modal-title');
+  var inp   = document.getElementById('other-modal-input');
+  var err   = document.getElementById('other-modal-err');
+
+  if (fieldKey === 'hobbies') {
+    title.textContent = isAr ? 'ما هي هوايتك؟' : 'What is your hobby?';
+    inp.placeholder   = isAr ? 'مثال: تصوير، رسم، سباحة...' : 'e.g. Photography, Drawing, Swimming...';
+    inp.value         = otherHobbiesText;
+  } else {
+    title.textContent = isAr ? 'ما هي هواية أطفالك؟' : "What are your kids' hobbies?";
+    inp.placeholder   = isAr ? 'مثال: رسم، سباحة، ألعاب إلكترونية...' : 'e.g. Drawing, Swimming, Video games...';
+    inp.value         = otherKidsHobbiesText;
+  }
+
+  err.style.display     = 'none';
+  inp.style.borderColor = 'rgba(255,255,255,0.15)';
+
+  var overlay = document.getElementById('other-modal-overlay');
+  overlay.style.display = 'flex';
+  setTimeout(function() { inp.focus(); if (inp.value) inp.select(); }, 80);
+
+  inp.onkeydown = function(e) {
+    if (e.key === 'Enter')  { e.preventDefault(); closeOtherModal(true); }
+    if (e.key === 'Escape') { closeOtherModal(false); }
+  };
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('other-modal-overlay')) closeOtherModal(false);
+}
+
+function closeOtherModal(confirm) {
+  var inp     = document.getElementById('other-modal-input');
+  var err     = document.getElementById('other-modal-err');
+  var overlay = document.getElementById('other-modal-overlay');
+
+  if (confirm) {
+    var text = inp.value.trim();
+    if (!text) {
+      err.style.display     = 'block';
+      inp.style.borderColor = '#ef4444';
+      inp.focus();
+      return;
+    }
+    if (otherFieldActive === 'hobbies') otherHobbiesText = text;
+    else otherKidsHobbiesText = text;
+    overlay.style.display = 'none';
+    saveDraft();
+  } else {
+    // cancelled — revert select to empty
+    var selectId = otherFieldActive === 'hobbies' ? 'inp-hobbies' : 'inp-kids-hobbies';
+    var sel = document.getElementById(selectId);
+    if (sel) sel.value = '';
+    if (otherFieldActive === 'hobbies') otherHobbiesText = '';
+    else otherKidsHobbiesText = '';
+    overlay.style.display = 'none';
+  }
+}
+
+function getHobbiesVal(fieldKey) {
+  var selectId = fieldKey === 'hobbies' ? 'inp-hobbies' : 'inp-kids-hobbies';
+  var sel = document.getElementById(selectId);
+  if (!sel) return '';
+  if (sel.value === 'Other') {
+    return (fieldKey === 'hobbies' ? otherHobbiesText : otherKidsHobbiesText) || '';
+  }
+  return sel.value.trim();
+}
 </script>
+
+<!-- ── Other-option modal ── -->
+<div id="other-modal-overlay"
+     onclick="handleOverlayClick(event)"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:300;align-items:center;justify-content:center;padding:20px;">
+  <div id="other-modal-box"
+       style="background:#0d1628;border:1px solid rgba(59,130,246,0.3);border-radius:16px;width:100%;max-width:380px;padding:24px 24px 20px;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+    <h3 id="other-modal-title"
+        style="margin:0 0 14px;font-size:16px;font-weight:600;color:#e2e8f0;"></h3>
+    <input type="text" id="other-modal-input" autocomplete="off"
+           style="width:100%;padding:11px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:#e2e8f0;font-size:15px;outline:none;box-sizing:border-box;transition:border-color .2s;">
+    <div id="other-modal-err"
+         style="display:none;color:#f87171;font-size:12px;margin-top:6px;">
+      هذا الحقل مطلوب / This field is required
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end;">
+      <button onclick="closeOtherModal(false)"
+              style="padding:9px 20px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:#94a3b8;font-size:14px;font-weight:500;cursor:pointer;transition:background .15s;"
+              onmouseover="this.style.background='rgba(255,255,255,0.07)'"
+              onmouseout="this.style.background='transparent'">
+        إلغاء / Cancel
+      </button>
+      <button onclick="closeOtherModal(true)"
+              style="padding:9px 24px;border-radius:8px;border:none;background:#3b82f6;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;"
+              onmouseover="this.style.background='#2563eb'"
+              onmouseout="this.style.background='#3b82f6'">
+        تأكيد / OK
+      </button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
