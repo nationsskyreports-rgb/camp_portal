@@ -42,6 +42,23 @@ var EN_LABELS = {
   payment_term:'Payment Method'
 };
 
+// ── Hobby Card Options ───────────────────────────────────────
+var HOBBY_OPTIONS = [
+  { value: 'Sports',     emoji: '⚽', ar: 'رياضة',          en: 'Sports' },
+  { value: 'Travel',     emoji: '✈️', ar: 'سفر',            en: 'Travel' },
+  { value: 'Reading',    emoji: '📚', ar: 'قراءة',          en: 'Reading' },
+  { value: 'Cooking',    emoji: '🍳', ar: 'طبخ',            en: 'Cooking' },
+  { value: 'Technology', emoji: '💻', ar: 'تكنولوجيا',     en: 'Technology' },
+  { value: 'Art',        emoji: '🎨', ar: 'فن',             en: 'Art' },
+  { value: 'Music',      emoji: '🎵', ar: 'موسيقى',        en: 'Music' },
+  { value: 'Social',     emoji: '👥', ar: 'تواصل اجتماعي', en: 'Social' },
+  { value: 'Business',   emoji: '💼', ar: 'أعمال',          en: 'Business' },
+  { value: 'Other',      emoji: '✨', ar: 'أخرى',           en: 'Other' }
+];
+
+// ── Hobby State ──────────────────────────────────────────────
+var selectedHobby = '';
+
 // ── Translations ─────────────────────────────────────────────
 var T = {
   ar: {
