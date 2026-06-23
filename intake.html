@@ -15,448 +15,22 @@
   <meta name="twitter:description" content="فريقنا متاح لمساعدتك. سجّل معلوماتك وسيتواصل معك أحد مستشارينا في أقرب وقت.">
   <meta name="twitter:image"      content="https://nationsskyreports-rgb.github.io/icon-512.png">
   <link rel="icon" type="image/png" href="icon-512.png">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --blue:      #3b82f6;
-      --blue-dark: #2563eb;
-      --blue-bg:   #eff6ff;
-      --green:     #10b981;
-      --green-bg:  #ecfdf5;
-      --red:       #ef4444;
-      --red-bg:    #fef2f2;
-      --border:    #e5e7eb;
-      --text:      #111827;
-      --muted:     #6b7280;
-      --card-bg:   #ffffff;
-      --page-bg:   #f3f4f6;
-      --radius:    10px;
-      --whatsapp:  #25d366;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, 'Cairo', Arial, sans-serif;
-      background: var(--page-bg);
-      min-height: 100vh;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 2rem 1rem 4rem;
-      color: var(--text);
-    }
-
-    .wrapper { width: 100%; max-width: 480px; }
-
-    /* Lang Toggle */
-    .lang-toggle {
-      display: flex;
-      justify-content: center;
-      gap: .5rem;
-      margin-bottom: 1.25rem;
-    }
-    .lang-btn {
-      padding: .4rem 1.1rem;
-      border-radius: 8px;
-      border: 1.5px solid var(--border);
-      background: #fff;
-      font-size: .82rem;
-      font-weight: 600;
-      cursor: pointer;
-      color: var(--muted);
-      transition: all .15s;
-      font-family: inherit;
-    }
-    .lang-btn.active {
-      background: var(--blue);
-      border-color: var(--blue);
-      color: #fff;
-    }
-
-    /* Brand Header */
-    .brand { text-align: center; margin-bottom: 1.5rem; }
-    .brand-logo {
-      width: 56px; height: 56px;
-      background: none;
-      border-radius: 16px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: .75rem;
-    }
-    .brand-logo img { width: 56px; height: 56px; border-radius: 16px; object-fit: cover; }
-    .brand-title { font-size: 1.1rem; font-weight: 700; color: var(--text); }
-    .brand-sub   { font-size: .85rem; color: var(--muted); margin-top: .2rem; }
-
-    /* Card */
-    .card {
-      background: var(--card-bg);
-      border-radius: 16px;
-      border: 1px solid var(--border);
-      padding: 2rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
-    }
-
-    .campaign-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: .4rem;
-      background: var(--blue-bg);
-      color: var(--blue-dark);
-      border-radius: 6px;
-      font-size: .78rem;
-      font-weight: 600;
-      padding: .3rem .7rem;
-      margin-bottom: 1.25rem;
-    }
-    .campaign-tag svg { width: 13px; height: 13px; fill: var(--blue); }
-
-    .card-title { font-size: 1.25rem; font-weight: 700; margin-bottom: .4rem; color: var(--text); }
-    .card-desc  { font-size: .88rem; color: var(--muted); margin-bottom: 1.75rem; line-height: 1.6; }
-
-    /* Form */
-    .field { margin-bottom: 1.1rem; }
-    .field label {
-      display: block;
-      font-size: .82rem;
-      font-weight: 600;
-      margin-bottom: .4rem;
-      color: #374151;
-    }
-    .field label .req { color: var(--red); margin-right: .15rem; margin-left: .15rem; }
-    .field input,
-    .field select,
-    .field textarea {
-      width: 100%;
-      padding: .65rem .9rem;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      font-size: .9rem;
-      font-family: inherit;
-      color: var(--text);
-      background: #fff;
-      transition: border-color .15s, box-shadow .15s;
-      outline: none;
-    }
-    .field input:focus,
-    .field select:focus,
-    .field textarea:focus {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(59,130,246,.12);
-    }
-    .field.has-err .err-msg { display: block; }
-    .field.has-err input,
-    .field.has-err select { border-color: var(--red); }
-    .field .err-msg {
-      font-size: .78rem;
-      color: var(--red);
-      margin-top: .3rem;
-      display: none;
-    }
-    .field textarea { resize: vertical; min-height: 90px; }
-
-    .divider { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0 1.25rem; }
-    .section-label {
-      font-size: .75rem;
-      font-weight: 700;
-      color: var(--muted);
-      letter-spacing: .05em;
-      text-transform: uppercase;
-      margin-bottom: 1rem;
-    }
-
-    /* Submit Button */
-    .btn-submit {
-      width: 100%;
-      padding: .85rem;
-      background: var(--blue);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius);
-      font-size: .95rem;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
-      transition: background .15s, transform .1s, opacity .15s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: .5rem;
-      margin-top: 1.5rem;
-      position: relative;
-      overflow: hidden;
-    }
-    .btn-submit:hover:not(:disabled) { background: var(--blue-dark); }
-    .btn-submit:active:not(:disabled) { transform: scale(.99); }
-    .btn-submit:disabled { opacity: .65; cursor: not-allowed; }
-    .btn-submit svg { width: 18px; height: 18px; fill: #fff; flex-shrink: 0; }
-
-    .whatsapp-container {
-      margin-top: 1.5rem;
-      text-align: center;
-    }
-    .whatsapp-text {
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-bottom: 0.75rem;
-    }
-    .btn-whatsapp {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: .6rem;
-      background: var(--whatsapp);
-      color: #fff;
-      padding: .75rem 1.25rem;
-      border-radius: var(--radius);
-      text-decoration: none;
-      font-weight: 700;
-      font-size: 0.9rem;
-      transition: opacity .15s, transform .1s;
-      width: 100%;
-    }
-    .btn-whatsapp:hover { opacity: .9; }
-    .btn-whatsapp:active { transform: scale(.98); }
-    .btn-whatsapp svg { width: 18px; height: 18px; fill: #fff; }
-
-    /* Privacy Checkbox */
-    .privacy-field {
-      display: flex;
-      align-items: flex-start;
-      gap: .75rem;
-      margin-top: 1.5rem;
-      cursor: pointer;
-    }
-    .privacy-field input {
-      width: 18px; height: 18px;
-      margin-top: .1rem;
-      cursor: pointer;
-    }
-    .privacy-field span {
-      font-size: .85rem;
-      line-height: 1.4;
-      color: var(--muted);
-    }
-
-    .btn-progress {
-      position: absolute; inset: 0;
-      background: rgba(255,255,255,.18);
-      width: 0%; transition: width .4s ease;
-      pointer-events: none;
-    }
-
-    .spinner {
-      width: 18px; height: 18px;
-      border: 2.5px solid rgba(255,255,255,.35);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      flex-shrink: 0;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* States */
-    .state { display: none; }
-    .state.active { display: block; }
-
-    .skeleton {
-      height: 14px; border-radius: 6px;
-      background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.4s infinite;
-      margin-bottom: .6rem;
-    }
-    @keyframes shimmer { to { background-position: -200% 0; } }
-
-    .success-box { text-align: center; padding: 1rem 0 .5rem; }
-    .success-circle {
-      width: 72px; height: 72px;
-      background: var(--green-bg);
-      border-radius: 50%;
-      display: inline-flex; align-items: center; justify-content: center;
-      margin-bottom: 1.25rem;
-      animation: popIn .4s cubic-bezier(.34,1.56,.64,1) both;
-    }
-    @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    .success-circle svg { width: 36px; height: 36px; fill: var(--green); }
-    .success-title { font-size: 1.2rem; font-weight: 700; margin-bottom: .5rem; }
-    .success-sub   { font-size: .9rem; color: var(--muted); line-height: 1.6; }
-
-    .error-banner {
-      background: var(--red-bg);
-      border: 1px solid #fecaca;
-      border-radius: var(--radius);
-      padding: .75rem 1rem;
-      font-size: .85rem;
-      color: #b91c1c;
-      margin-bottom: 1rem;
-      display: none;
-    }
-    .error-banner.show { display: flex; align-items: flex-start; gap: .5rem; }
-
-    .footer { text-align: center; margin-top: 1.5rem; font-size: .78rem; color: #9ca3af; }
-
-    .notfound-box { text-align: center; padding: 1rem 0; }
-    .notfound-icon {
-      width: 64px; height: 64px;
-      background: #fef2f2; border-radius: 50%;
-      display: inline-flex; align-items: center; justify-content: center;
-      margin-bottom: 1rem;
-    }
-    .notfound-icon svg { width: 30px; height: 30px; fill: var(--red); }
-    .notfound-title { font-size: 1.1rem; font-weight: 700; margin-bottom: .4rem; }
-    .notfound-sub   { font-size: .88rem; color: var(--muted); }
-
-
-    /* ── Phone Lookup Result ── */
-    .lookup-panel {
-      margin-top: .75rem;
-      border: 1.5px solid #a7f3d0;
-      border-radius: var(--radius);
-      background: var(--green-bg);
-      overflow: hidden;
-    }
-    .lookup-header {
-      display: flex;
-      align-items: center;
-      gap: .6rem;
-      padding: .7rem 1rem;
-      border-bottom: 1px solid #a7f3d0;
-    }
-    .lookup-header svg { width: 18px; height: 18px; fill: var(--green); flex-shrink: 0; }
-    .lookup-header-text { font-size: .85rem; color: #065f46; }
-    .lookup-header-name { font-weight: 700; font-size: .92rem; color: #064e3b; }
-    .lookup-units { padding: .6rem .85rem .85rem; }
-    .lookup-proj-lbl {
-      font-size: .68rem; font-weight: 700; color: #047857;
-      letter-spacing: .05em; text-transform: uppercase;
-      margin: .4rem 0 .35rem;
-    }
-    .lookup-unit-item {
-      display: flex; align-items: center; gap: .65rem;
-      padding: .55rem .75rem;
-      border: 1.5px solid #6ee7b7;
-      border-radius: 8px;
-      margin-bottom: .35rem;
-      cursor: pointer;
-      background: #fff;
-      transition: border-color .12s, background .12s;
-    }
-    .lookup-unit-item:hover,
-    .lookup-unit-item.sel { border-color: var(--green); background: #ecfdf5; }
-    .lookup-unit-item input[type=checkbox] {
-      width: 15px; height: 15px; accent-color: var(--green);
-      flex-shrink: 0; cursor: pointer;
-    }
-    .lookup-unit-code { font-size: .8rem; font-weight: 600; color: var(--text); flex: 1; }
-    .lookup-unit-con  { font-size: .72rem; color: var(--muted); }
-    /* ── Not registered notice ── */
-    .notfound-inline {
-      display: none;
-      margin-top: .6rem;
-      padding: .6rem .9rem;
-      background: var(--red-bg);
-      border: 1px solid #fecaca;
-      border-radius: 8px;
-      font-size: .82rem;
-      color: #b91c1c;
-    }
-    .notfound-inline.show { display: block; }
-
-    /* ── Communication Channel ── */
-    .channel-options { display: flex; flex-direction: column; gap: .6rem; margin-bottom: .5rem; }
-    .channel-item {
-      display: flex; align-items: center; gap: .75rem;
-      padding: .55rem .85rem;
-      border: 1.5px solid var(--border); border-radius: var(--radius);
-      cursor: pointer; transition: border-color .12s, background .12s;
-    }
-    .channel-item:hover { border-color: #93c5fd; background: #f8fbff; }
-    .channel-item input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--blue); flex-shrink: 0; }
-    .channel-item span { font-size: .88rem; color: var(--text); }
-    .channel-item:has(input:checked) { border-color: var(--blue); background: var(--blue-bg); }
-
-    /* ── Acknowledgment ── */
-    .acknowledgment-box { background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
-    .ack-title { font-size: .85rem; font-weight: 700; color: var(--text); margin-bottom: .75rem; }
-    .ack-text-en { font-size: .82rem; color: var(--muted); line-height: 1.6; margin-bottom: .6rem; }
-    .ack-text-ar { font-size: .82rem; color: var(--muted); line-height: 1.6; direction: rtl; }
-
-    /* ── Select Arrow ── */
-    .select-arrow {
-      appearance: none;
-      -webkit-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%236b7280'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: left 12px center;
-      padding-left: 2rem;
-    }
-
-    /* ── Yes / No Toggle ── */
-    .yesno-options { display: flex; gap: .75rem; margin-top: .3rem; }
-    .yesno-btn {
-      flex: 1;
-      padding: .65rem 1rem;
-      border-radius: var(--radius);
-      border: 1.5px solid var(--border);
-      background: #fff;
-      font-size: .9rem;
-      font-weight: 600;
-      cursor: pointer;
-      color: var(--muted);
-      font-family: inherit;
-      transition: all .15s;
-    }
-    .yesno-btn:hover:not(.sel-yes):not(.sel-no) { border-color: #93c5fd; background: #f8fbff; }
-    .yesno-btn.sel-yes { background: var(--green); border-color: var(--green); color: #fff; }
-    .yesno-btn.sel-no  { background: var(--red);   border-color: var(--red);   color: #fff; }
-
-    /* ── Sons sub-fields slide-in ── */
-    #kids-details {
-      padding: .85rem 1rem;
-      margin-bottom: .5rem;
-      background: #f8fbff;
-      border: 1.5px solid var(--blue);
-      border-radius: var(--radius);
-    }
-    #kids-details .field { margin-bottom: .85rem; }
-    #kids-details .field:last-child { margin-bottom: 0; }
-
-    /* ── Per-kid card inputs ── */
-    .kid-field-input {
-      width: 100%;
-      padding: .6rem .9rem;
-      border-radius: 8px;
-      border: 1.5px solid var(--border);
-      font-size: .88rem;
-      font-family: inherit;
-      color: var(--text);
-      background: #fff;
-      outline: none;
-      box-sizing: border-box;
-      transition: border-color .15s, box-shadow .15s;
-    }
-    .kid-field-input:focus {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(59,130,246,.12);
-    }
-
-    @media (max-width: 500px) {
-      body { padding: 1rem .75rem 3rem; }
-      .card { padding: 1.25rem; }
-    }
-  </style>
+  <link rel="stylesheet" href="css/intake.css">
 </head>
 <body>
 <div class="wrapper">
 
-  <!-- Lang Toggle -->
+  <!-- ══════════════════════════════════════════════════════════
+       Lang Toggle
+       ══════════════════════════════════════════════════════════ -->
   <div class="lang-toggle">
     <button class="lang-btn active" id="btn-ar" onclick="setLang('ar')">العربية</button>
     <button class="lang-btn"        id="btn-en" onclick="setLang('en')">English</button>
   </div>
 
-  <!-- Brand -->
+  <!-- ══════════════════════════════════════════════════════════
+       Brand Header
+       ══════════════════════════════════════════════════════════ -->
   <div class="brand">
     <div class="brand-logo">
       <img src="icon-512.png" alt="Nations of Sky">
@@ -465,10 +39,12 @@
     <div class="brand-sub" id="brand-sub">أهلاً بك! سجّل هنا وسيتواصل معك أحد مستشارينا قريباً</div>
   </div>
 
-  <!-- Card -->
+  <!-- ══════════════════════════════════════════════════════════
+       Main Card
+       ══════════════════════════════════════════════════════════ -->
   <div class="card">
 
-    <!-- Loading -->
+    <!-- ── STATE: Loading Skeleton ── -->
     <div id="state-loading" class="state active">
       <div class="skeleton" style="width:35%;margin-bottom:1rem"></div>
       <div class="skeleton" style="width:70%;height:20px;margin-bottom:.5rem"></div>
@@ -479,7 +55,7 @@
       <div class="skeleton" style="height:44px"></div>
     </div>
 
-    <!-- Form -->
+    <!-- ── STATE: Form ── -->
     <div id="state-form" class="state">
       <div class="campaign-tag" id="camp-tag" style="display: none;">
         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
@@ -492,22 +68,29 @@
         <span id="error-text"></span>
       </div>
 
-      <!-- Single Form -->
+      <!-- ════════════════════════════════════════════════════
+           FORM FIELDS
+           ════════════════════════════════════════════════════ -->
       <div id="panel-register">
         <div class="card-title" id="form-title">استمارة تحديث بيانات العميل</div>
         <div class="card-desc"  id="form-desc">يرجى تحديث بياناتك الشخصية وبيانات التواصل للتأكد من صحة سجلاتنا.</div>
 
+        <!-- ── Section: Basic Info ── -->
         <div class="section-label" id="lbl-basic">المعلومات الأساسية</div>
 
+        <!-- Name -->
         <div class="field" id="field-name">
           <label id="lbl-name">الاسم الكامل <span class="req">*</span></label>
           <input type="text" id="inp-name" autocomplete="name">
           <div class="err-msg" id="err-name">هذا الحقل مطلوب</div>
         </div>
 
+        <!-- Phone (primary) -->
         <div class="field" id="field-phone">
           <label id="lbl-phone">رقم التليفون الأساسي <span class="req">*</span></label>
-          <input type="tel" id="inp-phone" placeholder="+20 1xx xxxx xxxx" autocomplete="tel" dir="ltr" onblur="lookupPhone()" oninput="phoneLookupDone=false;phoneNotFound=false;document.getElementById('phone-lookup-panel').style.display='none';document.getElementById('phone-notfound-notice').classList.remove('show')">
+          <input type="tel" id="inp-phone" placeholder="+20 1xx xxxx xxxx" autocomplete="tel" dir="ltr"
+                 onblur="lookupPhone()"
+                 oninput="phoneLookupDone=false;phoneNotFound=false;document.getElementById('phone-lookup-panel').style.display='none';document.getElementById('phone-notfound-notice').classList.remove('show')">
           <div class="err-msg" id="err-phone">أدخل رقماً صحيحاً</div>
         </div>
 
@@ -528,31 +111,35 @@
         <!-- Not found notice -->
         <div class="notfound-inline" id="phone-notfound-notice"></div>
 
+        <!-- New Phone -->
         <div class="field" id="field-new-phone">
           <label id="lbl-new-phone">رقم التليفون الجديد (لو عايز تغيّر رقمك الأساسي) <span style="color:var(--muted);font-weight:400" id="lbl-new-phone-opt">(اختياري)</span></label>
           <input type="tel" id="inp-new-phone" placeholder="+20 1xx xxxx xxxx" dir="ltr">
           <div class="err-msg" id="err-new-phone">أدخل رقماً صحيحاً</div>
         </div>
 
+        <!-- Phone 2 -->
         <div class="field" id="field-phone2">
           <label id="lbl-phone2">رقم التليفون الإضافي <span style="color:var(--muted);font-weight:400" id="lbl-phone2-opt">(اختياري)</span></label>
           <input type="tel" id="inp-phone2" placeholder="+20 1xx xxxx xxxx" autocomplete="tel" dir="ltr">
           <div class="err-msg" id="err-phone2">أدخل رقماً صحيحاً</div>
         </div>
 
+        <!-- Email -->
         <div class="field" id="field-email">
           <label id="lbl-email">البريد الإلكتروني الأساسي <span class="req">*</span></label>
           <input type="email" id="inp-email" placeholder="example@email.com" autocomplete="email" dir="ltr">
           <div class="err-msg" id="err-email">أدخل بريداً إلكترونياً صحيحاً</div>
         </div>
 
+        <!-- Email 2 -->
         <div class="field" id="field-email2">
           <label id="lbl-email2">البريد الإلكتروني الإضافي <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>
           <input type="email" id="inp-email2" placeholder="example2@email.com" dir="ltr">
           <div class="err-msg" id="err-email2">أدخل بريداً إلكترونياً صحيحاً</div>
         </div>
 
-        <!-- ── Sons / Children Question ── -->
+        <!-- ── Section: Children ── -->
         <hr class="divider">
         <div class="field" id="field-kida">
           <label id="lbl-kida">هل عندك أبناء؟ <span class="req">*</span></label>
@@ -563,10 +150,9 @@
           <div class="err-msg" id="err-kida">هذا الحقل مطلوب</div>
         </div>
 
-        <!-- Sons Details — visible only when kida = yes -->
+        <!-- Sons Details (visible only when kida = yes) -->
         <div id="kids-details" style="display:none">
           <div class="section-label" id="lbl-sons-section" style="color:var(--blue-dark);margin-bottom:.85rem;">بيانات الأبناء</div>
-
           <div class="field" id="field-kids-count">
             <label id="lbl-kids-count">كم عدد أبنائك؟ <span class="req">*</span></label>
             <select id="inp-kids-count" class="select-arrow" onchange="handleKidsCountChange()">
@@ -579,11 +165,10 @@
             </select>
             <div class="err-msg" id="err-kids-count">هذا الحقل مطلوب</div>
           </div>
-
           <div id="kids-names-container"></div>
         </div>
 
-        <!-- Hobbies (client's own) -->
+        <!-- Hobbies -->
         <div class="field" id="field-hobbies">
           <label id="lbl-hobbies">هواياتك <span class="req">*</span></label>
           <select id="inp-hobbies" class="select-arrow" onchange="handleOtherSelect('hobbies')">
@@ -614,15 +199,17 @@
           <div class="err-msg" id="err-job-title">هذا الحقل مطلوب</div>
         </div>
 
+        <!-- Dynamic Fields (rendered by JS from campaign config) -->
         <div id="dynamic-fields"></div>
 
+        <!-- ── Section: Notes ── -->
         <hr class="divider">
         <div class="field">
           <label id="lbl-notes">ملاحظات إضافية <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>
           <textarea id="inp-notes"></textarea>
         </div>
 
-        <!-- Preferred Communication Channel -->
+        <!-- ── Section: Communication Channel ── -->
         <hr class="divider">
         <div class="section-label" id="lbl-channel-section">وسيلة التواصل المفضلة</div>
         <div class="channel-options" id="channel-options">
@@ -644,7 +231,7 @@
           </label>
         </div>
 
-        <!-- Client Acknowledgment -->
+        <!-- ── Section: Acknowledgment ── -->
         <hr class="divider">
         <div class="acknowledgment-box" id="field-ack">
           <div class="ack-title" id="lbl-ack-title">إقرار العميل</div>
@@ -656,12 +243,14 @@
           </label>
         </div>
 
+        <!-- Submit Button -->
         <button type="button" class="btn-submit" id="btn-submit" onclick="submitForm()">
           <div class="btn-progress" id="btn-progress"></div>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
           <span id="btn-label">إرسال الطلب</span>
         </button>
 
+        <!-- WhatsApp CTA -->
         <div class="whatsapp-container">
           <div class="whatsapp-text" id="wa-text">أو تواصل معنا مباشرة عبر واتساب</div>
           <a href="https://wa.me/20215555" target="_blank" class="btn-whatsapp" id="btn-wa-form">
@@ -673,7 +262,7 @@
 
     </div><!-- /state-form -->
 
-    <!-- Success -->
+    <!-- ── STATE: Success ── -->
     <div id="state-success" class="state">
       <div class="success-box">
         <div class="success-circle">
@@ -689,7 +278,7 @@
       </div>
     </div>
 
-    <!-- Not Found -->
+    <!-- ── STATE: Not Found ── -->
     <div id="state-notfound" class="state">
       <div class="notfound-box">
         <div class="notfound-icon">
@@ -706,1080 +295,45 @@
 
 </div><!-- /wrapper -->
 
-<script>
-// CONFIG
-var SB_URL = 'https://biwrdwxgfyhnltzddlwu.supabase.co';
-var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpd3Jkd3hnZnlobmx0emRkbHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTczMTYsImV4cCI6MjA4OTc5MzMxNn0.EMOV5v3cGaDEqQJusnyrWTWdSPPwKeyuguPzxJvtKdQ';
-
-var NOS_PROJECTS = [
-  'Jirian',
-  'Sky Ridge Elite',
-  'Sky Ridge Executives',
-  'Zomra',
-  'ISLA',
-  'Upviews',
-  'Sadaf'
-];
-
-var DROPDOWN_KEYS = {
-  project: NOS_PROJECTS
-};
-
-var AR_LABELS = {
-  project:'المشروع',
-  property_type:'نوع الوحدة', payment_term:'طريقة السداد'
-};
-var EN_LABELS = {
-  project:'Project',
-  property_type:'Property Type', payment_term:'Payment Method'
-};
-
-// TRANSLATIONS
-var T = {
-  ar: {
-    brandSub         : 'أهلاً بك! سجّل هنا وسيتواصل معك أحد مستشارينا قريباً',
-    formTitle        : 'استمارة تحديث بيانات العميل',
-    formDesc         : 'يرجى تحديث بياناتك الشخصية وبيانات التواصل للتأكد من صحة سجلاتنا.',
-    lblBasic         : 'المعلومات الأساسية',
-    lblName          : 'الاسم الكامل',
-    lblPhone         : 'رقم التليفون الأساسي',
-    lblNewPhone      : 'رقم التليفون الجديد (لو عايز تغيّر رقمك الأساسي)',
-    lblPhone2        : 'رقم التليفون الإضافي',
-    lblEmail         : 'البريد الإلكتروني الأساسي',
-    lblEmail2        : 'البريد الإلكتروني الإضافي',
-    lblOptional      : '(اختياري)',
-    lblNotes         : 'ملاحظات إضافية',
-    lblDetails       : 'تفاصيل الاهتمام',
-    btnSubmit        : 'إرسال الطلب',
-    btnSending       : 'جارٍ الإرسال...',
-    errRequired      : 'هذا الحقل مطلوب',
-    errPhone         : 'أدخل رقماً صحيحاً (مثال: +201234567890)',
-    errEmail         : 'أدخل بريداً إلكترونياً صحيحاً',
-    successTitle     : 'تم إرسال طلبك بنجاح!',
-    successMsg       : 'شكراً لك. سيتواصل معك أحد ممثلينا في أقرب وقت ممكن.',
-    lblPrivacy       : 'أوافق على الإقرار أعلاه',
-    waText           : 'أو تواصل معنا مباشرة عبر واتساب',
-    waLabel          : 'تواصل معنا عبر واتساب',
-    errPrivacy       : 'يجب الموافقة على الإقرار للمتابعة',
-    nfTitle          : 'الرابط غير صحيح',
-    nfSub            : 'هذا الرابط غير صالح أو انتهت صلاحيته. تواصل مع المبيعات للحصول على الرابط الصحيح.',
-    errNotFound      : 'الرقم ده مش متسجل عندنا. استخدم الرقم المسجل باسمك.',
-    errPhoneBlocked  : '⚠️ الرقم ده مش متسجل عندنا — استخدم الرقم المسجل باسمك',
-    lblKida          : 'هل عندك أبناء؟',
-    lblKidsCount     : 'كم عدد أبنائك؟',
-    lblSonsSection   : 'بيانات الأبناء',
-    lblHobbies       : 'هواياتك',
-    lblJobTitle      : 'المسمى الوظيفي',
-    phJobTitle       : 'مثال: مهندس، محاسب، طبيب...',
-    errGeneral       : 'حدث خطأ. يرجى المحاولة مرة أخرى.',
-    footerTxt        : 'مدعوم بواسطة Nations of Sky Portal',
-    namePlaceholder  : 'مثال: محمد أحمد',
-    lblChannelSection: 'وسيلة التواصل المفضلة',
-    lblChCall        : 'مكالمة هاتفية',
-    lblChWa          : 'واتساب',
-    lblChEmail       : 'البريد الإلكتروني',
-    lblChSms         : 'رسالة نصية',
-    lblAckTitle      : 'إقرار العميل',
-    lblEditHobby     : 'تعديل',
-    kidName          : 'الاسم',
-    kidAge           : 'السن',
-    kidHobby         : 'الهواية',
-    kidLabel         : 'الابن',
-    dir              : 'rtl',
-    lang             : 'ar'
-  },
-  en: {
-    brandSub         : 'Welcome! Register here and one of our consultants will reach out shortly.',
-    formTitle        : 'Client Data Update Form',
-    formDesc         : 'Please update your personal and contact information to ensure our records are accurate.',
-    lblBasic         : 'Basic Information',
-    lblName          : 'Full Name',
-    lblPhone         : 'Primary Phone Number',
-    lblNewPhone      : 'New Phone Number (if you want to change your primary number)',
-    lblPhone2        : 'Secondary Phone Number',
-    lblEmail         : 'Primary Email Address',
-    lblEmail2        : 'Secondary Email Address',
-    lblOptional      : '(Optional)',
-    lblNotes         : 'Additional Notes',
-    lblDetails       : 'Interest Details',
-    btnSubmit        : 'Submit Request',
-    btnSending       : 'Sending...',
-    errRequired      : 'This field is required',
-    errPhone         : 'Please enter a valid number (e.g. +201234567890)',
-    errEmail         : 'Please enter a valid email address',
-    successTitle     : 'Request Submitted Successfully!',
-    successMsg       : 'Thank you. One of our representatives will contact you as soon as possible.',
-    lblPrivacy       : 'I agree to the above acknowledgment',
-    waText           : 'Or contact us directly via WhatsApp',
-    waLabel          : 'Contact us on WhatsApp',
-    errPrivacy       : 'You must agree to the acknowledgment to continue',
-    nfTitle          : 'Invalid Link',
-    nfSub            : 'This link is invalid or has expired. Please contact sales to get the correct link.',
-    errNotFound      : 'This number is not registered with us. Please use the number registered under your name.',
-    errPhoneBlocked  : '⚠️ This number is not registered with us — please use the number registered under your name',
-    lblKida          : 'Do you have children?',
-    lblKidsCount     : 'How many children?',
-    lblSonsSection   : "Children's Details",
-    lblHobbies       : 'Your hobbies',
-    lblJobTitle      : 'Job title',
-    phJobTitle       : 'e.g. Engineer, Accountant, Doctor...',
-    errGeneral       : 'An error occurred. Please try again.',
-    footerTxt        : 'Powered by Nations of Sky Portal',
-    namePlaceholder  : 'e.g. John Smith',
-    lblChannelSection: 'Preferred Communication Channel',
-    lblChCall        : 'Mobile Call',
-    lblChWa          : 'WhatsApp',
-    lblChEmail       : 'Email',
-    lblChSms         : 'SMS',
-    lblAckTitle      : 'Client Acknowledgment',
-    lblEditHobby     : 'Edit',
-    kidName          : 'Name',
-    kidAge           : 'Age',
-    kidHobby         : 'Hobby',
-    kidLabel         : 'Child',
-    dir              : 'ltr',
-    lang             : 'en'
-  }
-};
-
-var campaignId     = null;
-var matchedClients = [];
-var selectedIds    = [];
-var campaignData   = null;
-var isSubmitting   = false;
-var currentLang    = 'ar';
-
-// ── State ──
-var kidaValue       = null;
-var phoneLookupDone = false;
-var phoneNotFound   = false;
-
-// ── Anti-Duplicate ──
-var submittedPhones = {};
-
-// ── Rate Limiting ──
-var RATE_LIMIT_MS  = 60000;
-var lastSubmitTime = 0;
-
-// ── Auto-save Draft key ──
-var DRAFT_KEY = 'intake_draft_' + (new URLSearchParams(window.location.search).get('c') || 'x');
-
-function setLang(lang) {
-  currentLang = lang;
-  var t = T[lang];
-
-  document.documentElement.setAttribute('lang', lang);
-  document.documentElement.setAttribute('dir', t.dir);
-
-  document.getElementById('btn-ar').classList.toggle('active', lang === 'ar');
-  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
-
-  document.getElementById('brand-sub').textContent  = t.brandSub;
-  document.getElementById('form-title').textContent = t.formTitle;
-  document.getElementById('form-desc').textContent  = t.formDesc;
-  document.getElementById('lbl-basic').textContent  = t.lblBasic;
-
-  setLabelText('lbl-name',      t.lblName,     true);
-  setLabelText('lbl-phone',     t.lblPhone,    true);
-  setLabelText('lbl-new-phone', t.lblNewPhone, false, t.lblOptional);
-  setLabelText('lbl-phone2',    t.lblPhone2,   false, t.lblOptional);
-  setLabelText('lbl-email',     t.lblEmail,    true);
-  setLabelText('lbl-email2',    t.lblEmail2,   false, t.lblOptional);
-  setLabelText('lbl-notes',     t.lblNotes,    false, t.lblOptional);
-  setLabelText('lbl-kida',      t.lblKida,     true);
-  setLabelText('lbl-kids-count',t.lblKidsCount, true);
-  setLabelText('lbl-hobbies',   t.lblHobbies,  true);
-  setLabelText('lbl-job-title', t.lblJobTitle, true);
-
-  // Sons section label
-  var sonsSec = document.getElementById('lbl-sons-section');
-  if (sonsSec) sonsSec.textContent = t.lblSonsSection;
-
-  // Channel section
-  var chanSec = document.getElementById('lbl-channel-section');
-  if (chanSec) chanSec.textContent = t.lblChannelSection;
-
-  // Channel items
-  var chCall = document.getElementById('lbl-ch-call');  if (chCall)  chCall.textContent  = t.lblChCall;
-  var chWa   = document.getElementById('lbl-ch-wa');    if (chWa)    chWa.textContent    = t.lblChWa;
-  var chEm   = document.getElementById('lbl-ch-email'); if (chEm)    chEm.textContent    = t.lblChEmail;
-  var chSms  = document.getElementById('lbl-ch-sms');   if (chSms)   chSms.textContent   = t.lblChSms;
-
-  // Acknowledgment
-  var ackTitle = document.getElementById('lbl-ack-title');
-  if (ackTitle) ackTitle.textContent = t.lblAckTitle;
-  var ackEn = document.getElementById('ack-text-en');
-  var ackAr = document.getElementById('ack-text-ar');
-  if (ackEn) ackEn.style.display = lang === 'en' ? 'block' : 'none';
-  if (ackAr) ackAr.style.display = lang === 'ar' ? 'block' : 'none';
-
-  // Edit hobby link
-  var editHobby = document.getElementById('lbl-edit-hobby');
-  if (editHobby) editHobby.textContent = t.lblEditHobby;
-
-  document.getElementById('inp-name').placeholder  = t.namePlaceholder;
-  document.getElementById('btn-label').textContent = t.btnSubmit;
-  var jobInp = document.getElementById('inp-job-title');
-  if (jobInp) jobInp.placeholder = t.phJobTitle;
-
-  document.getElementById('err-name').textContent      = t.errRequired;
-  document.getElementById('err-phone').textContent     = t.errPhone;
-  document.getElementById('err-new-phone').textContent = t.errPhone;
-  document.getElementById('err-phone2').textContent    = t.errPhone;
-  document.getElementById('err-email').textContent     = t.errEmail;
-  document.getElementById('err-email2').textContent    = t.errEmail;
-  document.getElementById('err-kida').textContent      = t.errRequired;
-  document.getElementById('err-kids-count').textContent= t.errRequired;
-  document.getElementById('err-hobbies').textContent   = t.errRequired;
-  document.getElementById('err-job-title').textContent = t.errRequired;
-  document.getElementById('lbl-privacy').textContent   = t.lblPrivacy;
-
-  // WhatsApp
-  if (document.getElementById('wa-text'))      document.getElementById('wa-text').textContent      = t.waText;
-  if (document.getElementById('wa-label-form'))document.getElementById('wa-label-form').textContent = t.waLabel;
-  if (document.getElementById('wa-label'))     document.getElementById('wa-label').textContent      = t.waLabel;
-
-  if (document.getElementById('nf-title')) document.getElementById('nf-title').textContent = t.nfTitle;
-  if (document.getElementById('nf-sub'))   document.getElementById('nf-sub').innerHTML     = t.nfSub;
-  document.getElementById('footer-txt').textContent = t.footerTxt;
-
-  // Re-render dynamic fields & kid cards with new lang
-  if (campaignData) buildDynamicFields(campaignData);
-  if (kidaValue === 'yes') {
-    var count = getKidsCount();
-    if (count) renderKidsNameFields(count);
-  }
-}
-
-function setLabelText(id, text, required, optionalText) {
-  var el = document.getElementById(id);
-  if (!el) return;
-  el.innerHTML = escHtml(text) +
-    (required     ? ' <span class="req">*</span>' : '') +
-    (optionalText ? ' <span style="color:var(--muted);font-weight:400">' + escHtml(optionalText) + '</span>' : '');
-}
-
-(function init(){
-  var params = new URLSearchParams(window.location.search);
-  campaignId = params.get('c') || params.get('campaign');
-  if (!campaignId) { showState('notfound'); return; }
-
-  sbGet('campaigns', 'id=eq.' + campaignId + '&select=id,name,column_config&limit=1')
-    .then(function(rows) {
-      if (!rows || !rows.length) { showState('notfound'); return; }
-      campaignData = rows[0];
-      var tagNameEl = document.getElementById('camp-tag-name');
-      var tagEl     = document.getElementById('camp-tag');
-      if (tagNameEl) tagNameEl.textContent = campaignData.name || '';
-      if (tagEl && campaignData.name) tagEl.style.display = 'inline-flex';
-      document.title = 'Nations OF Sky Form — ' + (campaignData.name || '');
-      buildDynamicFields(campaignData);
-      showState('form');
-      loadDraft();
-      attachDraftListeners();
-    })
-    .catch(function() { showState('notfound'); });
-
-  setLang('ar');
-})();
-
-function buildDynamicFields(camp) {
-  var cols = camp.column_config || [];
-  if (typeof cols === 'string') { try { cols = JSON.parse(cols); } catch(e) { cols = []; } }
-
-  var DYNAMIC_SKIP = ['email','email_account','email2','name','phone','phone2','notes'];
-  var visibleCols = cols
-    .filter(function(c) { return c.show_in_form === true && DYNAMIC_SKIP.indexOf(c.key) === -1; })
-    .sort(function(a,b) { return (a.form_order !== undefined ? a.form_order : a.order) - (b.form_order !== undefined ? b.form_order : b.order); });
-
-  if (!visibleCols.length) { document.getElementById('dynamic-fields').innerHTML = ''; return; }
-
-  var t        = T[currentLang];
-  var labelMap = currentLang === 'ar' ? AR_LABELS : EN_LABELS;
-
-  var html = '<hr class="divider"><div class="section-label">' + escHtml(t.lblDetails) + '</div>';
-  visibleCols.forEach(function(col) {
-    var label = labelMap[col.key] || col.label;
-    var opts  = DROPDOWN_KEYS[col.key];
-    if (opts) {
-      var arrowStyle = 'appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'%236b7280\'%3E%3Cpath d=\'M7 10l5 5 5-5z\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center;padding-left:2rem;';
-      html += '<div class="field">' +
-        '<label>' + escHtml(label) + ' <span style="color:var(--muted);font-weight:400">' + escHtml(t.lblOptional) + '</span></label>' +
-        '<select id="inp-' + escHtml(col.key) + '" data-col-key="' + escHtml(col.key) + '" style="' + arrowStyle + '">' +
-        '<option value="">' + escHtml(label) + '...</option>' +
-        opts.map(function(o){ return '<option value="' + escHtml(o) + '">' + escHtml(o) + '</option>'; }).join('') +
-        '</select>' +
-        '</div>';
-    } else {
-      html += '<div class="field">' +
-        '<label>' + escHtml(label) + ' <span style="color:var(--muted);font-weight:400">' + escHtml(t.lblOptional) + '</span></label>' +
-        '<input type="text" id="inp-' + escHtml(col.key) + '" placeholder="' + escHtml(label) + '" data-col-key="' + escHtml(col.key) + '">' +
-        '</div>';
-    }
-  });
-  document.getElementById('dynamic-fields').innerHTML = html;
-  var dynArea = document.getElementById('dynamic-fields');
-  if (dynArea) dynArea.addEventListener('input', saveDraft);
-}
-
-// ── Auto-save Draft ──────────────────────────────────────────
-function saveDraft() {
-  try {
-    var draft = {
-      name           : val('inp-name'),
-      phone          : val('inp-phone'),
-      newPhone       : val('inp-new-phone'),
-      phone2         : val('inp-phone2'),
-      email          : val('inp-email'),
-      email2         : val('inp-email2'),
-      notes          : val('inp-notes'),
-      kida           : kidaValue,
-      kidsCount      : val('inp-kids-count'),
-      kidsNames      : kidsNamesData,
-      kidsAgesData   : kidsAgesData,
-      kidsTalentsData: kidsTalentsData,
-      hobbies        : val('inp-hobbies'),
-      jobTitle       : val('inp-job-title')
-    };
-    document.querySelectorAll('[data-col-key]').forEach(function(inp) {
-      draft['_col_' + inp.getAttribute('data-col-key')] = inp.value.trim();
-    });
-    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-  } catch(e) {}
-}
-
-function loadDraft() {
-  try {
-    var raw = sessionStorage.getItem(DRAFT_KEY);
-    if (!raw) return;
-    var draft = JSON.parse(raw);
-    if (draft.name)    setV('inp-name',    draft.name);
-    if (draft.phone)   setV('inp-phone',   draft.phone);
-    if (draft.newPhone)setV('inp-new-phone',draft.newPhone);
-    if (draft.phone2)  setV('inp-phone2',  draft.phone2);
-    if (draft.email)   setV('inp-email',   draft.email);
-    if (draft.email2)  setV('inp-email2',  draft.email2);
-    if (draft.notes)   setV('inp-notes',   draft.notes);
-    if (draft.hobbies) setV('inp-hobbies', draft.hobbies);
-    if (draft.jobTitle)setV('inp-job-title',draft.jobTitle);
-    if (draft.kida)    { setKida(draft.kida); }
-    if (draft.kidsNames)       kidsNamesData    = draft.kidsNames;
-    if (draft.kidsAgesData)    kidsAgesData     = draft.kidsAgesData;
-    if (draft.kidsTalentsData) kidsTalentsData  = draft.kidsTalentsData;
-    if (draft.kidsCount) {
-      var el = document.getElementById('inp-kids-count');
-      if (el) { el.value = draft.kidsCount; handleKidsCountChange(); }
-    }
-    Object.keys(draft).forEach(function(k) {
-      if (k.indexOf('_col_') === 0) {
-        var key = k.replace('_col_', '');
-        var inp = document.querySelector('[data-col-key="' + key + '"]');
-        if (inp && draft[k]) inp.value = draft[k];
-      }
-    });
-  } catch(e) {}
-}
-
-function clearDraft() {
-  try { sessionStorage.removeItem(DRAFT_KEY); } catch(e) {}
-}
-
-function setV(id, v) {
-  var el = document.getElementById(id);
-  if (el && v) el.value = v;
-}
-
-function attachDraftListeners() {
-  var fields = ['inp-name','inp-phone','inp-phone2','inp-new-phone','inp-email','inp-email2',
-                'inp-notes','inp-kids-count','inp-hobbies','inp-job-title'];
-  fields.forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) {
-      el.addEventListener('input', saveDraft);
-      if (el.tagName === 'SELECT') el.addEventListener('change', saveDraft);
-    }
-  });
-  var dynArea = document.getElementById('dynamic-fields');
-  if (dynArea) dynArea.addEventListener('input', saveDraft);
-}
-
-// ── PHONE LOOKUP ─────────────────────────────────────────────
-function digitsOnly(s)     { return String(s || '').replace(/\D/g, ''); }
-function normalizePhone(r) { return digitsOnly(r).slice(-10); }
-
-// ── Sons Yes/No Toggle ──────────────────────────────────────
-function setKida(v) {
-  kidaValue = v;
-  var yesBtn  = document.getElementById('btn-kida-yes');
-  var noBtn   = document.getElementById('btn-kida-no');
-  var details = document.getElementById('kids-details');
-  if (yesBtn) { yesBtn.classList.toggle('sel-yes', v === 'yes'); yesBtn.classList.remove('sel-no'); }
-  if (noBtn)  { noBtn.classList.toggle('sel-no',   v === 'no');  noBtn.classList.remove('sel-yes'); }
-  if (details) details.style.display = v === 'yes' ? 'block' : 'none';
-  var field = document.getElementById('field-kida');
-  if (field) field.classList.remove('has-err');
-  saveDraft();
-}
-
-function lookupPhone() {
-  var raw = val('inp-phone');
-  if (!raw || !campaignId) return;
-  if (digitsOnly(raw).length < 7) return;
-
-  sbRpc('lookup_client_by_phone', { p_campaign_id: campaignId, p_phone: normalizePhone(raw) })
-    .then(function(clients) {
-      matchedClients  = clients || [];
-      phoneLookupDone = true;
-      var panel  = document.getElementById('phone-lookup-panel');
-      var notice = document.getElementById('phone-notfound-notice');
-      if (matchedClients.length) {
-        phoneNotFound = false;
-        renderLookupUnits();
-        panel.style.display = 'block';
-        notice.classList.remove('show');
-      } else {
-        phoneNotFound   = true;
-        panel.style.display = 'none';
-        notice.textContent  = T[currentLang].errPhoneBlocked;
-        notice.classList.add('show');
-        matchedClients = [];
-        selectedIds    = [];
-      }
-    }).catch(function() { phoneLookupDone = true; });
-}
-
-function renderLookupUnits() {
-  var clientName = matchedClients[0].name ||
-                   (matchedClients[0].extra_data || {}).customer || '\u2014';
-  document.getElementById('lookup-name').textContent    = clientName;
-  document.getElementById('lookup-greeting').textContent =
-    currentLang === 'ar' ? 'أهلاً بك!' : 'Welcome!';
-  document.getElementById('lookup-units-lbl').textContent =
-    currentLang === 'ar' ? 'اختار وحدتك / وحداتك' : 'Select your unit(s)';
-
-  var unitItems = [];
-  matchedClients.forEach(function(c) {
-    var ex = c.extra_data || {};
-    if (ex.units && Array.isArray(ex.units) && ex.units.length) {
-      ex.units.forEach(function(u) {
-        if (u.unit || u.contract_number)
-          unitItems.push({ clientId: c.id, unit: u.unit || '', contract: u.contract_number || '', project: u.project || '' });
-      });
-    } else if (ex.unit || ex.contract_number) {
-      unitItems.push({ clientId: c.id, unit: ex.unit || ex.Unit || '', contract: ex.contract_number || '', project: ex.project || '' });
-    }
-  });
-  if (!unitItems.length) {
-    matchedClients.forEach(function(c) {
-      unitItems.push({ clientId: c.id, unit: '', contract: '', project: '' });
-    });
-  }
-
-  var byProject = {};
-  unitItems.forEach(function(u) {
-    var proj = u.project || (currentLang === 'ar' ? 'وحدات أخرى' : 'Other Units');
-    if (!byProject[proj]) byProject[proj] = [];
-    byProject[proj].push(u);
-  });
-
-  var html = '';
-  Object.keys(byProject).forEach(function(proj) {
-    html += '<div class="lookup-proj-lbl">' + escHtml(proj) + '</div>';
-    byProject[proj].forEach(function(u, idx) {
-      var uid   = u.clientId + '_' + idx;
-      var label = u.unit || (currentLang === 'ar' ? 'وحدة ' + (idx + 1) : 'Unit ' + (idx + 1));
-      html += '<label class="lookup-unit-item sel" id="lui-' + uid + '" onclick="toggleLookupUnitItem(\'' + uid + '\',\'' + u.clientId + '\')">';
-      html += '<input type="checkbox" checked id="lchk-' + uid + '" onclick="event.stopPropagation()">';
-      html += '<div><div class="lookup-unit-code">' + escHtml(label) + '</div>';
-      if (u.contract) html += '<div class="lookup-unit-con">' + escHtml(u.contract) + '</div>';
-      html += '</div></label>';
-    });
-  });
-  document.getElementById('lookup-units-container').innerHTML = html;
-
-  var seen = {};
-  unitItems.forEach(function(u) { seen[u.clientId] = true; });
-  selectedIds = Object.keys(seen);
-}
-
-function toggleLookupUnitItem(uid, clientId) {
-  var chk = document.getElementById('lchk-' + uid);
-  var lbl = document.getElementById('lui-'  + uid);
-  if (!chk) return;
-  chk.checked = !chk.checked;
-  lbl.classList.toggle('sel', chk.checked);
-  var allCheckboxes = document.querySelectorAll('[id^="lchk-"]');
-  var checkedByClient = {};
-  allCheckboxes.forEach(function(cb) {
-    var parts = cb.id.replace('lchk-', '').split('_');
-    var cid   = parts.slice(0, -1).join('_');
-    if (cb.checked) checkedByClient[cid] = true;
-  });
-  selectedIds = Object.keys(checkedByClient);
-}
-
-function submitForm() {
-  if (isSubmitting) return;
-  var t = T[currentLang];
-  clearErrors(); hideBanner();
-
-  var name     = val('inp-name');
-  var phone    = val('inp-phone');
-  var newPhone = val('inp-new-phone');
-  var phone2   = val('inp-phone2');
-  var email    = val('inp-email');
-  var email2   = val('inp-email2');
-  var valid    = true;
-
-  if (!name)                               { setErr('field-name');      valid = false; }
-  if (!isValidPhone(phone))                { setErr('field-phone');     valid = false; }
-  if (newPhone && !isValidPhone(newPhone)) { setErr('field-new-phone'); valid = false; }
-  if (phone2 && !isValidPhone(phone2))     { setErr('field-phone2');    valid = false; }
-  if (!isValidEmail(email))                { setErr('field-email');     valid = false; }
-  if (email2 && !isValidEmail(email2))     { setErr('field-email2');    valid = false; }
-
-  // ── Phone must be registered ──
-  if (isValidPhone(phone) && !phoneLookupDone) {
-    showBanner(currentLang === 'ar' ? 'جاري التحقق من رقمك...' : 'Verifying your number...');
-    sbRpc('lookup_client_by_phone', { p_campaign_id: campaignId, p_phone: normalizePhone(phone) })
-      .then(function(clients) {
-        matchedClients  = clients || [];
-        phoneLookupDone = true;
-        var panel  = document.getElementById('phone-lookup-panel');
-        var notice = document.getElementById('phone-notfound-notice');
-        if (matchedClients.length) {
-          phoneNotFound = false;
-          renderLookupUnits();
-          if (panel)  panel.style.display = 'block';
-          if (notice) notice.classList.remove('show');
-        } else {
-          phoneNotFound = true;
-          if (panel)  panel.style.display = 'none';
-          if (notice) { notice.textContent = T[currentLang].errPhoneBlocked; notice.classList.add('show'); }
-          matchedClients = []; selectedIds = [];
-        }
-        hideBanner();
-        submitForm();
-      }).catch(function() { phoneLookupDone = true; hideBanner(); });
-    return;
-  }
-  if (phoneLookupDone && phoneNotFound) {
-    showBanner(t.errNotFound);
-    setErr('field-phone');
-    valid = false;
-  }
-
-  // ── Sons/Children fields ──
-  if (!kidaValue)       { setErr('field-kida');      valid = false; }
-  if (kidaValue === 'yes') {
-    if (!val('inp-kids-count')) { setErr('field-kids-count'); valid = false; }
-  }
-
-  if (!getHobbiesVal('hobbies')) { setErr('field-hobbies');   valid = false; }
-  if (!val('inp-job-title'))     { setErr('field-job-title'); valid = false; }
-
-  var privacy = document.getElementById('inp-privacy').checked;
-  if (!privacy) { showBanner(t.errPrivacy); valid = false; }
-
-  if (!valid) return;
-
-  // ── Rate Limiting ──
-  var now = Date.now();
-  if (lastSubmitTime && (now - lastSubmitTime) < RATE_LIMIT_MS) {
-    var secsLeft = Math.ceil((RATE_LIMIT_MS - (now - lastSubmitTime)) / 1000);
-    showBanner(
-      currentLang === 'ar'
-        ? 'يرجى الانتظار ' + secsLeft + ' ثانية قبل الإرسال مرة أخرى.'
-        : 'Please wait ' + secsLeft + ' seconds before submitting again.'
-    );
-    return;
-  }
-
-  var finalPhone  = newPhone || phone;
-  var storedPhone = normalizePhone(finalPhone);
-  var phoneKey    = campaignId + '_' + storedPhone;
-
-  var extraData = { name: name, phone: finalPhone };
-  if (newPhone) extraData.old_phone = phone;
-  if (phone2)   extraData.phone2    = phone2;
-  if (email)    extraData.email     = email;
-  if (email2)   extraData.email2    = email2;
-
-  // Sons / Children data
-  extraData.has_children = kidaValue;
-  if (kidaValue === 'yes') {
-    extraData.children_count    = val('inp-kids-count');
-    extraData.children_details  = getKidNamesString();
-    extraData.children_ages     = kidsAgesData.filter(Boolean).join(', ');
-    extraData.children_hobbies  = kidsTalentsData.filter(Boolean).join(', ');
-  }
-
-  extraData.hobbies   = getHobbiesVal('hobbies');
-  extraData.job_title = val('inp-job-title');
-
-  document.querySelectorAll('[data-col-key]').forEach(function(inp) {
-    if (inp.value.trim()) extraData[inp.getAttribute('data-col-key')] = inp.value.trim();
-  });
-
-  var notesVal = val('inp-notes');
-  if (notesVal) extraData.notes = notesVal;
-
-  var channels = [];
-  ['ch-call','ch-wa','ch-email','ch-sms'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el && el.checked) channels.push(el.value);
-  });
-  if (channels.length) extraData.preferred_channel = channels.join(', ');
-
-  // UPDATE existing clients
-  if (selectedIds.length > 0 && matchedClients.length > 0) {
-    doUpdateExisting(extraData, t);
-    return;
-  }
-
-  // ── Anti-Duplicate ──
-  if (submittedPhones[phoneKey]) {
-    showBanner(
-      currentLang === 'ar'
-        ? 'هذا الرقم مسجّل بالفعل. سيتواصل معك فريقنا قريباً.'
-        : 'This number is already registered. Our team will contact you shortly.'
-    );
-    return;
-  }
-
-  isSubmitting = true;
-  setBtnLoading(true, 'btn-submit', 'btn-label', 'btn-progress', t.btnSending);
-
-  sbGet('clients', 'phone=eq.' + encodeURIComponent(storedPhone) + '&campaign_id=eq.' + campaignId + '&select=id&limit=1')
-    .then(function(existing) {
-      if (existing && existing.length) {
-        submittedPhones[phoneKey] = true;
-        isSubmitting = false;
-        setBtnLoading(false, 'btn-submit', 'btn-label', 'btn-progress', t.btnSubmit);
-        showBanner(
-          currentLang === 'ar'
-            ? 'هذا الرقم مسجّل بالفعل في هذه الحملة. سيتواصل معك فريقنا قريباً.'
-            : 'This number is already registered in this campaign. Our team will contact you shortly.'
-        );
-        return Promise.reject('duplicate');
-      }
-      return getLeastLoadedEmployee();
-    })
-    .then(function(employee) {
-      var record = {
-        name                 : name,
-        phone                : storedPhone,
-        extra_data           : extraData,
-        status               : 'New',
-        campaign_id          : campaignId,
-        assigned_employee_id : employee ? employee.id : null
-      };
-      return sbInsert('clients', record).then(function() {
-        if (employee) {
-          sbInsert('notifications', {
-            employee_id : employee.id,
-            type        : 'new_clients',
-            message     : '📋 New lead from form: ' + name + (phone ? ' · ' + phone : ''),
-            read        : false
-          }).catch(function(){});
-        }
-      });
-    })
-    .then(function() {
-      lastSubmitTime            = Date.now();
-      submittedPhones[phoneKey] = true;
-      clearDraft();
-      document.getElementById('success-title').textContent = t.successTitle;
-      document.getElementById('success-msg').textContent   = t.successMsg;
-      showState('success');
-    })
-    .catch(function(err) {
-      if (err === 'duplicate') return;
-      isSubmitting = false;
-      setBtnLoading(false, 'btn-submit', 'btn-label', 'btn-progress', t.btnSubmit);
-      showBanner(err && err.message ? err.message : t.errGeneral);
-    });
-}
-
-// ── UPDATE existing records ──────────────────────────────────
-function doUpdateExisting(extraData, t) {
-  var updates = selectedIds.map(function(id) {
-    var client     = matchedClients.find(function(c) { return c.id === id; });
-    var existExtra = (client && client.extra_data) || {};
-    var merged     = Object.assign({}, existExtra, extraData, {
-      form_submitted    : true,
-      form_submitted_at : new Date().toISOString()
-    });
-    return sbPatch('clients', 'id=eq.' + id, { extra_data: merged });
-  });
-
-  Promise.all(updates)
-    .then(function() {
-      var empIds = {};
-      selectedIds.forEach(function(id) {
-        var client = matchedClients.find(function(c){ return c.id === id; });
-        if (client && client.assigned_employee_id) empIds[client.assigned_employee_id] = true;
-      });
-      var notifName = matchedClients[0] ? (matchedClients[0].name || 'A client') : 'A client';
-      var notifPromises = Object.keys(empIds).map(function(empId) {
-        var agentUnits = selectedIds.filter(function(id){
-          var c = matchedClients.find(function(x){ return x.id === id; });
-          return c && c.assigned_employee_id === empId;
-        }).length;
-        return sbInsert('notifications', {
-          employee_id : empId,
-          type        : 'form_submitted',
-          message     : '📝 ' + notifName + ' updated their form data' +
-                        (agentUnits > 1 ? ' (' + agentUnits + ' units)' : '') +
-                        (matchedClients[0] && matchedClients[0].extra_data && matchedClients[0].extra_data.phone
-                          ? ' · ' + matchedClients[0].extra_data.phone : ''),
-          read        : false
-        });
-      });
-      var adminMsg = '📝 ' + (matchedClients[0] ? matchedClients[0].name || 'A client' : 'A client') +
-        ' submitted their form' +
-        (matchedClients[0] && matchedClients[0].extra_data && matchedClients[0].extra_data.phone
-          ? ' · ' + matchedClients[0].extra_data.phone : '');
-      notifPromises.push(
-        sbInsert('notifications', { employee_id: null, type: 'form_submitted', message: adminMsg, read: false }).catch(function(){})
-      );
-      return Promise.all(notifPromises).catch(function(){});
-    })
-    .then(function() {
-      clearDraft();
-      document.getElementById('success-title').textContent = t.successTitle;
-      document.getElementById('success-msg').textContent   = t.successMsg;
-      showState('success');
-    })
-    .catch(function() {
-      isSubmitting = false;
-      setBtnLoading(false, 'btn-submit', 'btn-label', 'btn-progress', t.btnSubmit);
-      showBanner(t.errGeneral);
-    });
-}
-
-function getLeastLoadedEmployee() {
-  return Promise.all([
-    sbGet('employees', 'is_active=eq.true&select=id,name'),
-    sbGet('clients',   'campaign_id=eq.' + campaignId + '&select=assigned_employee_id')
-  ]).then(function(results) {
-    var emps    = results[0] || [];
-    var clients = results[1] || [];
-    if (!emps.length) return null;
-    var counts = {};
-    emps.forEach(function(e) { counts[e.id] = 0; });
-    clients.forEach(function(c) {
-      if (c.assigned_employee_id && counts[c.assigned_employee_id] !== undefined)
-        counts[c.assigned_employee_id]++;
-    });
-    return emps.reduce(function(min, e) { return counts[e.id] < counts[min.id] ? e : min; });
-  }).catch(function() { return null; });
-}
-
-// ── Supabase helpers ─────────────────────────────────────────
-function sbHeaders() {
-  return { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
-}
-function sbGet(table, query) {
-  return fetch(SB_URL + '/rest/v1/' + table + '?' + query, { headers: sbHeaders() })
-    .then(function(r) { if (!r.ok) throw new Error('GET error ' + r.status); return r.json(); });
-}
-function sbRpc(fn, params) {
-  return fetch(SB_URL + '/rest/v1/rpc/' + fn, {
-    method: 'POST', headers: sbHeaders(), body: JSON.stringify(params)
-  }).then(function(r) { if (!r.ok) throw new Error('RPC error ' + r.status); return r.json(); });
-}
-function sbInsert(table, payload) {
-  return fetch(SB_URL + '/rest/v1/' + table, {
-    method: 'POST',
-    headers: Object.assign(sbHeaders(), { 'Prefer': 'return=minimal' }),
-    body: JSON.stringify(payload)
-  }).then(function(r) {
-    if (r.status !== 201) return r.text().then(function(t) { throw new Error(t); });
-  });
-}
-function sbPatch(table, query, payload) {
-  return fetch(SB_URL + '/rest/v1/' + table + '?' + query, {
-    method: 'PATCH',
-    headers: Object.assign(sbHeaders(), { 'Prefer': 'return=minimal' }),
-    body: JSON.stringify(payload)
-  }).then(function(r) {
-    if (!r.ok) return r.text().then(function(t) { throw new Error(t); });
-  });
-}
-
-// ── UI helpers ───────────────────────────────────────────────
-function showState(id) {
-  ['loading','form','success','notfound'].forEach(function(s) {
-    var el = document.getElementById('state-' + s);
-    if (el) el.classList.toggle('active', s === id);
-  });
-}
-function val(id) {
-  var el = document.getElementById(id); return el ? el.value.trim() : '';
-}
-function isValidPhone(p) {
-  var clean = p.replace(/[\s\-\(\)]/g, '');
-  return clean && /^\+?[0-9]{7,20}$/.test(clean);
-}
-function isValidEmail(e) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
-}
-function setErr(fieldId) {
-  var el = document.getElementById(fieldId); if (el) el.classList.add('has-err');
-}
-function clearErrors() {
-  document.querySelectorAll('.field.has-err').forEach(function(el) { el.classList.remove('has-err'); });
-}
-function showBanner(msg) {
-  var b = document.getElementById('error-banner');
-  document.getElementById('error-text').textContent = msg;
-  b.classList.add('show');
-}
-function hideBanner() {
-  document.getElementById('error-banner').classList.remove('show');
-}
-function setBtnLoading(loading, btnId, labelId, progId, labelText) {
-  var btn  = document.getElementById(btnId);
-  var lbl  = document.getElementById(labelId);
-  var prog = document.getElementById(progId);
-  if (!btn) return;
-  btn.disabled = loading;
-  if (loading) {
-    lbl.innerHTML    = '<span class="spinner"></span> ' + escHtml(labelText);
-    prog.style.width = '70%';
-  } else {
-    lbl.textContent  = labelText;
-    prog.style.width = '0%';
-  }
-}
-function escHtml(str) {
-  return String(str || '')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ── Other-option modal (personal hobbies) ───────────────────
-var otherFieldActive = null;
-var otherHobbiesText = '';
-
-function handleOtherSelect(fieldKey) {
-  var sel = document.getElementById('inp-hobbies');
-  if (sel && sel.value === 'Other') {
-    openOtherModal(fieldKey);
-  } else {
-    otherHobbiesText = '';
-    hideOtherDisplay();
-  }
-}
-
-function openOtherModal(fieldKey) {
-  otherFieldActive  = fieldKey;
-  var isAr  = currentLang === 'ar';
-  var title = document.getElementById('other-modal-title');
-  var inp   = document.getElementById('other-modal-input');
-  var err   = document.getElementById('other-modal-err');
-
-  title.textContent = isAr ? 'ما هي هوايتك؟' : 'What is your hobby?';
-  inp.placeholder   = isAr ? 'مثال: تصوير، رسم، سباحة...' : 'e.g. Photography, Drawing, Swimming...';
-  inp.value         = otherHobbiesText;
-  err.style.display = 'none';
-  inp.style.borderColor = 'rgba(255,255,255,0.15)';
-
-  var overlay = document.getElementById('other-modal-overlay');
-  overlay.style.display = 'flex';
-  setTimeout(function() { inp.focus(); if (inp.value) inp.select(); }, 80);
-  inp.onkeydown = function(e) {
-    if (e.key === 'Enter')  { e.preventDefault(); closeOtherModal(true); }
-    if (e.key === 'Escape') { closeOtherModal(false); }
-  };
-}
-
-function handleOverlayClick(e) {
-  if (e.target === document.getElementById('other-modal-overlay')) closeOtherModal(false);
-}
-
-function closeOtherModal(confirm) {
-  var inp     = document.getElementById('other-modal-input');
-  var err     = document.getElementById('other-modal-err');
-  var overlay = document.getElementById('other-modal-overlay');
-
-  if (confirm) {
-    var text = inp.value.trim();
-    if (!text) {
-      err.style.display     = 'block';
-      inp.style.borderColor = '#ef4444';
-      inp.focus();
-      return;
-    }
-    otherHobbiesText      = text;
-    overlay.style.display = 'none';
-    showOtherDisplay(text);
-    saveDraft();
-  } else {
-    var sel = document.getElementById('inp-hobbies');
-    if (sel) sel.value = '';
-    otherHobbiesText      = '';
-    overlay.style.display = 'none';
-    hideOtherDisplay();
-  }
-}
-
-function getHobbiesVal(fieldKey) {
-  var sel = document.getElementById('inp-hobbies');
-  if (!sel) return '';
-  if (sel.value === 'Other') return otherHobbiesText || '';
-  return sel.value.trim();
-}
-
-function showOtherDisplay(text) {
-  var disp = document.getElementById('other-hobbies-display');
-  var span = document.getElementById('other-hobbies-text');
-  if (disp && span) { span.textContent = text; disp.style.display = 'flex'; }
-}
-function hideOtherDisplay() {
-  var disp = document.getElementById('other-hobbies-display');
-  if (disp) disp.style.display = 'none';
-}
-function reOpenOtherModal(fieldKey) { openOtherModal(fieldKey); }
-
-// ── Sons / Children Name Fields ──────────────────────────────
-var kidsNamesData   = [];   // per-child name
-var kidsAgesData    = [];   // per-child age
-var kidsTalentsData = [];   // per-child hobby
-
-var AR_ORDINALS = ['الأول','الثاني','الثالث','الرابع','الخامس'];
-
-function getKidsCount() {
-  var v = val('inp-kids-count');
-  if (!v) return 0;
-  return v === '5+' ? 5 : parseInt(v, 10);
-}
-
-function handleKidsCountChange() {
-  var count = getKidsCount();
-  kidsNamesData   = [];
-  kidsAgesData    = [];
-  kidsTalentsData = [];
-  if (!count) {
-    document.getElementById('kids-names-container').innerHTML = '';
-    return;
-  }
-  renderKidsNameFields(count);
-  saveDraft();
-}
-
-function renderKidsNameFields(count) {
-  var t    = T[currentLang];
-  var isAr = currentLang === 'ar';
-  var html = '<div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">';
-
-  for (var i = 0; i < count; i++) {
-    var lbl = isAr
-      ? ('الابن ' + AR_ORDINALS[i])
-      : (t.kidLabel + ' ' + (i + 1));
-
-    html += '<div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;">';
-    html += '<div style="font-size:13px;color:var(--blue-dark);font-weight:700;margin-bottom:10px;">👦 ' + escHtml(lbl) + '</div>';
-    html += '<div style="display:flex;flex-direction:column;gap:8px;">';
-
-    // Name — full width
-    html += '<input type="text" class="kid-field-input" id="inp-kid-name-' + i + '" '
-          + 'oninput="onKidNameInput()" placeholder="' + escHtml(t.kidName) + '">';
-
-    // Age — full width
-    html += '<input type="text" class="kid-field-input" id="inp-kid-age-' + i + '" '
-          + 'oninput="onKidNameInput()" placeholder="' + escHtml(t.kidAge) + '" '
-          + 'inputmode="numeric" style="max-width:160px;">';
-
-    // Hobby — full width
-    html += '<input type="text" class="kid-field-input" id="inp-kid-talent-' + i + '" '
-          + 'oninput="onKidNameInput()" placeholder="' + escHtml(t.kidHobby) + '">';
-
-    html += '</div></div>';
-  }
-  html += '</div>';
-  document.getElementById('kids-names-container').innerHTML = html;
-
-  // Restore saved values
-  for (var j = 0; j < count; j++) {
-    var elN = document.getElementById('inp-kid-name-'   + j);
-    var elA = document.getElementById('inp-kid-age-'    + j);
-    var elT = document.getElementById('inp-kid-talent-' + j);
-    if (elN && kidsNamesData[j])   elN.value = kidsNamesData[j];
-    if (elA && kidsAgesData[j])    elA.value = kidsAgesData[j];
-    if (elT && kidsTalentsData[j]) elT.value = kidsTalentsData[j];
-  }
-
-  // Attach draft save
-  var container = document.getElementById('kids-names-container');
-  if (container) container.addEventListener('input', saveDraft);
-}
-
-function onKidNameInput() {
-  var count = getKidsCount();
-  for (var i = 0; i < count; i++) {
-    var elN = document.getElementById('inp-kid-name-'   + i);
-    var elA = document.getElementById('inp-kid-age-'    + i);
-    var elT = document.getElementById('inp-kid-talent-' + i);
-    kidsNamesData[i]   = elN ? elN.value.trim() : '';
-    kidsAgesData[i]    = elA ? elA.value.trim() : '';
-    kidsTalentsData[i] = elT ? elT.value.trim() : '';
-  }
-}
-
-function getKidNamesString() {
-  var count  = getKidsCount();
-  var isAr   = currentLang === 'ar';
-  var parts  = [];
-  for (var i = 0; i < count; i++) {
-    var name   = kidsNamesData[i]   || (isAr ? 'الابن ' + (i + 1) : 'Child ' + (i + 1));
-    var age    = kidsAgesData[i]    || '';
-    var hobby  = kidsTalentsData[i] || '';
-    var s      = name;
-    if (age || hobby) {
-      s += ' (';
-      if (age)        s += (isAr ? 'السن: '     : 'Age: ')   + age;
-      if (age && hobby) s += ' - ';
-      if (hobby)      s += (isAr ? 'الهواية: '  : 'Hobby: ') + hobby;
-      s += ')';
-    }
-    parts.push(s);
-  }
-  return parts.join(', ');
-}
-</script>
-
-<!-- ── Other-option modal ── -->
-<div id="other-modal-overlay"
-     onclick="handleOverlayClick(event)"
-     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:300;align-items:center;justify-content:center;padding:20px;">
-  <div id="other-modal-box"
-       style="background:#0d1628;border:1px solid rgba(59,130,246,0.3);border-radius:16px;width:100%;max-width:380px;padding:24px 24px 20px;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
-    <h3 id="other-modal-title"
-        style="margin:0 0 14px;font-size:16px;font-weight:600;color:#e2e8f0;"></h3>
-    <input type="text" id="other-modal-input" autocomplete="off"
-           style="width:100%;padding:11px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:#e2e8f0;font-size:15px;outline:none;box-sizing:border-box;transition:border-color .2s;">
-    <div id="other-modal-err"
-         style="display:none;color:#f87171;font-size:12px;margin-top:6px;">
+<!-- ══════════════════════════════════════════════════════════════
+     "Other" Hobbies Modal
+     ══════════════════════════════════════════════════════════════ -->
+<div id="other-modal-overlay" onclick="handleOverlayClick(event)" style="display:none;">
+  <div id="other-modal-box">
+    <h3 id="other-modal-title"></h3>
+    <input type="text" id="other-modal-input" autocomplete="off">
+    <div id="other-modal-err" style="display:none;">
       هذا الحقل مطلوب / This field is required
     </div>
     <div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end;">
-      <button onclick="closeOtherModal(false)"
-              style="padding:9px 20px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:#94a3b8;font-size:14px;font-weight:500;cursor:pointer;transition:background .15s;"
-              onmouseover="this.style.background='rgba(255,255,255,0.07)'"
-              onmouseout="this.style.background='transparent'">
+      <button onclick="closeOtherModal(false)" class="modal-btn-cancel">
         إلغاء / Cancel
       </button>
-      <button onclick="closeOtherModal(true)"
-              style="padding:9px 24px;border-radius:8px;border:none;background:#3b82f6;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;"
-              onmouseover="this.style.background='#2563eb'"
-              onmouseout="this.style.background='#3b82f6'">
+      <button onclick="closeOtherModal(true)" class="modal-btn-confirm">
         تأكيد / OK
       </button>
     </div>
   </div>
 </div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     Scripts  —  ORDER MATTERS (dependency chain)
+     
+     1. config   → constants, translations, state
+     2. helpers  → Supabase API, UI utils, validation
+     3. kids     → children fields + hobbies modal
+     4. draft    → auto-save/load (uses val, kids data)
+     5. i18n     → setLang + buildDynamicFields
+     6. phone    → phone lookup + unit rendering
+     7. submit   → form submit + init()  ← MUST BE LAST
+     ══════════════════════════════════════════════════════════════ -->
+<script src="js/intake-config.js"></script>
+<script src="js/intake-helpers.js"></script>
+<script src="js/intake-kids.js"></script>
+<script src="js/intake-draft.js"></script>
+<script src="js/intake-i18n.js"></script>
+<script src="js/intake-phone.js"></script>
+<script src="js/intake-submit.js"></script>
 
 </body>
 </html>
