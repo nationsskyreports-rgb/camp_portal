@@ -37,7 +37,7 @@
 
     body {
       font-family: 'Segoe UI', system-ui, -apple-system, 'Cairo', Arial, sans-serif;
-      background: var(--page-bg );
+      background: var(--page-bg);
       min-height: 100vh;
       display: flex;
       align-items: flex-start;
@@ -375,11 +375,13 @@
     .channel-item input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--blue); flex-shrink: 0; }
     .channel-item span { font-size: .88rem; color: var(--text); }
     .channel-item:has(input:checked) { border-color: var(--blue); background: var(--blue-bg); }
+
     /* ── Acknowledgment ── */
     .acknowledgment-box { background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
     .ack-title { font-size: .85rem; font-weight: 700; color: var(--text); margin-bottom: .75rem; }
     .ack-text-en { font-size: .82rem; color: var(--muted); line-height: 1.6; margin-bottom: .6rem; }
     .ack-text-ar { font-size: .82rem; color: var(--muted); line-height: 1.6; direction: rtl; }
+
     /* ── Select Arrow ── */
     .select-arrow {
       appearance: none;
@@ -409,20 +411,39 @@
     .yesno-btn.sel-yes { background: var(--green); border-color: var(--green); color: #fff; }
     .yesno-btn.sel-no  { background: var(--red);   border-color: var(--red);   color: #fff; }
 
-    /* ── Kids sub-fields slide-in ── */
+    /* ── Sons sub-fields slide-in ── */
     #kids-details {
       padding: .85rem 1rem;
       margin-bottom: .5rem;
-      background: #f8fbff; /* Lightest blue background */
-      border: 1.5px solid var(--blue); /* Stronger border */
+      background: #f8fbff;
+      border: 1.5px solid var(--blue);
       border-radius: var(--radius);
     }
     #kids-details .field { margin-bottom: .85rem; }
     #kids-details .field:last-child { margin-bottom: 0; }
 
+    /* ── Per-kid card inputs ── */
+    .kid-field-input {
+      width: 100%;
+      padding: .6rem .9rem;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      font-size: .88rem;
+      font-family: inherit;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .kid-field-input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+    }
+
     @media (max-width: 500px) {
       body { padding: 1rem .75rem 3rem; }
-      .card { padding: 1.5rem; }
+      .card { padding: 1.25rem; }
     }
   </style>
 </head>
@@ -473,8 +494,8 @@
 
       <!-- Single Form -->
       <div id="panel-register">
-        <div class="card-title" id="form-title">سجّل هنا</div>
-        <div class="card-desc"  id="form-desc">أدخل معلوماتك وسيقوم فريقنا بالتواصل معك في أقرب وقت.</div>
+        <div class="card-title" id="form-title">استمارة تحديث بيانات العميل</div>
+        <div class="card-desc"  id="form-desc">يرجى تحديث بياناتك الشخصية وبيانات التواصل للتأكد من صحة سجلاتنا.</div>
 
         <div class="section-label" id="lbl-basic">المعلومات الأساسية</div>
 
@@ -490,7 +511,7 @@
           <div class="err-msg" id="err-phone">أدخل رقماً صحيحاً</div>
         </div>
 
-        <!-- Phone Lookup Result (shown when phone matches existing record) -->
+        <!-- Phone Lookup Result -->
         <div id="phone-lookup-panel" class="lookup-panel" style="display:none">
           <div class="lookup-header">
             <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
@@ -504,8 +525,8 @@
             <div id="lookup-units-container"></div>
           </div>
         </div>
-        <!-- Not found notice (shown when phone doesn't match) -->
-        <div class="notfound-inline" id="phone-notfound-notice" id="phone-notfound-notice"></div>
+        <!-- Not found notice -->
+        <div class="notfound-inline" id="phone-notfound-notice"></div>
 
         <div class="field" id="field-new-phone">
           <label id="lbl-new-phone">رقم التليفون الجديد (لو عايز تغيّر رقمك الأساسي) <span style="color:var(--muted);font-weight:400" id="lbl-new-phone-opt">(اختياري)</span></label>
@@ -531,10 +552,10 @@
           <div class="err-msg" id="err-email2">أدخل بريداً إلكترونياً صحيحاً</div>
         </div>
 
-        <!-- ── Kids Question ── -->
+        <!-- ── Sons / Children Question ── -->
         <hr class="divider">
         <div class="field" id="field-kida">
-          <label id="lbl-kida">هل عندك أطفال؟ <span class="req">*</span></label>
+          <label id="lbl-kida">هل عندك أبناء؟ <span class="req">*</span></label>
           <div class="yesno-options">
             <button type="button" class="yesno-btn" id="btn-kida-yes" onclick="setKida('yes')">Yes | نعم</button>
             <button type="button" class="yesno-btn" id="btn-kida-no"  onclick="setKida('no')">No | لأ</button>
@@ -542,10 +563,12 @@
           <div class="err-msg" id="err-kida">هذا الحقل مطلوب</div>
         </div>
 
-        <!-- Kids Details — visible only when kida = yes -->
+        <!-- Sons Details — visible only when kida = yes -->
         <div id="kids-details" style="display:none">
+          <div class="section-label" id="lbl-sons-section" style="color:var(--blue-dark);margin-bottom:.85rem;">بيانات الأبناء</div>
+
           <div class="field" id="field-kids-count">
-            <label id="lbl-kids-count">كم عدد أطفالك؟ <span class="req">*</span></label>
+            <label id="lbl-kids-count">كم عدد أبنائك؟ <span class="req">*</span></label>
             <select id="inp-kids-count" class="select-arrow" onchange="handleKidsCountChange()">
               <option value="">اختار... / Select...</option>
               <option value="1">1</option>
@@ -556,26 +579,8 @@
             </select>
             <div class="err-msg" id="err-kids-count">هذا الحقل مطلوب</div>
           </div>
+
           <div id="kids-names-container"></div>
-
-          <div class="field" id="field-kids-hobbies">
-            <label id="lbl-kids-hobbies">هوايات أطفالك <span class="req">*</span></label>
-            <div id="kids-hobbies-container"></div>
-            <div class="err-msg" id="err-kids-hobbies">هذا الحقل مطلوب</div>
-          </div>
-
-          <div class="field" id="field-kids-ages">
-            <label id="lbl-kids-ages">أعمار أطفالك <span class="req">*</span></label>
-            <select id="inp-kids-ages" class="select-arrow">
-              <option value="">اختار... / Select...</option>
-              <option value="Under 3">أقل من 3 سنوات / Under 3</option>
-              <option value="3-6">3–6 (رياض أطفال / Nursery)</option>
-              <option value="6-12">6–12 (ابتدائي / Primary)</option>
-              <option value="13-18">13–18 (ثانوي / Secondary)</option>
-              <option value="Mixed">أعمار متنوعة / Mixed ages</option>
-            </select>
-            <div class="err-msg" id="err-kids-ages">هذا الحقل مطلوب</div>
-          </div>
         </div>
 
         <!-- Hobbies (client's own) -->
@@ -597,7 +602,7 @@
           <div id="other-hobbies-display" style="display:none;margin-top:8px;padding:8px 12px;border-radius:8px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);color:#93c5fd;font-size:13px;align-items:center;gap:8px;">
             <span>✏️</span>
             <span id="other-hobbies-text" style="flex:1;"></span>
-            <span onclick="reOpenOtherModal('hobbies')" style="cursor:pointer;opacity:0.7;font-size:12px;text-decoration:underline;">تعديل</span>
+            <span onclick="reOpenOtherModal('hobbies')" style="cursor:pointer;opacity:0.7;font-size:12px;text-decoration:underline;" id="lbl-edit-hobby">تعديل</span>
           </div>
           <div class="err-msg" id="err-hobbies">هذا الحقل مطلوب</div>
         </div>
@@ -619,35 +624,35 @@
 
         <!-- Preferred Communication Channel -->
         <hr class="divider">
-        <div class="section-label" id="lbl-channel-section">Preferred Communication Channel | وسيلة التواصل المفضلة</div>
+        <div class="section-label" id="lbl-channel-section">وسيلة التواصل المفضلة</div>
         <div class="channel-options" id="channel-options">
           <label class="channel-item">
             <input type="checkbox" id="ch-call" value="Mobile Call">
-            <span>Mobile Call | مكالمة هاتفية</span>
+            <span id="lbl-ch-call">Mobile Call | مكالمة هاتفية</span>
           </label>
           <label class="channel-item">
             <input type="checkbox" id="ch-wa" value="WhatsApp">
-            <span>WhatsApp | واتساب</span>
+            <span id="lbl-ch-wa">WhatsApp | واتساب</span>
           </label>
           <label class="channel-item">
             <input type="checkbox" id="ch-email" value="Email">
-            <span>Email | البريد الإلكتروني</span>
+            <span id="lbl-ch-email">Email | البريد الإلكتروني</span>
           </label>
           <label class="channel-item">
             <input type="checkbox" id="ch-sms" value="SMS">
-            <span>SMS | رسالة نصية</span>
+            <span id="lbl-ch-sms">SMS | رسالة نصية</span>
           </label>
         </div>
 
         <!-- Client Acknowledgment -->
         <hr class="divider">
         <div class="acknowledgment-box" id="field-ack">
-          <div class="ack-title">Client Acknowledgment | إقرار العميل</div>
-          <div class="ack-text-en">I confirm that the above information is accurate and up to date. I understand that all future communications, service requests, and updates related to my account will be handled through the contact channels registered above.</div>
-          <div class="ack-text-ar">أقر بأن البيانات المذكورة أعلاه صحيحة ومحدثة، وأتفهم أن جميع المراسلات المستقبلية وطلبات الخدمة والتحديثات الخاصة بحسابي سيتم تنفيذها من خلال قنوات الاتصال المسجلة أعلاه.</div>
+          <div class="ack-title" id="lbl-ack-title">إقرار العميل</div>
+          <div class="ack-text-en" id="ack-text-en" style="display:none;">I confirm that the above information is accurate and up to date. I understand that all future communications, service requests, and updates related to my account will be handled through the contact channels registered above.</div>
+          <div class="ack-text-ar" id="ack-text-ar">أقر بأن البيانات المذكورة أعلاه صحيحة ومحدثة، وأتفهم أن جميع المراسلات المستقبلية وطلبات الخدمة والتحديثات الخاصة بحسابي سيتم تنفيذها من خلال قنوات الاتصال المسجلة أعلاه.</div>
           <label class="privacy-field" style="margin-top:1rem">
             <input type="checkbox" id="inp-privacy">
-            <span id="lbl-privacy">I agree to the above acknowledgment | أوافق على الإقرار أعلاه</span>
+            <span id="lbl-privacy">أوافق على الإقرار أعلاه</span>
           </label>
         </div>
 
@@ -732,108 +737,128 @@ var EN_LABELS = {
 // TRANSLATIONS
 var T = {
   ar: {
-    brandSub        : 'أهلاً بك! سجّل هنا وسيتواصل معك أحد مستشارينا قريباً',
-    formTitle       : 'Client Data Update Form | استمارة تحديث بيانات العميل',
-    formDesc        : 'يرجى تحديث بياناتك الشخصية وبيانات التواصل للتأكد من صحة سجلاتنا.',
-    lblBasic        : 'المعلومات الأساسية',
-    lblName         : 'الاسم الكامل',
-    lblPhone        : 'رقم التليفون الأساسي',
-    lblNewPhone     : 'رقم التليفون الجديد (لو عايز تغيّر رقمك الأساسي )',
-    lblPhone2       : 'رقم التليفون الإضافي',
-    lblEmail        : 'البريد الإلكتروني الأساسي',
-    lblEmail2       : 'البريد الإلكتروني الإضافي',
-    lblOptional     : '(اختياري)',
-    lblNotes        : 'ملاحظات إضافية',
-    lblDetails      : 'تفاصيل الاهتمام',
-    btnSubmit       : 'إرسال الطلب',
-    btnSending      : 'جارٍ الإرسال...',
-    errRequired     : 'هذا الحقل مطلوب',
-    errPhone        : 'أدخل رقماً صحيحاً (مثال: +201234567890)',
-    errEmail        : 'أدخل بريداً إلكترونياً صحيحاً',
-    successTitle    : 'تم إرسال طلبك بنجاح!',
-    successMsg      : 'شكراً لك. سيتواصل معك أحد ممثلينا في أقرب وقت ممكن.',
-    lblPrivacy      : 'أوافق على معالجة بياناتي الشخصية وفقاً لسياسة الخصوصية.',
-    waText          : 'لو حابب تتواصل معانا مباشرة عبر واتساب',
-    waLabel         : 'تواصل معنا عبر واتساب',
-    errPrivacy      : 'يجب الموافقة على شروط الخصوصية للمتابعة',
-    nfTitle         : 'الرابط غير صحيح',
-    nfSub           : 'هذا الرابط غير صالح أو انتهت صلاحيته. تواصل مع المبيعات للحصول على الرابط الصحيح.',
-    errNotFound     : 'الرقم ده مش متسجل عندنا. استخدم الرقم المسجل باسمك.',
-    errPhoneBlocked : '⚠️ الرقم ده مش متسجل عندنا — استخدم الرقم المسجل باسمك',
-    lblKida         : 'هل عندك أطفال؟',
-    lblKidsCount    : 'كم عدد أطفالك؟',
-    lblKidsHobbies  : 'هوايات أطفالك',
-    lblKidsAges     : 'أعمار أطفالك',
-    lblHobbies      : 'هواياتك',
-    lblJobTitle     : 'المسمى الوظيفي',
-    phJobTitle      : 'مثال: مهندس، محاسب، طبيب...',
-    errGeneral      : 'حدث خطأ. يرجى المحاولة مرة أخرى.',
-    footerTxt       : 'مدعوم بواسطة Nations of Sky Portal',
-    namePlaceholder : 'مثال: محمد أحمد',
-    dir             : 'rtl',
-    lang            : 'ar'
+    brandSub         : 'أهلاً بك! سجّل هنا وسيتواصل معك أحد مستشارينا قريباً',
+    formTitle        : 'استمارة تحديث بيانات العميل',
+    formDesc         : 'يرجى تحديث بياناتك الشخصية وبيانات التواصل للتأكد من صحة سجلاتنا.',
+    lblBasic         : 'المعلومات الأساسية',
+    lblName          : 'الاسم الكامل',
+    lblPhone         : 'رقم التليفون الأساسي',
+    lblNewPhone      : 'رقم التليفون الجديد (لو عايز تغيّر رقمك الأساسي)',
+    lblPhone2        : 'رقم التليفون الإضافي',
+    lblEmail         : 'البريد الإلكتروني الأساسي',
+    lblEmail2        : 'البريد الإلكتروني الإضافي',
+    lblOptional      : '(اختياري)',
+    lblNotes         : 'ملاحظات إضافية',
+    lblDetails       : 'تفاصيل الاهتمام',
+    btnSubmit        : 'إرسال الطلب',
+    btnSending       : 'جارٍ الإرسال...',
+    errRequired      : 'هذا الحقل مطلوب',
+    errPhone         : 'أدخل رقماً صحيحاً (مثال: +201234567890)',
+    errEmail         : 'أدخل بريداً إلكترونياً صحيحاً',
+    successTitle     : 'تم إرسال طلبك بنجاح!',
+    successMsg       : 'شكراً لك. سيتواصل معك أحد ممثلينا في أقرب وقت ممكن.',
+    lblPrivacy       : 'أوافق على الإقرار أعلاه',
+    waText           : 'أو تواصل معنا مباشرة عبر واتساب',
+    waLabel          : 'تواصل معنا عبر واتساب',
+    errPrivacy       : 'يجب الموافقة على الإقرار للمتابعة',
+    nfTitle          : 'الرابط غير صحيح',
+    nfSub            : 'هذا الرابط غير صالح أو انتهت صلاحيته. تواصل مع المبيعات للحصول على الرابط الصحيح.',
+    errNotFound      : 'الرقم ده مش متسجل عندنا. استخدم الرقم المسجل باسمك.',
+    errPhoneBlocked  : '⚠️ الرقم ده مش متسجل عندنا — استخدم الرقم المسجل باسمك',
+    lblKida          : 'هل عندك أبناء؟',
+    lblKidsCount     : 'كم عدد أبنائك؟',
+    lblSonsSection   : 'بيانات الأبناء',
+    lblHobbies       : 'هواياتك',
+    lblJobTitle      : 'المسمى الوظيفي',
+    phJobTitle       : 'مثال: مهندس، محاسب، طبيب...',
+    errGeneral       : 'حدث خطأ. يرجى المحاولة مرة أخرى.',
+    footerTxt        : 'مدعوم بواسطة Nations of Sky Portal',
+    namePlaceholder  : 'مثال: محمد أحمد',
+    lblChannelSection: 'وسيلة التواصل المفضلة',
+    lblChCall        : 'مكالمة هاتفية',
+    lblChWa          : 'واتساب',
+    lblChEmail       : 'البريد الإلكتروني',
+    lblChSms         : 'رسالة نصية',
+    lblAckTitle      : 'إقرار العميل',
+    lblEditHobby     : 'تعديل',
+    kidName          : 'الاسم',
+    kidAge           : 'السن',
+    kidHobby         : 'الهواية',
+    kidLabel         : 'الابن',
+    dir              : 'rtl',
+    lang             : 'ar'
   },
   en: {
-    brandSub        : 'Welcome! Register here and one of our consultants will reach out shortly.',
-    formTitle       : 'Client Data Update Form | استمارة تحديث بيانات العميل',
-    formDesc        : 'Please update your personal and contact information to ensure our records are accurate.',
-    lblBasic        : 'Basic Information',
-    lblName         : 'Full Name',
-    lblPhone        : 'Primary Phone Number',
-    lblNewPhone     : 'New Phone Number (if you want to change your primary number)',
-    lblPhone2       : 'Secondary Phone Number',
-    lblEmail        : 'Primary Email Address',
-    lblEmail2       : 'Secondary Email Address',
-    lblOptional     : '(Optional)',
-    lblNotes        : 'Additional Notes',
-    lblDetails      : 'Interest Details',
-    btnSubmit       : 'Submit Request',
-    btnSending      : 'Sending...',
-    errRequired     : 'This field is required',
-    errPhone        : 'Please enter a valid number (e.g. +201234567890)',
-    errEmail        : 'Please enter a valid email address',
-    successTitle    : 'Request Submitted Successfully!',
-    successMsg      : 'Thank you. One of our representatives will contact you as soon as possible.',
-    lblPrivacy      : 'I agree to the processing of my personal data according to the privacy policy.',
-    waText          : 'If you would like to contact us directly via WhatsApp',
-    waLabel         : 'Contact us on WhatsApp',
-    errPrivacy      : 'You must agree to the privacy terms to continue',
-    nfTitle         : 'Invalid Link',
-    nfSub           : 'This link is invalid or has expired. Please contact sales to get the correct link.',
-    errNotFound     : 'This number is not registered with us. Please use the number registered under your name.',
-    errPhoneBlocked : '⚠️ This number is not registered with us — please use the number registered under your name',
-    lblKida         : 'Do you have kids?',
-    lblKidsCount    : 'How many kids?',
-    lblKidsHobbies  : 'Kids\' hobbies',
-    lblKidsAges     : 'Kids\' ages',
-    lblHobbies      : 'Your hobbies',
-    lblJobTitle     : 'Job title',
-    phJobTitle      : 'e.g. Engineer, Accountant, Doctor...',
-    errGeneral      : 'An error occurred. Please try again.',
-    footerTxt       : 'Powered by Nations of Sky Portal',
-    namePlaceholder : 'e.g. John Smith',
-    dir             : 'ltr',
-    lang            : 'en'
+    brandSub         : 'Welcome! Register here and one of our consultants will reach out shortly.',
+    formTitle        : 'Client Data Update Form',
+    formDesc         : 'Please update your personal and contact information to ensure our records are accurate.',
+    lblBasic         : 'Basic Information',
+    lblName          : 'Full Name',
+    lblPhone         : 'Primary Phone Number',
+    lblNewPhone      : 'New Phone Number (if you want to change your primary number)',
+    lblPhone2        : 'Secondary Phone Number',
+    lblEmail         : 'Primary Email Address',
+    lblEmail2        : 'Secondary Email Address',
+    lblOptional      : '(Optional)',
+    lblNotes         : 'Additional Notes',
+    lblDetails       : 'Interest Details',
+    btnSubmit        : 'Submit Request',
+    btnSending       : 'Sending...',
+    errRequired      : 'This field is required',
+    errPhone         : 'Please enter a valid number (e.g. +201234567890)',
+    errEmail         : 'Please enter a valid email address',
+    successTitle     : 'Request Submitted Successfully!',
+    successMsg       : 'Thank you. One of our representatives will contact you as soon as possible.',
+    lblPrivacy       : 'I agree to the above acknowledgment',
+    waText           : 'Or contact us directly via WhatsApp',
+    waLabel          : 'Contact us on WhatsApp',
+    errPrivacy       : 'You must agree to the acknowledgment to continue',
+    nfTitle          : 'Invalid Link',
+    nfSub            : 'This link is invalid or has expired. Please contact sales to get the correct link.',
+    errNotFound      : 'This number is not registered with us. Please use the number registered under your name.',
+    errPhoneBlocked  : '⚠️ This number is not registered with us — please use the number registered under your name',
+    lblKida          : 'Do you have children?',
+    lblKidsCount     : 'How many children?',
+    lblSonsSection   : "Children's Details",
+    lblHobbies       : 'Your hobbies',
+    lblJobTitle      : 'Job title',
+    phJobTitle       : 'e.g. Engineer, Accountant, Doctor...',
+    errGeneral       : 'An error occurred. Please try again.',
+    footerTxt        : 'Powered by Nations of Sky Portal',
+    namePlaceholder  : 'e.g. John Smith',
+    lblChannelSection: 'Preferred Communication Channel',
+    lblChCall        : 'Mobile Call',
+    lblChWa          : 'WhatsApp',
+    lblChEmail       : 'Email',
+    lblChSms         : 'SMS',
+    lblAckTitle      : 'Client Acknowledgment',
+    lblEditHobby     : 'Edit',
+    kidName          : 'Name',
+    kidAge           : 'Age',
+    kidHobby         : 'Hobby',
+    kidLabel         : 'Child',
+    dir              : 'ltr',
+    lang             : 'en'
   }
 };
 
-var campaignId    = null;
-var matchedClients = [];   // clients found by phone
-var selectedIds    = [];   // unit IDs user selected
-var campaignData  = null;
-var isSubmitting  = false;
-var currentLang   = 'ar';
+var campaignId     = null;
+var matchedClients = [];
+var selectedIds    = [];
+var campaignData   = null;
+var isSubmitting   = false;
+var currentLang    = 'ar';
 
-// ── New fields state ──
-var kidaValue       = null;   // 'yes' | 'no' | null
-var phoneLookupDone = false;  // true after first lookup completes
-var phoneNotFound   = false;  // true when DB lookup returned 0 results
+// ── State ──
+var kidaValue       = null;
+var phoneLookupDone = false;
+var phoneNotFound   = false;
 
-// ── Anti-Duplicate: track submitted phones in this session ──
+// ── Anti-Duplicate ──
 var submittedPhones = {};
 
-// ── Rate Limiting: cooldown after successful submit ──
-var RATE_LIMIT_MS  = 60000; // 60 seconds cooldown
+// ── Rate Limiting ──
+var RATE_LIMIT_MS  = 60000;
 var lastSubmitTime = 0;
 
 // ── Auto-save Draft key ──
@@ -849,7 +874,7 @@ function setLang(lang) {
   document.getElementById('btn-ar').classList.toggle('active', lang === 'ar');
   document.getElementById('btn-en').classList.toggle('active', lang === 'en');
 
-  document.getElementById('brand-sub').textContent = t.brandSub;
+  document.getElementById('brand-sub').textContent  = t.brandSub;
   document.getElementById('form-title').textContent = t.formTitle;
   document.getElementById('form-desc').textContent  = t.formDesc;
   document.getElementById('lbl-basic').textContent  = t.lblBasic;
@@ -861,36 +886,69 @@ function setLang(lang) {
   setLabelText('lbl-email',     t.lblEmail,    true);
   setLabelText('lbl-email2',    t.lblEmail2,   false, t.lblOptional);
   setLabelText('lbl-notes',     t.lblNotes,    false, t.lblOptional);
-  setLabelText('lbl-kida',        t.lblKida,       true);
-  setLabelText('lbl-kids-count',  t.lblKidsCount,  true);
-  setLabelText('lbl-kids-hobbies',t.lblKidsHobbies,true);
-  setLabelText('lbl-kids-ages',   t.lblKidsAges,   true);
-  setLabelText('lbl-hobbies',     t.lblHobbies,    true);
-  setLabelText('lbl-job-title',   t.lblJobTitle,   true);
+  setLabelText('lbl-kida',      t.lblKida,     true);
+  setLabelText('lbl-kids-count',t.lblKidsCount, true);
+  setLabelText('lbl-hobbies',   t.lblHobbies,  true);
+  setLabelText('lbl-job-title', t.lblJobTitle, true);
+
+  // Sons section label
+  var sonsSec = document.getElementById('lbl-sons-section');
+  if (sonsSec) sonsSec.textContent = t.lblSonsSection;
+
+  // Channel section
+  var chanSec = document.getElementById('lbl-channel-section');
+  if (chanSec) chanSec.textContent = t.lblChannelSection;
+
+  // Channel items
+  var chCall = document.getElementById('lbl-ch-call');  if (chCall)  chCall.textContent  = t.lblChCall;
+  var chWa   = document.getElementById('lbl-ch-wa');    if (chWa)    chWa.textContent    = t.lblChWa;
+  var chEm   = document.getElementById('lbl-ch-email'); if (chEm)    chEm.textContent    = t.lblChEmail;
+  var chSms  = document.getElementById('lbl-ch-sms');   if (chSms)   chSms.textContent   = t.lblChSms;
+
+  // Acknowledgment
+  var ackTitle = document.getElementById('lbl-ack-title');
+  if (ackTitle) ackTitle.textContent = t.lblAckTitle;
+  var ackEn = document.getElementById('ack-text-en');
+  var ackAr = document.getElementById('ack-text-ar');
+  if (ackEn) ackEn.style.display = lang === 'en' ? 'block' : 'none';
+  if (ackAr) ackAr.style.display = lang === 'ar' ? 'block' : 'none';
+
+  // Edit hobby link
+  var editHobby = document.getElementById('lbl-edit-hobby');
+  if (editHobby) editHobby.textContent = t.lblEditHobby;
 
   document.getElementById('inp-name').placeholder  = t.namePlaceholder;
   document.getElementById('btn-label').textContent = t.btnSubmit;
   var jobInp = document.getElementById('inp-job-title');
   if (jobInp) jobInp.placeholder = t.phJobTitle;
 
-  document.getElementById('err-name').textContent     = t.errRequired;
-  document.getElementById('err-phone').textContent    = t.errPhone;
+  document.getElementById('err-name').textContent      = t.errRequired;
+  document.getElementById('err-phone').textContent     = t.errPhone;
   document.getElementById('err-new-phone').textContent = t.errPhone;
-  document.getElementById('err-phone2').textContent   = t.errPhone;
-  document.getElementById('err-email').textContent    = t.errEmail;
-  document.getElementById('err-email2').textContent   = t.errEmail;
-  document.getElementById('lbl-privacy').textContent  = t.lblPrivacy;
-  
-  // WhatsApp elements
-  if(document.getElementById('wa-text')) document.getElementById('wa-text').textContent = t.waText;
-  if(document.getElementById('wa-label-form')) document.getElementById('wa-label-form').textContent = t.waLabel;
-  if(document.getElementById('wa-label')) document.getElementById('wa-label').textContent = t.waLabel;
+  document.getElementById('err-phone2').textContent    = t.errPhone;
+  document.getElementById('err-email').textContent     = t.errEmail;
+  document.getElementById('err-email2').textContent    = t.errEmail;
+  document.getElementById('err-kida').textContent      = t.errRequired;
+  document.getElementById('err-kids-count').textContent= t.errRequired;
+  document.getElementById('err-hobbies').textContent   = t.errRequired;
+  document.getElementById('err-job-title').textContent = t.errRequired;
+  document.getElementById('lbl-privacy').textContent   = t.lblPrivacy;
 
-  if(document.getElementById('nf-title')) document.getElementById('nf-title').textContent = t.nfTitle;
-  if(document.getElementById('nf-sub')) document.getElementById('nf-sub').innerHTML = t.nfSub;
+  // WhatsApp
+  if (document.getElementById('wa-text'))      document.getElementById('wa-text').textContent      = t.waText;
+  if (document.getElementById('wa-label-form'))document.getElementById('wa-label-form').textContent = t.waLabel;
+  if (document.getElementById('wa-label'))     document.getElementById('wa-label').textContent      = t.waLabel;
+
+  if (document.getElementById('nf-title')) document.getElementById('nf-title').textContent = t.nfTitle;
+  if (document.getElementById('nf-sub'))   document.getElementById('nf-sub').innerHTML     = t.nfSub;
   document.getElementById('footer-txt').textContent = t.footerTxt;
 
+  // Re-render dynamic fields & kid cards with new lang
   if (campaignData) buildDynamicFields(campaignData);
+  if (kidaValue === 'yes') {
+    var count = getKidsCount();
+    if (count) renderKidsNameFields(count);
+  }
 }
 
 function setLabelText(id, text, required, optionalText) {
@@ -911,10 +969,9 @@ function setLabelText(id, text, required, optionalText) {
       if (!rows || !rows.length) { showState('notfound'); return; }
       campaignData = rows[0];
       var tagNameEl = document.getElementById('camp-tag-name');
-      var tagEl = document.getElementById('camp-tag');
+      var tagEl     = document.getElementById('camp-tag');
       if (tagNameEl) tagNameEl.textContent = campaignData.name || '';
       if (tagEl && campaignData.name) tagEl.style.display = 'inline-flex';
-      
       document.title = 'Nations OF Sky Form — ' + (campaignData.name || '');
       buildDynamicFields(campaignData);
       showState('form');
@@ -930,7 +987,6 @@ function buildDynamicFields(camp) {
   var cols = camp.column_config || [];
   if (typeof cols === 'string') { try { cols = JSON.parse(cols); } catch(e) { cols = []; } }
 
-  // Skip keys that already have dedicated inputs in the form
   var DYNAMIC_SKIP = ['email','email_account','email2','name','phone','phone2','notes'];
   var visibleCols = cols
     .filter(function(c) { return c.show_in_form === true && DYNAMIC_SKIP.indexOf(c.key) === -1; })
@@ -946,7 +1002,7 @@ function buildDynamicFields(camp) {
     var label = labelMap[col.key] || col.label;
     var opts  = DROPDOWN_KEYS[col.key];
     if (opts) {
-      var arrowStyle = 'appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'%236b7280\'%3E%3Cpath d=\'M7 10l5 5 5-5z\'/%3E%3C/svg%3E" );background-repeat:no-repeat;background-position:left 12px center;padding-left:2rem;';
+      var arrowStyle = 'appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'%236b7280\'%3E%3Cpath d=\'M7 10l5 5 5-5z\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center;padding-left:2rem;';
       html += '<div class="field">' +
         '<label>' + escHtml(label) + ' <span style="color:var(--muted);font-weight:400">' + escHtml(t.lblOptional) + '</span></label>' +
         '<select id="inp-' + escHtml(col.key) + '" data-col-key="' + escHtml(col.key) + '" style="' + arrowStyle + '">' +
@@ -962,32 +1018,29 @@ function buildDynamicFields(camp) {
     }
   });
   document.getElementById('dynamic-fields').innerHTML = html;
-  // re-attach draft save listener for newly added dynamic fields
   var dynArea = document.getElementById('dynamic-fields');
   if (dynArea) dynArea.addEventListener('input', saveDraft);
 }
 
-// ── Auto-save Draft helpers ──────────────────────────────────
+// ── Auto-save Draft ──────────────────────────────────────────
 function saveDraft() {
   try {
     var draft = {
-      name        : val('inp-name'),
-      phone       : val('inp-phone'),
-      phone2      : val('inp-phone2'),
-      email       : val('inp-email'),
-      email2      : val('inp-email2'),
-      notes       : val('inp-notes'),
-      kida        : kidaValue,
-      kidsCount   : val('inp-kids-count'),
-      kidsNames   : kidsNamesData,
-      kidsAgesData: kidsAgesData,
+      name           : val('inp-name'),
+      phone          : val('inp-phone'),
+      newPhone       : val('inp-new-phone'),
+      phone2         : val('inp-phone2'),
+      email          : val('inp-email'),
+      email2         : val('inp-email2'),
+      notes          : val('inp-notes'),
+      kida           : kidaValue,
+      kidsCount      : val('inp-kids-count'),
+      kidsNames      : kidsNamesData,
+      kidsAgesData   : kidsAgesData,
       kidsTalentsData: kidsTalentsData,
-      kidsHobbies : val('inp-kids-hobbies'),
-      kidsAges    : val('inp-kids-ages'),
-      hobbies     : val('inp-hobbies'),
-      jobTitle    : val('inp-job-title')
+      hobbies        : val('inp-hobbies'),
+      jobTitle       : val('inp-job-title')
     };
-    // also save dynamic fields
     document.querySelectorAll('[data-col-key]').forEach(function(inp) {
       draft['_col_' + inp.getAttribute('data-col-key')] = inp.value.trim();
     });
@@ -1000,28 +1053,23 @@ function loadDraft() {
     var raw = sessionStorage.getItem(DRAFT_KEY);
     if (!raw) return;
     var draft = JSON.parse(raw);
-    if (draft.name)   { var el = document.getElementById('inp-name');   if (el) el.value = draft.name; }
-    if (draft.phone)  { var el = document.getElementById('inp-phone');  if (el) el.value = draft.phone; }
-    if (draft.phone2) { var el = document.getElementById('inp-phone2'); if (el) el.value = draft.phone2; }
-    if (draft.email)  { var el = document.getElementById('inp-email');  if (el) el.value = draft.email; }
-    if (draft.email2) { var el = document.getElementById('inp-email2'); if (el) el.value = draft.email2; }
-    if (draft.notes)  { var el = document.getElementById('inp-notes');  if (el) el.value = draft.notes; }
-    if (draft.kida)   { setKida(draft.kida); }
-    if (draft.kidsNames)   kidsNamesData = draft.kidsNames;
-    if (draft.kidsAgesData) kidsAgesData = draft.kidsAgesData;
-    if (draft.kidsTalentsData) kidsTalentsData = draft.kidsTalentsData;
-    if (draft.kidsCount)   { 
-      var el = document.getElementById('inp-kids-count'); 
-      if (el) {
-        el.value = draft.kidsCount;
-        handleKidsCountChange();
-      }
+    if (draft.name)    setV('inp-name',    draft.name);
+    if (draft.phone)   setV('inp-phone',   draft.phone);
+    if (draft.newPhone)setV('inp-new-phone',draft.newPhone);
+    if (draft.phone2)  setV('inp-phone2',  draft.phone2);
+    if (draft.email)   setV('inp-email',   draft.email);
+    if (draft.email2)  setV('inp-email2',  draft.email2);
+    if (draft.notes)   setV('inp-notes',   draft.notes);
+    if (draft.hobbies) setV('inp-hobbies', draft.hobbies);
+    if (draft.jobTitle)setV('inp-job-title',draft.jobTitle);
+    if (draft.kida)    { setKida(draft.kida); }
+    if (draft.kidsNames)       kidsNamesData    = draft.kidsNames;
+    if (draft.kidsAgesData)    kidsAgesData     = draft.kidsAgesData;
+    if (draft.kidsTalentsData) kidsTalentsData  = draft.kidsTalentsData;
+    if (draft.kidsCount) {
+      var el = document.getElementById('inp-kids-count');
+      if (el) { el.value = draft.kidsCount; handleKidsCountChange(); }
     }
-    if (draft.kidsHobbies) { var el = document.getElementById('inp-kids-hobbies'); if (el) el.value = draft.kidsHobbies; }
-    if (draft.kidsAges)    { var el = document.getElementById('inp-kids-ages');    if (el) el.value = draft.kidsAges; }
-    if (draft.hobbies)     { var el = document.getElementById('inp-hobbies');      if (el) el.value = draft.hobbies; }
-    if (draft.jobTitle)    { var el = document.getElementById('inp-job-title');    if (el) el.value = draft.jobTitle; }
-    // restore dynamic fields
     Object.keys(draft).forEach(function(k) {
       if (k.indexOf('_col_') === 0) {
         var key = k.replace('_col_', '');
@@ -1036,36 +1084,41 @@ function clearDraft() {
   try { sessionStorage.removeItem(DRAFT_KEY); } catch(e) {}
 }
 
-// Attach auto-save on input change (called after form is shown)
+function setV(id, v) {
+  var el = document.getElementById(id);
+  if (el && v) el.value = v;
+}
+
 function attachDraftListeners() {
-  var fields = ['inp-name','inp-phone','inp-phone2','inp-email','inp-email2','inp-notes','inp-new-phone',
-                'inp-kids-count','inp-kids-hobbies','inp-kids-ages','inp-hobbies','inp-job-title'];
+  var fields = ['inp-name','inp-phone','inp-phone2','inp-new-phone','inp-email','inp-email2',
+                'inp-notes','inp-kids-count','inp-hobbies','inp-job-title'];
   fields.forEach(function(id) {
     var el = document.getElementById(id);
-    if (el) el.addEventListener('input', saveDraft);
-    if (el && el.tagName === 'SELECT') el.addEventListener('change', saveDraft);
+    if (el) {
+      el.addEventListener('input', saveDraft);
+      if (el.tagName === 'SELECT') el.addEventListener('change', saveDraft);
+    }
   });
-  // dynamic fields via event delegation
   var dynArea = document.getElementById('dynamic-fields');
   if (dynArea) dynArea.addEventListener('input', saveDraft);
 }
 
-
 // ── PHONE LOOKUP ─────────────────────────────────────────────
-function digitsOnly(s) { return String(s || '').replace(/\D/g, ''); }
-// Normalize phone: strip non-digits, keep last 10 (handles +20 / 020 / 0 prefixes)
-function normalizePhone(raw) { return digitsOnly(raw).slice(-10); }
-// ── Kids Yes/No Toggle ──────────────────────────────────────
-function setKida(val) {
-  kidaValue = val;
+function digitsOnly(s)     { return String(s || '').replace(/\D/g, ''); }
+function normalizePhone(r) { return digitsOnly(r).slice(-10); }
+
+// ── Sons Yes/No Toggle ──────────────────────────────────────
+function setKida(v) {
+  kidaValue = v;
   var yesBtn  = document.getElementById('btn-kida-yes');
   var noBtn   = document.getElementById('btn-kida-no');
   var details = document.getElementById('kids-details');
-  if (yesBtn) { yesBtn.classList.toggle('sel-yes', val === 'yes'); yesBtn.classList.remove('sel-no'); }
-  if (noBtn)  { noBtn.classList.toggle('sel-no',   val === 'no');  noBtn.classList.remove('sel-yes'); }
-  if (details) details.style.display = val === 'yes' ? 'block' : 'none';
+  if (yesBtn) { yesBtn.classList.toggle('sel-yes', v === 'yes'); yesBtn.classList.remove('sel-no'); }
+  if (noBtn)  { noBtn.classList.toggle('sel-no',   v === 'no');  noBtn.classList.remove('sel-yes'); }
+  if (details) details.style.display = v === 'yes' ? 'block' : 'none';
   var field = document.getElementById('field-kida');
   if (field) field.classList.remove('has-err');
+  saveDraft();
 }
 
 function lookupPhone() {
@@ -1075,8 +1128,8 @@ function lookupPhone() {
 
   sbRpc('lookup_client_by_phone', { p_campaign_id: campaignId, p_phone: normalizePhone(raw) })
     .then(function(clients) {
-      matchedClients    = clients || [];
-      phoneLookupDone   = true;
+      matchedClients  = clients || [];
+      phoneLookupDone = true;
       var panel  = document.getElementById('phone-lookup-panel');
       var notice = document.getElementById('phone-notfound-notice');
       if (matchedClients.length) {
@@ -1085,56 +1138,46 @@ function lookupPhone() {
         panel.style.display = 'block';
         notice.classList.remove('show');
       } else {
-        phoneNotFound = true;
+        phoneNotFound   = true;
         panel.style.display = 'none';
         notice.textContent  = T[currentLang].errPhoneBlocked;
         notice.classList.add('show');
         matchedClients = [];
         selectedIds    = [];
       }
-    }).catch(function() {
-      phoneLookupDone = true;
-    });
+    }).catch(function() { phoneLookupDone = true; });
 }
 
 function renderLookupUnits() {
   var clientName = matchedClients[0].name ||
                    (matchedClients[0].extra_data || {}).customer || '\u2014';
-  document.getElementById('lookup-name').textContent = clientName;
+  document.getElementById('lookup-name').textContent    = clientName;
   document.getElementById('lookup-greeting').textContent =
-    currentLang === 'ar' ? '\u0623\u0647\u0644\u0627\u064b \u0628\u0643!' : 'Welcome!';
+    currentLang === 'ar' ? 'أهلاً بك!' : 'Welcome!';
   document.getElementById('lookup-units-lbl').textContent =
-    currentLang === 'ar' ? '\u0627\u062e\u062a\u0627\u0631 \u0648\u062d\u062f\u062a\u0643 / \u0648\u062d\u062f\u0627\u062a\u0643' : 'Select your unit(s)';
+    currentLang === 'ar' ? 'اختار وحدتك / وحداتك' : 'Select your unit(s)';
 
-  // Build flat list of units from all matched records
-  // Supports both extra_data.units[] array AND flat extra_data.unit field
-  var unitItems = []; // [{clientId, unit, contract, project}]
+  var unitItems = [];
   matchedClients.forEach(function(c) {
     var ex = c.extra_data || {};
     if (ex.units && Array.isArray(ex.units) && ex.units.length) {
-      // Multi-unit record — iterate the array
       ex.units.forEach(function(u) {
-        if (u.unit || u.contract_number) {
+        if (u.unit || u.contract_number)
           unitItems.push({ clientId: c.id, unit: u.unit || '', contract: u.contract_number || '', project: u.project || '' });
-        }
       });
     } else if (ex.unit || ex.contract_number) {
-      // Single-unit flat record
       unitItems.push({ clientId: c.id, unit: ex.unit || ex.Unit || '', contract: ex.contract_number || '', project: ex.project || '' });
     }
   });
-
-  // If no real units found, fall back to showing all records
   if (!unitItems.length) {
     matchedClients.forEach(function(c) {
       unitItems.push({ clientId: c.id, unit: '', contract: '', project: '' });
     });
   }
 
-  // Group by project
   var byProject = {};
   unitItems.forEach(function(u) {
-    var proj = u.project || (currentLang === 'ar' ? '\u0648\u062d\u062f\u0627\u062a \u0623\u062e\u0631\u0649' : 'Other Units');
+    var proj = u.project || (currentLang === 'ar' ? 'وحدات أخرى' : 'Other Units');
     if (!byProject[proj]) byProject[proj] = [];
     byProject[proj].push(u);
   });
@@ -1143,8 +1186,8 @@ function renderLookupUnits() {
   Object.keys(byProject).forEach(function(proj) {
     html += '<div class="lookup-proj-lbl">' + escHtml(proj) + '</div>';
     byProject[proj].forEach(function(u, idx) {
-      var uid    = u.clientId + '_' + idx;
-      var label  = u.unit || (currentLang === 'ar' ? '\u0648\u062d\u062f\u0629 ' + (idx + 1) : 'Unit ' + (idx + 1));
+      var uid   = u.clientId + '_' + idx;
+      var label = u.unit || (currentLang === 'ar' ? 'وحدة ' + (idx + 1) : 'Unit ' + (idx + 1));
       html += '<label class="lookup-unit-item sel" id="lui-' + uid + '" onclick="toggleLookupUnitItem(\'' + uid + '\',\'' + u.clientId + '\')">';
       html += '<input type="checkbox" checked id="lchk-' + uid + '" onclick="event.stopPropagation()">';
       html += '<div><div class="lookup-unit-code">' + escHtml(label) + '</div>';
@@ -1154,7 +1197,6 @@ function renderLookupUnits() {
   });
   document.getElementById('lookup-units-container').innerHTML = html;
 
-  // selectedIds = unique client IDs with at least one unit checked (all checked by default)
   var seen = {};
   unitItems.forEach(function(u) { seen[u.clientId] = true; });
   selectedIds = Object.keys(seen);
@@ -1162,35 +1204,18 @@ function renderLookupUnits() {
 
 function toggleLookupUnitItem(uid, clientId) {
   var chk = document.getElementById('lchk-' + uid);
-  var lbl = document.getElementById('lui-' + uid);
+  var lbl = document.getElementById('lui-'  + uid);
   if (!chk) return;
   chk.checked = !chk.checked;
   lbl.classList.toggle('sel', chk.checked);
-
-  // Rebuild selectedIds: include clientId if ANY of its unit checkboxes are checked
   var allCheckboxes = document.querySelectorAll('[id^="lchk-"]');
   var checkedByClient = {};
   allCheckboxes.forEach(function(cb) {
-    // uid format: clientId_idx — extract clientId
     var parts = cb.id.replace('lchk-', '').split('_');
-    // clientId is a UUID (has 4 dashes = 5 parts), idx is last
-    var cid = parts.slice(0, -1).join('_');
+    var cid   = parts.slice(0, -1).join('_');
     if (cb.checked) checkedByClient[cid] = true;
   });
   selectedIds = Object.keys(checkedByClient);
-}
-
-function toggleLookupUnit(id) {
-  var chk  = document.getElementById('lchk-' + id);
-  var item = document.getElementById('lui-' + id);
-  if (!chk) return;
-  chk.checked = !chk.checked;
-  item.classList.toggle('sel', chk.checked);
-  if (chk.checked) {
-    if (selectedIds.indexOf(id) === -1) selectedIds.push(id);
-  } else {
-    selectedIds = selectedIds.filter(function(x) { return x !== id; });
-  }
 }
 
 function submitForm() {
@@ -1214,11 +1239,9 @@ function submitForm() {
   if (email2 && !isValidEmail(email2))     { setErr('field-email2');    valid = false; }
 
   // ── Phone must be registered ──
-  // If lookup hasn't run yet (user didn't blur), trigger it now and wait
   if (isValidPhone(phone) && !phoneLookupDone) {
     showBanner(currentLang === 'ar' ? 'جاري التحقق من رقمك...' : 'Verifying your number...');
-    var _raw = phone;
-    sbRpc('lookup_client_by_phone', { p_campaign_id: campaignId, p_phone: normalizePhone(_raw) })
+    sbRpc('lookup_client_by_phone', { p_campaign_id: campaignId, p_phone: normalizePhone(phone) })
       .then(function(clients) {
         matchedClients  = clients || [];
         phoneLookupDone = true;
@@ -1236,7 +1259,7 @@ function submitForm() {
           matchedClients = []; selectedIds = [];
         }
         hideBanner();
-        submitForm(); // retry after lookup resolves
+        submitForm();
       }).catch(function() { phoneLookupDone = true; hideBanner(); });
     return;
   }
@@ -1246,15 +1269,14 @@ function submitForm() {
     valid = false;
   }
 
-  // ── New mandatory fields ──
-  if (!kidaValue)                          { setErr('field-kida');        valid = false; }
+  // ── Sons/Children fields ──
+  if (!kidaValue)       { setErr('field-kida');      valid = false; }
   if (kidaValue === 'yes') {
-    if (!val('inp-kids-count'))            { setErr('field-kids-count');   valid = false; }
-    if (!validateKidsHobbies())             { setErr('field-kids-hobbies'); valid = false; }
-    if (!val('inp-kids-ages'))             { setErr('field-kids-ages');    valid = false; }
+    if (!val('inp-kids-count')) { setErr('field-kids-count'); valid = false; }
   }
-  if (!getHobbiesVal('hobbies'))           { setErr('field-hobbies');      valid = false; }
-  if (!val('inp-job-title'))               { setErr('field-job-title');    valid = false; }
+
+  if (!getHobbiesVal('hobbies')) { setErr('field-hobbies');   valid = false; }
+  if (!val('inp-job-title'))     { setErr('field-job-title'); valid = false; }
 
   var privacy = document.getElementById('inp-privacy').checked;
   if (!privacy) { showBanner(t.errPrivacy); valid = false; }
@@ -1274,41 +1296,42 @@ function submitForm() {
   }
 
   var finalPhone  = newPhone || phone;
-  var storedPhone = normalizePhone(finalPhone);          // last 10 digits — consistent for DB
+  var storedPhone = normalizePhone(finalPhone);
   var phoneKey    = campaignId + '_' + storedPhone;
 
-  // Build extra data (used in both UPDATE and INSERT paths)
-  var extraData = { name: name, phone: finalPhone };     // keep original for display
+  var extraData = { name: name, phone: finalPhone };
   if (newPhone) extraData.old_phone = phone;
   if (phone2)   extraData.phone2    = phone2;
   if (email)    extraData.email     = email;
   if (email2)   extraData.email2    = email2;
-  // ── New fields ──
-    extraData.has_kids  = kidaValue;
-    if (kidaValue === 'yes') {
-      extraData.kids_count   = val('inp-kids-count');
-      extraData.kids_names   = getKidNamesString();
-      extraData.kids_hobbies = getKidsHobbiesString();
-      extraData.kids_ages    = val('inp-kids-ages');
-      extraData.kids_ages_list = kidsAgesData.filter(Boolean).join(', ');
-      extraData.kids_talents   = kidsTalentsData.filter(Boolean).join(', ');
-    }
+
+  // Sons / Children data
+  extraData.has_children = kidaValue;
+  if (kidaValue === 'yes') {
+    extraData.children_count    = val('inp-kids-count');
+    extraData.children_details  = getKidNamesString();
+    extraData.children_ages     = kidsAgesData.filter(Boolean).join(', ');
+    extraData.children_hobbies  = kidsTalentsData.filter(Boolean).join(', ');
+  }
+
   extraData.hobbies   = getHobbiesVal('hobbies');
   extraData.job_title = val('inp-job-title');
+
   document.querySelectorAll('[data-col-key]').forEach(function(inp) {
     if (inp.value.trim()) extraData[inp.getAttribute('data-col-key')] = inp.value.trim();
   });
+
   var notesVal = val('inp-notes');
   if (notesVal) extraData.notes = notesVal;
-  // Collect preferred channels
-  var channels = [];
-  ['ch-call','ch-wa','ch-email','ch-sms'].forEach(function(id){
-    var el = document.getElementById(id);
-    if(el && el.checked) channels.push(el.value);
-  });
-  if(channels.length) extraData.preferred_channel = channels.join(', ');
 
-  // If existing client matched & units selected → UPDATE those records
+  var channels = [];
+  ['ch-call','ch-wa','ch-email','ch-sms'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && el.checked) channels.push(el.value);
+  });
+  if (channels.length) extraData.preferred_channel = channels.join(', ');
+
+  // UPDATE existing clients
   if (selectedIds.length > 0 && matchedClients.length > 0) {
     doUpdateExisting(extraData, t);
     return;
@@ -1327,11 +1350,9 @@ function submitForm() {
   isSubmitting = true;
   setBtnLoading(true, 'btn-submit', 'btn-label', 'btn-progress', t.btnSending);
 
-  // ── Anti-Duplicate: check DB too (normalized match) ──
   sbGet('clients', 'phone=eq.' + encodeURIComponent(storedPhone) + '&campaign_id=eq.' + campaignId + '&select=id&limit=1')
     .then(function(existing) {
       if (existing && existing.length) {
-        // Already registered in DB
         submittedPhones[phoneKey] = true;
         isSubmitting = false;
         setBtnLoading(false, 'btn-submit', 'btn-label', 'btn-progress', t.btnSubmit);
@@ -1347,7 +1368,7 @@ function submitForm() {
     .then(function(employee) {
       var record = {
         name                 : name,
-        phone                : storedPhone,       // normalized — consistent with DB lookups
+        phone                : storedPhone,
         extra_data           : extraData,
         status               : 'New',
         campaign_id          : campaignId,
@@ -1365,51 +1386,44 @@ function submitForm() {
       });
     })
     .then(function() {
-      // ── Success: update rate limit + mark phone + clear draft ──
-      lastSubmitTime           = Date.now();
+      lastSubmitTime            = Date.now();
       submittedPhones[phoneKey] = true;
       clearDraft();
-
       document.getElementById('success-title').textContent = t.successTitle;
       document.getElementById('success-msg').textContent   = t.successMsg;
       showState('success');
     })
     .catch(function(err) {
-      if (err === 'duplicate') return; // already handled
+      if (err === 'duplicate') return;
       isSubmitting = false;
       setBtnLoading(false, 'btn-submit', 'btn-label', 'btn-progress', t.btnSubmit);
       showBanner(err && err.message ? err.message : t.errGeneral);
     });
 }
 
-
-// ── UPDATE existing records (when phone matched) ──────────────
+// ── UPDATE existing records ──────────────────────────────────
 function doUpdateExisting(extraData, t) {
   var updates = selectedIds.map(function(id) {
-    var client      = matchedClients.find(function(c) { return c.id === id; });
-    var existExtra  = (client && client.extra_data) || {};
-    var merged      = Object.assign({}, existExtra, extraData, {
+    var client     = matchedClients.find(function(c) { return c.id === id; });
+    var existExtra = (client && client.extra_data) || {};
+    var merged     = Object.assign({}, existExtra, extraData, {
       form_submitted    : true,
       form_submitted_at : new Date().toISOString()
     });
     return sbPatch('clients', 'id=eq.' + id, { extra_data: merged });
   });
 
-  // After updates, fetch assigned employees and notify them
   Promise.all(updates)
     .then(function() {
-      // Collect unique assigned employees from matched clients
       var empIds = {};
       selectedIds.forEach(function(id) {
         var client = matchedClients.find(function(c){ return c.id === id; });
         if (client && client.assigned_employee_id) empIds[client.assigned_employee_id] = true;
       });
-      // Send notification to each assigned employee
       var notifName = matchedClients[0] ? (matchedClients[0].name || 'A client') : 'A client';
       var notifPromises = Object.keys(empIds).map(function(empId) {
-        // Count how many units this agent owns that were updated
         var agentUnits = selectedIds.filter(function(id){
-          var c = matchedClients.find(function(x){ return x.id===id; });
+          var c = matchedClients.find(function(x){ return x.id === id; });
           return c && c.assigned_employee_id === empId;
         }).length;
         return sbInsert('notifications', {
@@ -1422,18 +1436,12 @@ function doUpdateExisting(extraData, t) {
           read        : false
         });
       });
-      // Notify admin about form submission
       var adminMsg = '📝 ' + (matchedClients[0] ? matchedClients[0].name || 'A client' : 'A client') +
         ' submitted their form' +
         (matchedClients[0] && matchedClients[0].extra_data && matchedClients[0].extra_data.phone
           ? ' · ' + matchedClients[0].extra_data.phone : '');
       notifPromises.push(
-        sbInsert('notifications', {
-          employee_id : null,
-          type        : 'form_submitted',
-          message     : adminMsg,
-          read        : false
-        }).catch(function(){})
+        sbInsert('notifications', { employee_id: null, type: 'form_submitted', message: adminMsg, read: false }).catch(function(){})
       );
       return Promise.all(notifPromises).catch(function(){});
     })
@@ -1468,6 +1476,7 @@ function getLeastLoadedEmployee() {
   }).catch(function() { return null; });
 }
 
+// ── Supabase helpers ─────────────────────────────────────────
 function sbHeaders() {
   return { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
 }
@@ -1477,30 +1486,29 @@ function sbGet(table, query) {
 }
 function sbRpc(fn, params) {
   return fetch(SB_URL + '/rest/v1/rpc/' + fn, {
-    method  : 'POST',
-    headers : sbHeaders(),
-    body    : JSON.stringify(params)
+    method: 'POST', headers: sbHeaders(), body: JSON.stringify(params)
   }).then(function(r) { if (!r.ok) throw new Error('RPC error ' + r.status); return r.json(); });
 }
 function sbInsert(table, payload) {
   return fetch(SB_URL + '/rest/v1/' + table, {
-    method  : 'POST',
-    headers : Object.assign(sbHeaders(), { 'Prefer': 'return=minimal' }),
-    body    : JSON.stringify(payload)
+    method: 'POST',
+    headers: Object.assign(sbHeaders(), { 'Prefer': 'return=minimal' }),
+    body: JSON.stringify(payload)
   }).then(function(r) {
     if (r.status !== 201) return r.text().then(function(t) { throw new Error(t); });
   });
 }
 function sbPatch(table, query, payload) {
   return fetch(SB_URL + '/rest/v1/' + table + '?' + query, {
-    method  : 'PATCH',
-    headers : Object.assign(sbHeaders(), { 'Prefer': 'return=minimal' }),
-    body    : JSON.stringify(payload)
+    method: 'PATCH',
+    headers: Object.assign(sbHeaders(), { 'Prefer': 'return=minimal' }),
+    body: JSON.stringify(payload)
   }).then(function(r) {
     if (!r.ok) return r.text().then(function(t) { throw new Error(t); });
   });
 }
 
+// ── UI helpers ───────────────────────────────────────────────
 function showState(id) {
   ['loading','form','success','notfound'].forEach(function(s) {
     var el = document.getElementById('state-' + s);
@@ -1511,8 +1519,6 @@ function val(id) {
   var el = document.getElementById(id); return el ? el.value.trim() : '';
 }
 function isValidPhone(p) {
-  // Enhanced validation for international numbers
-  // Matches + and digits, spaces, dashes, parentheses. Length 7 to 20.
   var clean = p.replace(/[\s\-\(\)]/g, '');
   return clean && /^\+?[0-9]{7,20}$/.test(clean);
 }
@@ -1540,7 +1546,7 @@ function setBtnLoading(loading, btnId, labelId, progId, labelText) {
   if (!btn) return;
   btn.disabled = loading;
   if (loading) {
-    lbl.innerHTML   = '<span class="spinner"></span> ' + escHtml(labelText);
+    lbl.innerHTML    = '<span class="spinner"></span> ' + escHtml(labelText);
     prog.style.width = '70%';
   } else {
     lbl.textContent  = labelText;
@@ -1553,48 +1559,36 @@ function escHtml(str) {
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Other-option modal ──────────────────────────────────────────────────────
-var otherFieldActive     = null;   // 'hobbies' | 'kids-hobbies'
-var otherHobbiesText     = '';
-var otherKidsHobbiesText = '';
+// ── Other-option modal (personal hobbies) ───────────────────
+var otherFieldActive = null;
+var otherHobbiesText = '';
 
 function handleOtherSelect(fieldKey) {
-  var selectId = fieldKey === 'hobbies' ? 'inp-hobbies' : 'inp-kids-hobbies';
-  var sel = document.getElementById(selectId);
+  var sel = document.getElementById('inp-hobbies');
   if (sel && sel.value === 'Other') {
     openOtherModal(fieldKey);
   } else {
-    // reset stored custom text if user picks a real option
-    if (fieldKey === 'hobbies') otherHobbiesText = '';
-    else otherKidsHobbiesText = '';
-    hideOtherDisplay(fieldKey);
+    otherHobbiesText = '';
+    hideOtherDisplay();
   }
 }
 
 function openOtherModal(fieldKey) {
-  otherFieldActive = fieldKey;
-  var isAr = currentLang === 'ar';
+  otherFieldActive  = fieldKey;
+  var isAr  = currentLang === 'ar';
   var title = document.getElementById('other-modal-title');
   var inp   = document.getElementById('other-modal-input');
   var err   = document.getElementById('other-modal-err');
 
-  if (fieldKey === 'hobbies') {
-    title.textContent = isAr ? 'ما هي هوايتك؟' : 'What is your hobby?';
-    inp.placeholder   = isAr ? 'مثال: تصوير، رسم، سباحة...' : 'e.g. Photography, Drawing, Swimming...';
-    inp.value         = otherHobbiesText;
-  } else {
-    title.textContent = isAr ? 'ما هي هواية أطفالك؟' : "What are your kids' hobbies?";
-    inp.placeholder   = isAr ? 'مثال: رسم، سباحة، ألعاب إلكترونية...' : 'e.g. Drawing, Swimming, Video games...';
-    inp.value         = otherKidsHobbiesText;
-  }
-
-  err.style.display     = 'none';
+  title.textContent = isAr ? 'ما هي هوايتك؟' : 'What is your hobby?';
+  inp.placeholder   = isAr ? 'مثال: تصوير، رسم، سباحة...' : 'e.g. Photography, Drawing, Swimming...';
+  inp.value         = otherHobbiesText;
+  err.style.display = 'none';
   inp.style.borderColor = 'rgba(255,255,255,0.15)';
 
   var overlay = document.getElementById('other-modal-overlay');
   overlay.style.display = 'flex';
   setTimeout(function() { inp.focus(); if (inp.value) inp.select(); }, 80);
-
   inp.onkeydown = function(e) {
     if (e.key === 'Enter')  { e.preventDefault(); closeOtherModal(true); }
     if (e.key === 'Escape') { closeOtherModal(false); }
@@ -1618,78 +1612,41 @@ function closeOtherModal(confirm) {
       inp.focus();
       return;
     }
-    if (otherFieldActive === 'hobbies') {
-      otherHobbiesText = text;
-      overlay.style.display = 'none';
-      showOtherDisplay('hobbies', text);
-    } else if (otherFieldActive.indexOf('kid-hobby-') === 0) {
-      var kidIdx = parseInt(otherFieldActive.replace('kid-hobby-', ''));
-      kidsOtherHobbiesData[kidIdx] = text;
-      kidsHobbiesData[kidIdx]      = text;
-      overlay.style.display = 'none';
-      var kDisp = document.getElementById('kid-other-display-' + kidIdx);
-      var kSpan = document.getElementById('kid-other-text-'    + kidIdx);
-      if (kDisp) kDisp.style.display = 'flex';
-      if (kSpan) kSpan.textContent   = text;
-    } else {
-      otherKidsHobbiesText = text;
-      overlay.style.display = 'none';
-      showOtherDisplay('kids-hobbies', text);
-    }
+    otherHobbiesText      = text;
+    overlay.style.display = 'none';
+    showOtherDisplay(text);
     saveDraft();
   } else {
-    // cancelled — revert select to empty
-    if (otherFieldActive === 'hobbies') {
-      var sel = document.getElementById('inp-hobbies');
-      if (sel) sel.value = '';
-      otherHobbiesText = '';
-      hideOtherDisplay('hobbies');
-    } else if (otherFieldActive.indexOf('kid-hobby-') === 0) {
-      var kidIdx = parseInt(otherFieldActive.replace('kid-hobby-', ''));
-      var sel = document.getElementById('inp-kid-hobby-' + kidIdx);
-      if (sel) sel.value = '';
-      kidsHobbiesData[kidIdx]      = '';
-      kidsOtherHobbiesData[kidIdx] = '';
-      var kDisp = document.getElementById('kid-other-display-' + kidIdx);
-      if (kDisp) kDisp.style.display = 'none';
-    } else {
-      var sel = document.getElementById('inp-kids-hobbies');
-      if (sel) sel.value = '';
-      otherKidsHobbiesText = '';
-      hideOtherDisplay('kids-hobbies');
-    }
+    var sel = document.getElementById('inp-hobbies');
+    if (sel) sel.value = '';
+    otherHobbiesText      = '';
     overlay.style.display = 'none';
+    hideOtherDisplay();
   }
 }
 
 function getHobbiesVal(fieldKey) {
-  var selectId = fieldKey === 'hobbies' ? 'inp-hobbies' : 'inp-kids-hobbies';
-  var sel = document.getElementById(selectId);
+  var sel = document.getElementById('inp-hobbies');
   if (!sel) return '';
-  if (sel.value === 'Other') {
-    return (fieldKey === 'hobbies' ? otherHobbiesText : otherKidsHobbiesText) || '';
-  }
+  if (sel.value === 'Other') return otherHobbiesText || '';
   return sel.value.trim();
 }
 
+function showOtherDisplay(text) {
+  var disp = document.getElementById('other-hobbies-display');
+  var span = document.getElementById('other-hobbies-text');
+  if (disp && span) { span.textContent = text; disp.style.display = 'flex'; }
+}
+function hideOtherDisplay() {
+  var disp = document.getElementById('other-hobbies-display');
+  if (disp) disp.style.display = 'none';
+}
+function reOpenOtherModal(fieldKey) { openOtherModal(fieldKey); }
 
-// ── Kids Names + Per-Kid Hobbies ──────────────────────────────────────────
-var kidsNamesData        = [];   // ['Ahmed','Sara',...]
-var kidsAgesData         = [];   // ['5','3',...]
-var kidsTalentsData      = [];   // ['Football','Drawing',...]
-var kidsHobbiesData      = {};   // { 0:'Sports', 1:'Other custom text' }
-var kidsOtherHobbiesData = {};   // { 0:'', 1:'custom text' }
-
-var HOBBY_OPTIONS = [
-  { value:'Sports',     label:'Sports | رياضة' },
-  { value:'Arts',       label:'Arts | فنون' },
-  { value:'Music',      label:'Music | موسيقى' },
-  { value:'Reading',    label:'Reading | قراءة' },
-  { value:'Technology', label:'Technology | تكنولوجيا' },
-  { value:'Outdoor',    label:'Outdoor | أنشطة خارجية' },
-  { value:'Other',      label:'Other | أخرى' }
-];
-var HOBBY_STD = ['Sports','Arts','Music','Reading','Technology','Outdoor'];
+// ── Sons / Children Name Fields ──────────────────────────────
+var kidsNamesData   = [];   // per-child name
+var kidsAgesData    = [];   // per-child age
+var kidsTalentsData = [];   // per-child hobby
 
 var AR_ORDINALS = ['الأول','الثاني','الثالث','الرابع','الخامس'];
 
@@ -1701,227 +1658,95 @@ function getKidsCount() {
 
 function handleKidsCountChange() {
   var count = getKidsCount();
-  // reset data arrays when count changes
-  kidsNamesData        = [];
-  kidsAgesData         = [];
-  kidsTalentsData      = [];
-  kidsHobbiesData      = {};
-  kidsOtherHobbiesData = {};
+  kidsNamesData   = [];
+  kidsAgesData    = [];
+  kidsTalentsData = [];
   if (!count) {
-    document.getElementById('kids-names-container').innerHTML    = '';
-    document.getElementById('kids-hobbies-container').innerHTML  = '';
+    document.getElementById('kids-names-container').innerHTML = '';
     return;
   }
   renderKidsNameFields(count);
+  saveDraft();
 }
 
 function renderKidsNameFields(count) {
+  var t    = T[currentLang];
   var isAr = currentLang === 'ar';
-  var html  = '<div style="margin-top:12px;display:flex;flex-direction:column;gap:15px;">';
+  var html = '<div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">';
+
   for (var i = 0; i < count; i++) {
-    var lbl  = isAr ? ('الطفل ' + AR_ORDINALS[i]) : ('Child ' + (i + 1));
-    var phName = isAr ? 'الاسم' : 'Name';
-    var phAge  = isAr ? 'السن' : 'Age';
-    var phTalent = isAr ? 'الموهبة' : 'Talent';
-    
-    html += '<div style="background:#f9fafb; padding:12px; border-radius:10px; border:1px solid var(--border);">';
-    html += '<div style="font-size:13px;color:var(--blue-dark);font-weight:700;margin-bottom:8px;">👦 ' + lbl + '</div>';
-    
-    html += '<div style="display:flex; flex-direction:column; gap:8px;">';
-    // Name
-    html += '<input type="text" id="inp-kid-name-' + i + '" oninput="onKidNameInput()" placeholder="' + phName + '" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;font-weight:600;outline:none;box-sizing:border-box;">';
-    // Age & Talent Row
-    html += '<div style="display:flex;gap:8px;">';
-    html += '<input type="text" id="inp-kid-age-' + i + '" oninput="onKidNameInput()" placeholder="' + phAge + '" style="flex:1;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;outline:none;box-sizing:border-box;">';
-    html += '<input type="text" id="inp-kid-talent-' + i + '" oninput="onKidNameInput()" placeholder="' + phTalent + '" style="flex:2;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;outline:none;box-sizing:border-box;">';
-    html += '</div>';
-    html += '</div>';
-    
-    html += '</div>';
+    var lbl = isAr
+      ? ('الابن ' + AR_ORDINALS[i])
+      : (t.kidLabel + ' ' + (i + 1));
+
+    html += '<div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;">';
+    html += '<div style="font-size:13px;color:var(--blue-dark);font-weight:700;margin-bottom:10px;">👦 ' + escHtml(lbl) + '</div>';
+    html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+
+    // Name — full width
+    html += '<input type="text" class="kid-field-input" id="inp-kid-name-' + i + '" '
+          + 'oninput="onKidNameInput()" placeholder="' + escHtml(t.kidName) + '">';
+
+    // Age — full width
+    html += '<input type="text" class="kid-field-input" id="inp-kid-age-' + i + '" '
+          + 'oninput="onKidNameInput()" placeholder="' + escHtml(t.kidAge) + '" '
+          + 'inputmode="numeric" style="max-width:160px;">';
+
+    // Hobby — full width
+    html += '<input type="text" class="kid-field-input" id="inp-kid-talent-' + i + '" '
+          + 'oninput="onKidNameInput()" placeholder="' + escHtml(t.kidHobby) + '">';
+
+    html += '</div></div>';
   }
   html += '</div>';
   document.getElementById('kids-names-container').innerHTML = html;
-  // restore saved values
+
+  // Restore saved values
   for (var j = 0; j < count; j++) {
-    var elN = document.getElementById('inp-kid-name-' + j);
-    var elA = document.getElementById('inp-kid-age-' + j);
+    var elN = document.getElementById('inp-kid-name-'   + j);
+    var elA = document.getElementById('inp-kid-age-'    + j);
     var elT = document.getElementById('inp-kid-talent-' + j);
-    if (elN && kidsNamesData[j]) elN.value = kidsNamesData[j];
-    if (elA && kidsAgesData[j]) elA.value = kidsAgesData[j];
+    if (elN && kidsNamesData[j])   elN.value = kidsNamesData[j];
+    if (elA && kidsAgesData[j])    elA.value = kidsAgesData[j];
     if (elT && kidsTalentsData[j]) elT.value = kidsTalentsData[j];
   }
-  renderKidsHobbies(count);
+
+  // Attach draft save
+  var container = document.getElementById('kids-names-container');
+  if (container) container.addEventListener('input', saveDraft);
 }
 
 function onKidNameInput() {
   var count = getKidsCount();
   for (var i = 0; i < count; i++) {
-    var elN = document.getElementById('inp-kid-name-' + i);
-    var elA = document.getElementById('inp-kid-age-' + i);
+    var elN = document.getElementById('inp-kid-name-'   + i);
+    var elA = document.getElementById('inp-kid-age-'    + i);
     var elT = document.getElementById('inp-kid-talent-' + i);
-    kidsNamesData[i] = elN ? elN.value.trim() : '';
-    kidsAgesData[i]  = elA ? elA.value.trim() : '';
+    kidsNamesData[i]   = elN ? elN.value.trim() : '';
+    kidsAgesData[i]    = elA ? elA.value.trim() : '';
     kidsTalentsData[i] = elT ? elT.value.trim() : '';
   }
-  // update hobby cards labels only (re-render)
-  renderKidsHobbies(count);
-  saveDraft();
-}
-
-function renderKidsHobbies(count) {
-  var isAr = currentLang === 'ar';
-  if (!count) count = getKidsCount();
-  if (!count) { document.getElementById('kids-hobbies-container').innerHTML = ''; return; }
-
-  var html = '<div style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">';
-  for (var i = 0; i < count; i++) {
-    var kidName = kidsNamesData[i] || (isAr ? 'الطفل ' + AR_ORDINALS[i] : 'Child ' + (i + 1));
-    var selectId = 'inp-kid-hobby-' + i;
-    var opts = '';
-    HOBBY_OPTIONS.forEach(function(opt) {
-      opts += '<option value="' + opt.value + '">' + opt.label + '</option>';
-    });
-
-    var otherTxt = kidsOtherHobbiesData[i] || '';
-    var otherDisplayStyle = otherTxt ? 'display:flex' : 'display:none';
-
-    html += '<div style="background:#fff;border:1px solid var(--border);'
-          + 'border-radius:10px;padding:12px 14px;">';
-    html += '<div style="font-size:13px;font-weight:700;color:var(--blue-dark);margin-bottom:8px;">👦 ' + escHtml(kidName) + '</div>';
-    html += '<select id="' + selectId + '" class="select-arrow" '
-          + 'data-kid-index="' + i + '" onchange="handleKidHobbyChange(' + i + ')" style="width:100%;">';
-    html += '<option value="">' + (isAr ? 'اختار الهواية...' : 'Select hobby...') + '</option>';
-    html += opts;
-    html += '</select>';
-    html += '<div id="kid-other-display-' + i + '" style="' + otherDisplayStyle + ';margin-top:8px;'
-          + 'padding:7px 11px;border-radius:8px;background:rgba(59,130,246,0.1);'
-          + 'border:1px solid rgba(59,130,246,0.25);color:#93c5fd;font-size:13px;align-items:center;gap:8px;">'
-          + '<span>✏️</span>'
-          + '<span id="kid-other-text-' + i + '" style="flex:1;">' + escHtml(otherTxt) + '</span>'
-          + '<span onclick="reOpenKidOtherModal(' + i + ')" '
-          + 'style="cursor:pointer;opacity:0.7;font-size:12px;text-decoration:underline;">تعديل</span>'
-          + '</div>';
-    html += '</div>';
-  }
-  html += '</div>';
-  document.getElementById('kids-hobbies-container').innerHTML = html;
-
-  // Restore selected hobbies
-  for (var j = 0; j < count; j++) {
-    var sel = document.getElementById('inp-kid-hobby-' + j);
-    if (!sel) continue;
-    var storedVal = kidsHobbiesData[j];
-    if (!storedVal) continue;
-    if (HOBBY_STD.indexOf(storedVal) > -1 || storedVal === 'Other') {
-      sel.value = storedVal;
-    } else {
-      // custom text → show Other selected
-      sel.value = 'Other';
-    }
-  }
-}
-
-function handleKidHobbyChange(kidIndex) {
-  var sel = document.getElementById('inp-kid-hobby-' + kidIndex);
-  if (!sel) return;
-  if (sel.value === 'Other') {
-    openKidOtherModal(kidIndex);
-  } else {
-    kidsHobbiesData[kidIndex]      = sel.value;
-    kidsOtherHobbiesData[kidIndex] = '';
-    var disp = document.getElementById('kid-other-display-' + kidIndex);
-    if (disp) disp.style.display = 'none';
-    saveDraft();
-  }
-}
-
-function openKidOtherModal(kidIndex) {
-  var isAr    = currentLang === 'ar';
-  var kidName = kidsNamesData[kidIndex] || (isAr ? 'الطفل ' + (kidIndex + 1) : 'Child ' + (kidIndex + 1));
-  var title   = document.getElementById('other-modal-title');
-  var inp     = document.getElementById('other-modal-input');
-  var err     = document.getElementById('other-modal-err');
-
-  title.textContent = isAr ? ('ما هي هواية ' + kidName + '؟') : ("What is " + kidName + "'s hobby?");
-  inp.placeholder   = isAr ? 'مثال: رسم، سباحة، ألعاب إلكترونية...' : 'e.g. Drawing, Swimming, Gaming...';
-  inp.value         = kidsOtherHobbiesData[kidIndex] || '';
-  err.style.display = 'none';
-  inp.style.borderColor = 'rgba(255,255,255,0.15)';
-
-  otherFieldActive = 'kid-hobby-' + kidIndex;
-
-  var overlay = document.getElementById('other-modal-overlay');
-  overlay.style.display = 'flex';
-  setTimeout(function() { inp.focus(); if (inp.value) inp.select(); }, 80);
-  inp.onkeydown = function(e) {
-    if (e.key === 'Enter')  { e.preventDefault(); closeOtherModal(true); }
-    if (e.key === 'Escape') { closeOtherModal(false); }
-  };
-}
-
-function reOpenKidOtherModal(kidIndex) {
-  openKidOtherModal(kidIndex);
 }
 
 function getKidNamesString() {
-  var count = getKidsCount();
-  var parts = [];
+  var count  = getKidsCount();
+  var isAr   = currentLang === 'ar';
+  var parts  = [];
   for (var i = 0; i < count; i++) {
-    var name = kidsNamesData[i] || (currentLang === 'ar' ? 'طفل ' + (i + 1) : 'Child ' + (i + 1));
-    var age = kidsAgesData[i] || '';
-    var talent = kidsTalentsData[i] || '';
-    var s = name;
-    if (age || talent) {
+    var name   = kidsNamesData[i]   || (isAr ? 'الابن ' + (i + 1) : 'Child ' + (i + 1));
+    var age    = kidsAgesData[i]    || '';
+    var hobby  = kidsTalentsData[i] || '';
+    var s      = name;
+    if (age || hobby) {
       s += ' (';
-      if (age) s += (currentLang === 'ar' ? 'السن: ' : 'Age: ') + age;
-      if (age && talent) s += ' - ';
-      if (talent) s += (currentLang === 'ar' ? 'الموهبة: ' : 'Talent: ') + talent;
+      if (age)        s += (isAr ? 'السن: '     : 'Age: ')   + age;
+      if (age && hobby) s += ' - ';
+      if (hobby)      s += (isAr ? 'الهواية: '  : 'Hobby: ') + hobby;
       s += ')';
     }
     parts.push(s);
   }
   return parts.join(', ');
-}
-
-function getKidsHobbiesString() {
-  var count = getKidsCount();
-  var parts = [];
-  for (var i = 0; i < count; i++) {
-    var kidName = kidsNamesData[i] || ('طفل ' + (i + 1));
-    var hobby   = kidsHobbiesData[i] || '';
-    if (hobby) parts.push(kidName + ': ' + hobby);
-  }
-  return parts.join(' | ');
-}
-
-function validateKidsHobbies() {
-  var count = getKidsCount();
-  if (!count) return false;
-  for (var i = 0; i < count; i++) {
-    if (!kidsHobbiesData[i]) return false;
-  }
-  return true;
-}
-
-function showOtherDisplay(fieldKey, text) {
-  var displayId = fieldKey === 'hobbies' ? 'other-hobbies-display' : 'other-kids-hobbies-display';
-  var textId    = fieldKey === 'hobbies' ? 'other-hobbies-text'    : 'other-kids-hobbies-text';
-  var disp = document.getElementById(displayId);
-  var span = document.getElementById(textId);
-  if (disp && span) {
-    span.textContent    = text;
-    disp.style.display  = 'flex';
-  }
-}
-
-function hideOtherDisplay(fieldKey) {
-  var displayId = fieldKey === 'hobbies' ? 'other-hobbies-display' : 'other-kids-hobbies-display';
-  var disp = document.getElementById(displayId);
-  if (disp) disp.style.display = 'none';
-}
-
-function reOpenOtherModal(fieldKey) {
-  openOtherModal(fieldKey);
 }
 </script>
 
