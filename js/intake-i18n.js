@@ -107,8 +107,9 @@ function setLang(lang) {
   if (document.getElementById('nf-sub'))   document.getElementById('nf-sub').innerHTML     = t.nfSub;
   document.getElementById('footer-txt').textContent = t.footerTxt;
 
-  // Re-render dynamic fields & kid cards with new lang
+  // Re-render dynamic fields, kid cards, and hobby cards with new lang
   if (campaignData) buildDynamicFields(campaignData);
+  renderHobbyCards();
   if (kidaValue === 'yes') {
     var count = getKidsCount();
     if (count) renderKidsNameFields(count);
