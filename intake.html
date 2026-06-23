@@ -413,8 +413,8 @@
     #kids-details {
       padding: .85rem 1rem;
       margin-bottom: .5rem;
-      background: var(--blue-bg);
-      border: 1.5px solid #bfdbfe;
+      background: #f8fbff; /* Lightest blue background */
+      border: 1.5px solid var(--blue); /* Stronger border */
       border-radius: var(--radius);
     }
     #kids-details .field { margin-bottom: .85rem; }
@@ -1704,13 +1704,13 @@ function renderKidsNameFields(count) {
     var lbl  = isAr ? ('الطفل ' + AR_ORDINALS[i]) : ('Child ' + (i + 1));
     var ph   = isAr ? ('اسم ' + lbl) : ('Name of child ' + (i + 1));
     html += '<div style="display:flex;align-items:center;gap:10px;">';
-    html += '<span style="font-size:13px;color:var(--muted);min-width:85px;flex-shrink:0;">' + lbl + '</span>';
+    html += '<span style="font-size:13px;color:var(--text);font-weight:600;min-width:85px;flex-shrink:0;">' + lbl + '</span>';
     html += '<input type="text" id="inp-kid-name-' + i + '" data-kid-index="' + i + '"'
           + ' oninput="onKidNameInput()"'
           + ' placeholder="' + ph + '"'
           + ' style="flex:1;padding:9px 12px;border-radius:8px;'
-          + 'border:1.5px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);'
-          + 'color:#e2e8f0;font-size:14px;outline:none;width:100%;box-sizing:border-box;">';
+          + 'border:1.5px solid var(--border);background:#fff;'
+          + 'color:var(--text);font-size:14px;font-weight:600;outline:none;width:100%;box-sizing:border-box;">';
     html += '</div>';
   }
   html += '</div>';
@@ -1751,9 +1751,9 @@ function renderKidsHobbies(count) {
     var otherTxt = kidsOtherHobbiesData[i] || '';
     var otherDisplayStyle = otherTxt ? 'display:flex' : 'display:none';
 
-    html += '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);'
+    html += '<div style="background:#fff;border:1px solid var(--border);'
           + 'border-radius:10px;padding:12px 14px;">';
-    html += '<div style="font-size:13px;font-weight:600;color:#93c5fd;margin-bottom:8px;">👦 ' + escHtml(kidName) + '</div>';
+    html += '<div style="font-size:13px;font-weight:700;color:var(--blue-dark);margin-bottom:8px;">👦 ' + escHtml(kidName) + '</div>';
     html += '<select id="' + selectId + '" class="select-arrow" '
           + 'data-kid-index="' + i + '" onchange="handleKidHobbyChange(' + i + ')" style="width:100%;">';
     html += '<option value="">' + (isAr ? 'اختار الهواية...' : 'Select hobby...') + '</option>';
