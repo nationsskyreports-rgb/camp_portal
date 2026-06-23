@@ -159,6 +159,7 @@
         </div>
 
         <div id="kids-details" style="display:none">
+          <div id="family-avatar" class="family-avatar" style="display:none"></div>
           <div class="section-label" id="lbl-sons-section" style="color:var(--gold-dark);margin-bottom:.85rem;">بيانات الأبناء</div>
           <div class="field" id="field-kids-count">
             <label id="lbl-kids-count">كم عدد أبنائك؟ <span class="req">*</span></label>
@@ -178,19 +179,8 @@
         <!-- Hobbies -->
         <div class="field" id="field-hobbies">
           <label id="lbl-hobbies">ايه أكتر هواية أو نشاط بتحبه؟ <span class="req">*</span></label>
-          <select id="inp-hobbies" class="select-arrow" onchange="handleOtherSelect('hobbies')">
-            <option value="">اختار... / Select...</option>
-            <option value="Sports">Sports | رياضة</option>
-            <option value="Travel">Travel | سفر</option>
-            <option value="Reading">Reading | قراءة</option>
-            <option value="Cooking">Cooking | طبخ</option>
-            <option value="Technology">Technology | تكنولوجيا</option>
-            <option value="Art">Art | فن</option>
-            <option value="Music">Music | موسيقى</option>
-            <option value="Social">Social | تواصل اجتماعي</option>
-            <option value="Business">Business | أعمال</option>
-            <option value="Other">Other | أخرى</option>
-          </select>
+          <div id="hobby-cards-container" class="hobby-grid"></div>
+          <input type="hidden" id="inp-hobbies" value="">
           <div id="other-hobbies-display" style="display:none;margin-top:8px;padding:8px 12px;border-radius:10px;background:var(--gold-bg);border:1px solid #ddd3c0;color:var(--gold-dark);font-size:13px;align-items:center;gap:8px;">
             <span>✏️</span>
             <span id="other-hobbies-text" style="flex:1;"></span>
