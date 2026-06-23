@@ -28,7 +28,7 @@ function saveDraft() {
       kidsNames      : kidsNamesData,
       kidsAgesData   : kidsAgesData,
       kidsTalentsData: kidsTalentsData,
-      hobbies        : selectedHobby,
+      hobbies        : selectedHobbies,
       otherHobbies   : otherHobbiesText,
       jobTitle       : val('inp-job-title')
     };
@@ -52,9 +52,9 @@ function loadDraft() {
     if (draft.email2)   setV('inp-email2',    draft.email2);
     if (draft.notes)    setV('inp-notes',     draft.notes);
     if (draft.hobbies) {
-      selectedHobby = draft.hobbies;
-      document.getElementById('inp-hobbies').value = draft.hobbies;
-      if (draft.hobbies === 'Other' && draft.otherHobbies) {
+      selectedHobbies = Array.isArray(draft.hobbies) ? draft.hobbies : [draft.hobbies];
+      document.getElementById('inp-hobbies').value = selectedHobbies.join(',');
+      if (selectedHobbies.indexOf('Other') !== -1 && draft.otherHobbies) {
         otherHobbiesText = draft.otherHobbies;
         showOtherDisplay(draft.otherHobbies);
       }
