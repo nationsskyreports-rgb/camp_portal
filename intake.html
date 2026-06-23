@@ -380,6 +380,46 @@
     .ack-title { font-size: .85rem; font-weight: 700; color: var(--text); margin-bottom: .75rem; }
     .ack-text-en { font-size: .82rem; color: var(--muted); line-height: 1.6; margin-bottom: .6rem; }
     .ack-text-ar { font-size: .82rem; color: var(--muted); line-height: 1.6; direction: rtl; }
+    /* ── Select Arrow ── */
+    .select-arrow {
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%236b7280'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: left 12px center;
+      padding-left: 2rem;
+    }
+
+    /* ── Yes / No Toggle ── */
+    .yesno-options { display: flex; gap: .75rem; margin-top: .3rem; }
+    .yesno-btn {
+      flex: 1;
+      padding: .65rem 1rem;
+      border-radius: var(--radius);
+      border: 1.5px solid var(--border);
+      background: #fff;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--muted);
+      font-family: inherit;
+      transition: all .15s;
+    }
+    .yesno-btn:hover:not(.sel-yes):not(.sel-no) { border-color: #93c5fd; background: #f8fbff; }
+    .yesno-btn.sel-yes { background: var(--green); border-color: var(--green); color: #fff; }
+    .yesno-btn.sel-no  { background: var(--red);   border-color: var(--red);   color: #fff; }
+
+    /* ── Kids sub-fields slide-in ── */
+    #kids-details {
+      padding: .85rem 1rem;
+      margin-bottom: .5rem;
+      background: var(--blue-bg);
+      border: 1.5px solid #bfdbfe;
+      border-radius: var(--radius);
+    }
+    #kids-details .field { margin-bottom: .85rem; }
+    #kids-details .field:last-child { margin-bottom: 0; }
+
     @media (max-width: 500px) {
       body { padding: 1rem .75rem 3rem; }
       .card { padding: 1.5rem; }
@@ -446,7 +486,7 @@
 
         <div class="field" id="field-phone">
           <label id="lbl-phone">رقم التليفون الأساسي <span class="req">*</span></label>
-          <input type="tel" id="inp-phone" placeholder="+20 1xx xxxx xxxx" autocomplete="tel" dir="ltr" onblur="lookupPhone()">
+          <input type="tel" id="inp-phone" placeholder="+20 1xx xxxx xxxx" autocomplete="tel" dir="ltr" onblur="lookupPhone()" oninput="phoneLookupDone=false;phoneNotFound=false;document.getElementById('phone-lookup-panel').style.display='none';document.getElementById('phone-notfound-notice').classList.remove('show')">
           <div class="err-msg" id="err-phone">أدخل رقماً صحيحاً</div>
         </div>
 
@@ -489,6 +529,87 @@
           <label id="lbl-email2">البريد الإلكتروني الإضافي <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>
           <input type="email" id="inp-email2" placeholder="example2@email.com" dir="ltr">
           <div class="err-msg" id="err-email2">أدخل بريداً إلكترونياً صحيحاً</div>
+        </div>
+
+        <!-- ── Kids Question ── -->
+        <hr class="divider">
+        <div class="field" id="field-kida">
+          <label id="lbl-kida">هل عندك أطفال؟ <span class="req">*</span></label>
+          <div class="yesno-options">
+            <button type="button" class="yesno-btn" id="btn-kida-yes" onclick="setKida('yes')">Yes | نعم</button>
+            <button type="button" class="yesno-btn" id="btn-kida-no"  onclick="setKida('no')">No | لأ</button>
+          </div>
+          <div class="err-msg" id="err-kida">هذا الحقل مطلوب</div>
+        </div>
+
+        <!-- Kids Details — visible only when kida = yes -->
+        <div id="kids-details" style="display:none">
+          <div class="field" id="field-kids-count">
+            <label id="lbl-kids-count">كم عدد أطفالك؟ <span class="req">*</span></label>
+            <select id="inp-kids-count" class="select-arrow">
+              <option value="">اختار... / Select...</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5+">5 أو أكثر / 5 or more</option>
+            </select>
+            <div class="err-msg" id="err-kids-count">هذا الحقل مطلوب</div>
+          </div>
+
+          <div class="field" id="field-kids-hobbies">
+            <label id="lbl-kids-hobbies">هوايات أطفالك <span class="req">*</span></label>
+            <select id="inp-kids-hobbies" class="select-arrow">
+              <option value="">اختار... / Select...</option>
+              <option value="Sports">Sports | رياضة</option>
+              <option value="Arts">Arts | فنون</option>
+              <option value="Music">Music | موسيقى</option>
+              <option value="Reading">Reading | قراءة</option>
+              <option value="Technology">Technology | تكنولوجيا</option>
+              <option value="Outdoor">Outdoor | أنشطة خارجية</option>
+              <option value="Other">Other | أخرى</option>
+            </select>
+            <div class="err-msg" id="err-kids-hobbies">هذا الحقل مطلوب</div>
+          </div>
+
+          <div class="field" id="field-kids-ages">
+            <label id="lbl-kids-ages">أعمار أطفالك <span class="req">*</span></label>
+            <select id="inp-kids-ages" class="select-arrow">
+              <option value="">اختار... / Select...</option>
+              <option value="Under 3">أقل من 3 سنوات / Under 3</option>
+              <option value="3-6">3–6 (رياض أطفال / Nursery)</option>
+              <option value="6-12">6–12 (ابتدائي / Primary)</option>
+              <option value="13-18">13–18 (ثانوي / Secondary)</option>
+              <option value="Mixed">أعمار متنوعة / Mixed ages</option>
+            </select>
+            <div class="err-msg" id="err-kids-ages">هذا الحقل مطلوب</div>
+          </div>
+        </div>
+
+        <!-- Hobbies (client's own) -->
+        <div class="field" id="field-hobbies">
+          <label id="lbl-hobbies">هواياتك <span class="req">*</span></label>
+          <select id="inp-hobbies" class="select-arrow">
+            <option value="">اختار... / Select...</option>
+            <option value="Sports">Sports | رياضة</option>
+            <option value="Travel">Travel | سفر</option>
+            <option value="Reading">Reading | قراءة</option>
+            <option value="Cooking">Cooking | طبخ</option>
+            <option value="Technology">Technology | تكنولوجيا</option>
+            <option value="Art">Art | فن</option>
+            <option value="Music">Music | موسيقى</option>
+            <option value="Social">Social | تواصل اجتماعي</option>
+            <option value="Business">Business | أعمال</option>
+            <option value="Other">Other | أخرى</option>
+          </select>
+          <div class="err-msg" id="err-hobbies">هذا الحقل مطلوب</div>
+        </div>
+
+        <!-- Job Title -->
+        <div class="field" id="field-job-title">
+          <label id="lbl-job-title">المسمى الوظيفي <span class="req">*</span></label>
+          <input type="text" id="inp-job-title" placeholder="مثال: مهندس، محاسب، طبيب...">
+          <div class="err-msg" id="err-job-title">هذا الحقل مطلوب</div>
         </div>
 
         <div id="dynamic-fields"></div>
@@ -640,7 +761,15 @@ var T = {
     errPrivacy      : 'يجب الموافقة على شروط الخصوصية للمتابعة',
     nfTitle         : 'الرابط غير صحيح',
     nfSub           : 'هذا الرابط غير صالح أو انتهت صلاحيته. تواصل مع المبيعات للحصول على الرابط الصحيح.',
-    errNotFound     : 'الرقم ده مش موجود عندنا. لو لسه مسجلتش، اضغط على تبويب "تسجيل جديد" واملا معلوماتك الأول.',
+    errNotFound     : 'الرقم ده مش متسجل عندنا. استخدم الرقم المسجل باسمك.',
+    errPhoneBlocked : '⚠️ الرقم ده مش متسجل عندنا — استخدم الرقم المسجل باسمك',
+    lblKida         : 'هل عندك أطفال؟',
+    lblKidsCount    : 'كم عدد أطفالك؟',
+    lblKidsHobbies  : 'هوايات أطفالك',
+    lblKidsAges     : 'أعمار أطفالك',
+    lblHobbies      : 'هواياتك',
+    lblJobTitle     : 'المسمى الوظيفي',
+    phJobTitle      : 'مثال: مهندس، محاسب، طبيب...',
     errGeneral      : 'حدث خطأ. يرجى المحاولة مرة أخرى.',
     footerTxt       : 'مدعوم بواسطة Nations of Sky Portal',
     namePlaceholder : 'مثال: محمد أحمد',
@@ -674,7 +803,15 @@ var T = {
     errPrivacy      : 'You must agree to the privacy terms to continue',
     nfTitle         : 'Invalid Link',
     nfSub           : 'This link is invalid or has expired. Please contact sales to get the correct link.',
-    errNotFound     : 'This number is not registered. If you haven\'t signed up yet, go to "New Registration" and fill in your information first.',
+    errNotFound     : 'This number is not registered with us. Please use the number registered under your name.',
+    errPhoneBlocked : '⚠️ This number is not registered with us — please use the number registered under your name',
+    lblKida         : 'Do you have kids?',
+    lblKidsCount    : 'How many kids?',
+    lblKidsHobbies  : 'Kids\' hobbies',
+    lblKidsAges     : 'Kids\' ages',
+    lblHobbies      : 'Your hobbies',
+    lblJobTitle     : 'Job title',
+    phJobTitle      : 'e.g. Engineer, Accountant, Doctor...',
     errGeneral      : 'An error occurred. Please try again.',
     footerTxt       : 'Powered by Nations of Sky Portal',
     namePlaceholder : 'e.g. John Smith',
@@ -689,6 +826,11 @@ var selectedIds    = [];   // unit IDs user selected
 var campaignData  = null;
 var isSubmitting  = false;
 var currentLang   = 'ar';
+
+// ── New fields state ──
+var kidaValue       = null;   // 'yes' | 'no' | null
+var phoneLookupDone = false;  // true after first lookup completes
+var phoneNotFound   = false;  // true when DB lookup returned 0 results
 
 // ── Anti-Duplicate: track submitted phones in this session ──
 var submittedPhones = {};
@@ -722,9 +864,17 @@ function setLang(lang) {
   setLabelText('lbl-email',     t.lblEmail,    true);
   setLabelText('lbl-email2',    t.lblEmail2,   false, t.lblOptional);
   setLabelText('lbl-notes',     t.lblNotes,    false, t.lblOptional);
+  setLabelText('lbl-kida',        t.lblKida,       true);
+  setLabelText('lbl-kids-count',  t.lblKidsCount,  true);
+  setLabelText('lbl-kids-hobbies',t.lblKidsHobbies,true);
+  setLabelText('lbl-kids-ages',   t.lblKidsAges,   true);
+  setLabelText('lbl-hobbies',     t.lblHobbies,    true);
+  setLabelText('lbl-job-title',   t.lblJobTitle,   true);
 
   document.getElementById('inp-name').placeholder  = t.namePlaceholder;
   document.getElementById('btn-label').textContent = t.btnSubmit;
+  var jobInp = document.getElementById('inp-job-title');
+  if (jobInp) jobInp.placeholder = t.phJobTitle;
 
   document.getElementById('err-name').textContent     = t.errRequired;
   document.getElementById('err-phone').textContent    = t.errPhone;
@@ -824,12 +974,18 @@ function buildDynamicFields(camp) {
 function saveDraft() {
   try {
     var draft = {
-      name   : val('inp-name'),
-      phone  : val('inp-phone'),
-      phone2 : val('inp-phone2'),
-      email  : val('inp-email'),
-      email2 : val('inp-email2'),
-      notes  : val('inp-notes')
+      name        : val('inp-name'),
+      phone       : val('inp-phone'),
+      phone2      : val('inp-phone2'),
+      email       : val('inp-email'),
+      email2      : val('inp-email2'),
+      notes       : val('inp-notes'),
+      kida        : kidaValue,
+      kidsCount   : val('inp-kids-count'),
+      kidsHobbies : val('inp-kids-hobbies'),
+      kidsAges    : val('inp-kids-ages'),
+      hobbies     : val('inp-hobbies'),
+      jobTitle    : val('inp-job-title')
     };
     // also save dynamic fields
     document.querySelectorAll('[data-col-key]').forEach(function(inp) {
@@ -850,6 +1006,12 @@ function loadDraft() {
     if (draft.email)  { var el = document.getElementById('inp-email');  if (el) el.value = draft.email; }
     if (draft.email2) { var el = document.getElementById('inp-email2'); if (el) el.value = draft.email2; }
     if (draft.notes)  { var el = document.getElementById('inp-notes');  if (el) el.value = draft.notes; }
+    if (draft.kida)   { setKida(draft.kida); }
+    if (draft.kidsCount)   { var el = document.getElementById('inp-kids-count');   if (el) el.value = draft.kidsCount; }
+    if (draft.kidsHobbies) { var el = document.getElementById('inp-kids-hobbies'); if (el) el.value = draft.kidsHobbies; }
+    if (draft.kidsAges)    { var el = document.getElementById('inp-kids-ages');    if (el) el.value = draft.kidsAges; }
+    if (draft.hobbies)     { var el = document.getElementById('inp-hobbies');      if (el) el.value = draft.hobbies; }
+    if (draft.jobTitle)    { var el = document.getElementById('inp-job-title');    if (el) el.value = draft.jobTitle; }
     // restore dynamic fields
     Object.keys(draft).forEach(function(k) {
       if (k.indexOf('_col_') === 0) {
@@ -867,10 +1029,12 @@ function clearDraft() {
 
 // Attach auto-save on input change (called after form is shown)
 function attachDraftListeners() {
-  var fields = ['inp-name','inp-phone','inp-phone2','inp-email','inp-email2','inp-notes','inp-new-phone'];
+  var fields = ['inp-name','inp-phone','inp-phone2','inp-email','inp-email2','inp-notes','inp-new-phone',
+                'inp-kids-count','inp-kids-hobbies','inp-kids-ages','inp-hobbies','inp-job-title'];
   fields.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.addEventListener('input', saveDraft);
+    if (el && el.tagName === 'SELECT') el.addEventListener('change', saveDraft);
   });
   // dynamic fields via event delegation
   var dynArea = document.getElementById('dynamic-fields');
@@ -882,6 +1046,19 @@ function attachDraftListeners() {
 function digitsOnly(s) { return String(s || '').replace(/\D/g, ''); }
 // Normalize phone: strip non-digits, keep last 10 (handles +20 / 020 / 0 prefixes)
 function normalizePhone(raw) { return digitsOnly(raw).slice(-10); }
+// ── Kids Yes/No Toggle ──────────────────────────────────────
+function setKida(val) {
+  kidaValue = val;
+  var yesBtn  = document.getElementById('btn-kida-yes');
+  var noBtn   = document.getElementById('btn-kida-no');
+  var details = document.getElementById('kids-details');
+  if (yesBtn) { yesBtn.classList.toggle('sel-yes', val === 'yes'); yesBtn.classList.remove('sel-no'); }
+  if (noBtn)  { noBtn.classList.toggle('sel-no',   val === 'no');  noBtn.classList.remove('sel-yes'); }
+  if (details) details.style.display = val === 'yes' ? 'block' : 'none';
+  var field = document.getElementById('field-kida');
+  if (field) field.classList.remove('has-err');
+}
+
 function lookupPhone() {
   var raw = val('inp-phone');
   if (!raw || !campaignId) return;
@@ -889,23 +1066,26 @@ function lookupPhone() {
 
   sbRpc('lookup_client_by_phone', { p_campaign_id: campaignId, p_phone: normalizePhone(raw) })
     .then(function(clients) {
-      matchedClients = clients || [];
+      matchedClients    = clients || [];
+      phoneLookupDone   = true;
       var panel  = document.getElementById('phone-lookup-panel');
       var notice = document.getElementById('phone-notfound-notice');
       if (matchedClients.length) {
+        phoneNotFound = false;
         renderLookupUnits();
         panel.style.display = 'block';
         notice.classList.remove('show');
       } else {
+        phoneNotFound = true;
         panel.style.display = 'none';
-        notice.textContent  = currentLang === 'ar'
-          ? 'الرقم ده مش مسجل عندنا — هنسجّلك كعميل جديد'
-          : 'Number not found — you will be registered as a new client';
+        notice.textContent  = T[currentLang].errPhoneBlocked;
         notice.classList.add('show');
         matchedClients = [];
         selectedIds    = [];
       }
-    }).catch(function() {});
+    }).catch(function() {
+      phoneLookupDone = true;
+    });
 }
 
 function renderLookupUnits() {
@@ -1024,6 +1204,49 @@ function submitForm() {
   if (!isValidEmail(email))                { setErr('field-email');     valid = false; }
   if (email2 && !isValidEmail(email2))     { setErr('field-email2');    valid = false; }
 
+  // ── Phone must be registered ──
+  // If lookup hasn't run yet (user didn't blur), trigger it now and wait
+  if (isValidPhone(phone) && !phoneLookupDone) {
+    showBanner(currentLang === 'ar' ? 'جاري التحقق من رقمك...' : 'Verifying your number...');
+    var _raw = phone;
+    sbRpc('lookup_client_by_phone', { p_campaign_id: campaignId, p_phone: normalizePhone(_raw) })
+      .then(function(clients) {
+        matchedClients  = clients || [];
+        phoneLookupDone = true;
+        var panel  = document.getElementById('phone-lookup-panel');
+        var notice = document.getElementById('phone-notfound-notice');
+        if (matchedClients.length) {
+          phoneNotFound = false;
+          renderLookupUnits();
+          if (panel)  panel.style.display = 'block';
+          if (notice) notice.classList.remove('show');
+        } else {
+          phoneNotFound = true;
+          if (panel)  panel.style.display = 'none';
+          if (notice) { notice.textContent = T[currentLang].errPhoneBlocked; notice.classList.add('show'); }
+          matchedClients = []; selectedIds = [];
+        }
+        hideBanner();
+        submitForm(); // retry after lookup resolves
+      }).catch(function() { phoneLookupDone = true; hideBanner(); });
+    return;
+  }
+  if (phoneLookupDone && phoneNotFound) {
+    showBanner(t.errNotFound);
+    setErr('field-phone');
+    valid = false;
+  }
+
+  // ── New mandatory fields ──
+  if (!kidaValue)                          { setErr('field-kida');        valid = false; }
+  if (kidaValue === 'yes') {
+    if (!val('inp-kids-count'))            { setErr('field-kids-count');   valid = false; }
+    if (!val('inp-kids-hobbies'))          { setErr('field-kids-hobbies'); valid = false; }
+    if (!val('inp-kids-ages'))             { setErr('field-kids-ages');    valid = false; }
+  }
+  if (!val('inp-hobbies'))                 { setErr('field-hobbies');      valid = false; }
+  if (!val('inp-job-title'))               { setErr('field-job-title');    valid = false; }
+
   var privacy = document.getElementById('inp-privacy').checked;
   if (!privacy) { showBanner(t.errPrivacy); valid = false; }
 
@@ -1051,6 +1274,15 @@ function submitForm() {
   if (phone2)   extraData.phone2    = phone2;
   if (email)    extraData.email     = email;
   if (email2)   extraData.email2    = email2;
+  // ── New fields ──
+  extraData.has_kids  = kidaValue;
+  if (kidaValue === 'yes') {
+    extraData.kids_count   = val('inp-kids-count');
+    extraData.kids_hobbies = val('inp-kids-hobbies');
+    extraData.kids_ages    = val('inp-kids-ages');
+  }
+  extraData.hobbies   = val('inp-hobbies');
+  extraData.job_title = val('inp-job-title');
   document.querySelectorAll('[data-col-key]').forEach(function(inp) {
     if (inp.value.trim()) extraData[inp.getAttribute('data-col-key')] = inp.value.trim();
   });
