@@ -2,10 +2,10 @@
    intake-kids.js
    ──────────────
    Children (sons) yes/no toggle, per-child name/age/hobby cards,
-   family avatar builder, hobby card selection, and "Other" modal.
+   family avatar builder, hobby card multi-selection, and "Other" modal.
    
    Depends on: intake-config.js (T, currentLang, kidaValue,
-                                  HOBBY_OPTIONS, selectedHobby)
+                                  HOBBY_OPTIONS, selectedHobbies)
                intake-helpers.js (escHtml, val, saveDraft)
    
    EDIT HERE when you need to:
@@ -24,7 +24,7 @@ var AR_ORDINALS = ['الأول','الثاني','الثالث','الرابع','ا
 
 
 /* ══════════════════════════════════════════════════════════════
-   Hobby Cards
+   Hobby Cards  (Multi-Select)
    ══════════════════════════════════════════════════════════════ */
 function renderHobbyCards() {
   var lang = currentLang;
@@ -41,42 +41,42 @@ function renderHobbyCards() {
 }
 
 function selectHobby(value) {
-  // Deselect all
-  var cards = document.querySelectorAll('.hobby-card');
-  cards.forEach(function(c) { c.classList.remove('selected'); });
-
   if (value === 'Other') {
-    selectedHobby = 'Other';
-    var card = document.querySelector('.hobby-card[data-value="Other"]');
-    if (card) card.classList.add('selected');
-    document.getElementById('inp-hobbies').value = 'Other';
+    if (selectedHobbies.indexOf('Other') === -1) selectedHobbies.push('Other');
     openOtherModal('hobbies');
+    renderHobbyCards();
     return;
   }
 
-  // Toggle: if same value clicked again, deselect
-  if (selectedHobby === value) {
-    selectedHobby = '';
-    document.getElementById('inp-hobbies').value = '';
-    otherHobbiesText = '';
-    hideOtherDisplay();
+  var idx = selectedHobbies.indexOf(value);
+  if (idx !== -1) {
+    selectedHobbies.splice(idx, 1);
   } else {
-    selectedHobby = value;
-    document.getElementById('inp-hobbies').value = value;
-    var card = document.querySelector('.hobby-card[data-value="' + value + '"]');
-    if (card) card.classList.add('selected');
+    selectedHobbies.push(value);
+  }
+
+  document.getElementById('inp-hobbies').value = selectedHobbies.join(',');
+  if (selectedHobbies.indexOf('Other') === -1) {
     otherHobbiesText = '';
     hideOtherDisplay();
   }
 
   var field = document.getElementById('field-hobbies');
   if (field) field.classList.remove('has-err');
+  renderHobbyCards();
   saveDraft();
 }
 
 function getHobbiesVal(fieldKey) {
-  if (selectedHobby === 'Other') return otherHobbiesText || '';
-  return selectedHobby || '';
+  var parts = [];
+  selectedHobbies.forEach(function(h) {
+    if (h === 'Other') {
+      if (otherHobbiesText) parts.push(otherHobbiesText);
+    } else {
+      parts.push(h);
+    }
+  });
+  return parts.join(', ');
 }
 
 
@@ -246,7 +246,7 @@ var otherFieldActive = null;
 var otherHobbiesText = '';
 
 function handleOtherSelect(fieldKey) {
-  if (selectedHobby === 'Other') {
+  if (selectedHobbies.indexOf('Other') !== -1) {
     openOtherModal(fieldKey);
   } else {
     otherHobbiesText = '';
@@ -293,22 +293,19 @@ function closeOtherModal(confirm) {
       inp.focus();
       return;
     }
-    otherHobbiesText      = text;
-    selectedHobby         = 'Other';
-    document.getElementById('inp-hobbies').value = 'Other';
+    otherHobbiesText = text;
+    if (selectedHobbies.indexOf('Other') === -1) selectedHobbies.push('Other');
+    document.getElementById('inp-hobbies').value = selectedHobbies.join(',');
     overlay.style.display = 'none';
     showOtherDisplay(text);
-    // Highlight "Other" card
-    var cards = document.querySelectorAll('.hobby-card');
-    cards.forEach(function(c) { c.classList.toggle('selected', c.getAttribute('data-value') === 'Other'); });
+    renderHobbyCards();
     saveDraft();
   } else {
-    // If no text was entered, deselect Other
     if (!otherHobbiesText) {
-      selectedHobby = '';
-      document.getElementById('inp-hobbies').value = '';
-      var cards = document.querySelectorAll('.hobby-card');
-      cards.forEach(function(c) { c.classList.remove('selected'); });
+      var oi = selectedHobbies.indexOf('Other');
+      if (oi !== -1) selectedHobbies.splice(oi, 1);
+      document.getElementById('inp-hobbies').value = selectedHobbies.join(',');
+      renderHobbyCards();
     }
     overlay.style.display = 'none';
     if (!otherHobbiesText) hideOtherDisplay();
