@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Client Data Update Form - استمارة تحديث بيانات العميل</title>
+  <title>Lifestyle & Community Profile — Nations of Sky</title>
   <meta property="og:type"        content="website">
   <meta property="og:site_name"   content="Nations of Sky">
-  <meta property="og:title"       content="Client Data Update Form - استمارة تحديث بيانات العميل">
-  <meta property="og:description" content="فريقنا متاح لمساعدتك. سجّل معلوماتك وسيتواصل معك أحد مستشارينا في أقرب وقت.">
+  <meta property="og:title"       content="ساعدنا نصمم مجتمعك — Help Us Shape Your Community">
+  <meta property="og:description" content="منزلك أكثر من مجرد وحدة سكنية — نريد أن نتعرف عليكم أكثر حتى نبني معًا مجتمعًا يعكس اهتماماتكم.">
   <meta property="og:image"       content="https://nationsskyreports-rgb.github.io/icon-512.png">
   <meta property="og:url"         content="https://nationsskyreports-rgb.github.io/intake.html">
   <meta name="twitter:card"       content="summary_large_image">
-  <meta name="twitter:title"      content="Client Data Update Form - استمارة تحديث بيانات العميل">
-  <meta name="twitter:description" content="فريقنا متاح لمساعدتك. سجّل معلوماتك وسيتواصل معك أحد مستشارينا في أقرب وقت.">
+  <meta name="twitter:title"      content="ساعدنا نصمم مجتمعك — Help Us Shape Your Community">
+  <meta name="twitter:description" content="منزلك أكثر من مجرد وحدة سكنية — نريد أن نتعرف عليكم أكثر حتى نبني معًا مجتمعًا يعكس اهتماماتكم.">
   <meta name="twitter:image"      content="https://nationsskyreports-rgb.github.io/icon-512.png">
   <link rel="icon" type="image/png" href="icon-512.png">
   <link rel="stylesheet" href="css/intake.css">
@@ -20,28 +20,26 @@
 <body>
 <div class="wrapper">
 
-  <!-- ══════════════════════════════════════════════════════════
-       Lang Toggle
-       ══════════════════════════════════════════════════════════ -->
+  <!-- ── Gold Accent Bar ── -->
+  <div class="accent-bar"></div>
+
+  <!-- ── Lang Toggle ── -->
   <div class="lang-toggle">
     <button class="lang-btn active" id="btn-ar" onclick="setLang('ar')">العربية</button>
     <button class="lang-btn"        id="btn-en" onclick="setLang('en')">English</button>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════
-       Brand Header
-       ══════════════════════════════════════════════════════════ -->
+  <!-- ── Brand Header ── -->
   <div class="brand">
     <div class="brand-logo">
       <img src="icon-512.png" alt="Nations of Sky">
     </div>
     <div class="brand-title">Nations of Sky</div>
-    <div class="brand-sub" id="brand-sub">أهلاً بك! سجّل هنا وسيتواصل معك أحد مستشارينا قريباً</div>
+    <div class="brand-sub" id="brand-sub">منزلك أكثر من مجرد وحدة سكنية — هو بداية حياة جديدة لك ولعائلتك.
+نريد أن نتعرف عليكم أكثر حتى نبني معًا مجتمعًا يعكس اهتماماتكم ويناسب أسلوب حياتكم.</div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════
-       Main Card
-       ══════════════════════════════════════════════════════════ -->
+  <!-- ── Main Card ── -->
   <div class="card">
 
     <!-- ── STATE: Loading Skeleton ── -->
@@ -68,12 +66,13 @@
         <span id="error-text"></span>
       </div>
 
-      <!-- ════════════════════════════════════════════════════
-           FORM FIELDS
-           ════════════════════════════════════════════════════ -->
       <div id="panel-register">
-        <div class="card-title" id="form-title">استمارة تحديث بيانات العميل</div>
-        <div class="card-desc"  id="form-desc">يرجى تحديث بياناتك الشخصية وبيانات التواصل للتأكد من صحة سجلاتنا.</div>
+        <div class="card-title" id="form-title">ساعدنا نصمم مجتمعك</div>
+        <div class="card-desc" id="form-desc">إجاباتك تساعدنا في تصميم أنشطة وخدمات تجعل كل يوم داخل مجتمعنا أكثر راحة ومتعة.</div>
+        <div class="card-time" id="form-time">
+          <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+          <span id="form-time-text">لن يستغرق الأمر أكثر من ٣ دقائق</span>
+        </div>
 
         <!-- ── Section: Basic Info ── -->
         <div class="section-label" id="lbl-basic">المعلومات الأساسية</div>
@@ -108,7 +107,6 @@
             <div id="lookup-units-container"></div>
           </div>
         </div>
-        <!-- Not found notice -->
         <div class="notfound-inline" id="phone-notfound-notice"></div>
 
         <!-- New Phone -->
@@ -127,20 +125,30 @@
 
         <!-- Email -->
         <div class="field" id="field-email">
-          <label id="lbl-email">البريد الإلكتروني الأساسي <span class="req">*</span></label>
+          <label id="lbl-email">البريد الإلكتروني <span class="req">*</span></label>
           <input type="email" id="inp-email" placeholder="example@email.com" autocomplete="email" dir="ltr">
           <div class="err-msg" id="err-email">أدخل بريداً إلكترونياً صحيحاً</div>
         </div>
 
         <!-- Email 2 -->
         <div class="field" id="field-email2">
-          <label id="lbl-email2">البريد الإلكتروني الإضافي <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>
+          <label id="lbl-email2">بريد إلكتروني إضافي <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>
           <input type="email" id="inp-email2" placeholder="example2@email.com" dir="ltr">
           <div class="err-msg" id="err-email2">أدخل بريداً إلكترونياً صحيحاً</div>
         </div>
 
-        <!-- ── Section: Children ── -->
+        <!-- ── Section: Family & Lifestyle ── -->
         <hr class="divider">
+        <div class="section-label" id="lbl-lifestyle-section">العائلة وأسلوب الحياة</div>
+
+        <!-- Job Title -->
+        <div class="field" id="field-job-title">
+          <label id="lbl-job-title">مجال عملك <span class="req">*</span></label>
+          <input type="text" id="inp-job-title" placeholder="مثال: مهندس، محاسب، طبيب...">
+          <div class="err-msg" id="err-job-title">هذا الحقل مطلوب</div>
+        </div>
+
+        <!-- Children -->
         <div class="field" id="field-kida">
           <label id="lbl-kida">هل عندك أبناء؟ <span class="req">*</span></label>
           <div class="yesno-options">
@@ -150,9 +158,8 @@
           <div class="err-msg" id="err-kida">هذا الحقل مطلوب</div>
         </div>
 
-        <!-- Sons Details (visible only when kida = yes) -->
         <div id="kids-details" style="display:none">
-          <div class="section-label" id="lbl-sons-section" style="color:var(--blue-dark);margin-bottom:.85rem;">بيانات الأبناء</div>
+          <div class="section-label" id="lbl-sons-section" style="color:var(--gold-dark);margin-bottom:.85rem;">بيانات الأبناء</div>
           <div class="field" id="field-kids-count">
             <label id="lbl-kids-count">كم عدد أبنائك؟ <span class="req">*</span></label>
             <select id="inp-kids-count" class="select-arrow" onchange="handleKidsCountChange()">
@@ -170,7 +177,7 @@
 
         <!-- Hobbies -->
         <div class="field" id="field-hobbies">
-          <label id="lbl-hobbies">هواياتك <span class="req">*</span></label>
+          <label id="lbl-hobbies">ايه أكتر هواية أو نشاط بتحبه؟ <span class="req">*</span></label>
           <select id="inp-hobbies" class="select-arrow" onchange="handleOtherSelect('hobbies')">
             <option value="">اختار... / Select...</option>
             <option value="Sports">Sports | رياضة</option>
@@ -184,7 +191,7 @@
             <option value="Business">Business | أعمال</option>
             <option value="Other">Other | أخرى</option>
           </select>
-          <div id="other-hobbies-display" style="display:none;margin-top:8px;padding:8px 12px;border-radius:8px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);color:#93c5fd;font-size:13px;align-items:center;gap:8px;">
+          <div id="other-hobbies-display" style="display:none;margin-top:8px;padding:8px 12px;border-radius:10px;background:var(--gold-bg);border:1px solid #ddd3c0;color:var(--gold-dark);font-size:13px;align-items:center;gap:8px;">
             <span>✏️</span>
             <span id="other-hobbies-text" style="flex:1;"></span>
             <span onclick="reOpenOtherModal('hobbies')" style="cursor:pointer;opacity:0.7;font-size:12px;text-decoration:underline;" id="lbl-edit-hobby">تعديل</span>
@@ -192,54 +199,47 @@
           <div class="err-msg" id="err-hobbies">هذا الحقل مطلوب</div>
         </div>
 
-        <!-- Job Title -->
-        <div class="field" id="field-job-title">
-          <label id="lbl-job-title">المسمى الوظيفي <span class="req">*</span></label>
-          <input type="text" id="inp-job-title" placeholder="مثال: مهندس، محاسب، طبيب...">
-          <div class="err-msg" id="err-job-title">هذا الحقل مطلوب</div>
-        </div>
-
-        <!-- Dynamic Fields (rendered by JS from campaign config) -->
+        <!-- Dynamic Fields -->
         <div id="dynamic-fields"></div>
 
         <!-- ── Section: Notes ── -->
         <hr class="divider">
         <div class="field">
-          <label id="lbl-notes">ملاحظات إضافية <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>
+          <label id="lbl-notes">حابب تضيف أي حاجة تانية؟ <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>
           <textarea id="inp-notes"></textarea>
         </div>
 
         <!-- ── Section: Communication Channel ── -->
         <hr class="divider">
-        <div class="section-label" id="lbl-channel-section">وسيلة التواصل المفضلة</div>
+        <div class="section-label" id="lbl-channel-section">ايه أحسن طريقة نتواصل بيها معاك؟</div>
         <div class="channel-options" id="channel-options">
           <label class="channel-item">
             <input type="checkbox" id="ch-call" value="Mobile Call">
-            <span id="lbl-ch-call">Mobile Call | مكالمة هاتفية</span>
+            <span id="lbl-ch-call">مكالمة هاتفية</span>
           </label>
           <label class="channel-item">
             <input type="checkbox" id="ch-wa" value="WhatsApp">
-            <span id="lbl-ch-wa">WhatsApp | واتساب</span>
+            <span id="lbl-ch-wa">واتساب</span>
           </label>
           <label class="channel-item">
             <input type="checkbox" id="ch-email" value="Email">
-            <span id="lbl-ch-email">Email | البريد الإلكتروني</span>
+            <span id="lbl-ch-email">البريد الإلكتروني</span>
           </label>
           <label class="channel-item">
             <input type="checkbox" id="ch-sms" value="SMS">
-            <span id="lbl-ch-sms">SMS | رسالة نصية</span>
+            <span id="lbl-ch-sms">رسالة نصية</span>
           </label>
         </div>
 
         <!-- ── Section: Acknowledgment ── -->
         <hr class="divider">
         <div class="acknowledgment-box" id="field-ack">
-          <div class="ack-title" id="lbl-ack-title">إقرار العميل</div>
-          <div class="ack-text-en" id="ack-text-en" style="display:none;">I confirm that the above information is accurate and up to date. I understand that all future communications, service requests, and updates related to my account will be handled through the contact channels registered above.</div>
-          <div class="ack-text-ar" id="ack-text-ar">أقر بأن البيانات المذكورة أعلاه صحيحة ومحدثة، وأتفهم أن جميع المراسلات المستقبلية وطلبات الخدمة والتحديثات الخاصة بحسابي سيتم تنفيذها من خلال قنوات الاتصال المسجلة أعلاه.</div>
+          <div class="ack-title" id="lbl-ack-title">إقرار المشاركة</div>
+          <div class="ack-text-en" id="ack-text-en" style="display:none;">I agree to share this information to help Nations of Sky improve community services and activities. My data will not be used for marketing purposes or shared with third parties.</div>
+          <div class="ack-text-ar" id="ack-text-ar">أوافق على مشاركة هذه المعلومات لمساعدة Nations of Sky في تطوير الخدمات والأنشطة المجتمعية. بياناتي لن تُستخدم لأغراض تسويقية أو تُشارك مع أطراف خارجية.</div>
           <label class="privacy-field" style="margin-top:1rem">
             <input type="checkbox" id="inp-privacy">
-            <span id="lbl-privacy">أوافق على الإقرار أعلاه</span>
+            <span id="lbl-privacy">أوافق على مشاركة هذه المعلومات لتطوير الخدمات المجتمعية</span>
           </label>
         </div>
 
@@ -247,7 +247,7 @@
         <button type="button" class="btn-submit" id="btn-submit" onclick="submitForm()">
           <div class="btn-progress" id="btn-progress"></div>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-          <span id="btn-label">إرسال الطلب</span>
+          <span id="btn-label">إرسال</span>
         </button>
 
         <!-- WhatsApp CTA -->
@@ -268,9 +268,8 @@
         <div class="success-circle">
           <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
         </div>
-        <div class="success-title" id="success-title">تم إرسال طلبك بنجاح!</div>
-        <div class="success-sub"   id="success-msg">شكراً لك. سيتواصل معك أحد ممثلينا في أقرب وقت ممكن.</div>
-        
+        <div class="success-title" id="success-title">شكرًا لمشاركتك!</div>
+        <div class="success-sub" id="success-msg">كل إجابة تقربنا خطوة من بناء المجتمع الذي تستحقه عائلتك.</div>
         <a href="https://wa.me/20215555" target="_blank" class="btn-whatsapp" id="btn-wa" style="margin-top: 1.5rem;">
           <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
           <span id="wa-label">تواصل معنا عبر واتساب</span>
@@ -285,48 +284,30 @@
           <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
         </div>
         <div class="notfound-title" id="nf-title">الرابط غير صحيح</div>
-        <div class="notfound-sub"   id="nf-sub">هذا الرابط غير صالح أو انتهت صلاحيته. تواصل مع المبيعات للحصول على الرابط الصحيح.</div>
+        <div class="notfound-sub" id="nf-sub">هذا الرابط غير صالح أو انتهت صلاحيته. تواصل مع المبيعات للحصول على الرابط الصحيح.</div>
       </div>
     </div>
 
   </div><!-- /card -->
 
-  <div class="footer" id="footer-txt">مدعوم بواسطة Nations of Sky Portal</div>
+  <div class="footer" id="footer-txt">Nations of Sky — Building Communities</div>
 
 </div><!-- /wrapper -->
 
-<!-- ══════════════════════════════════════════════════════════════
-     "Other" Hobbies Modal
-     ══════════════════════════════════════════════════════════════ -->
+<!-- ── "Other" Hobbies Modal ── -->
 <div id="other-modal-overlay" onclick="handleOverlayClick(event)" style="display:none;">
   <div id="other-modal-box">
     <h3 id="other-modal-title"></h3>
     <input type="text" id="other-modal-input" autocomplete="off">
-    <div id="other-modal-err" style="display:none;">
-      هذا الحقل مطلوب / This field is required
-    </div>
+    <div id="other-modal-err" style="display:none;">هذا الحقل مطلوب / This field is required</div>
     <div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end;">
-      <button onclick="closeOtherModal(false)" class="modal-btn-cancel">
-        إلغاء / Cancel
-      </button>
-      <button onclick="closeOtherModal(true)" class="modal-btn-confirm">
-        تأكيد / OK
-      </button>
+      <button onclick="closeOtherModal(false)" class="modal-btn-cancel">إلغاء / Cancel</button>
+      <button onclick="closeOtherModal(true)" class="modal-btn-confirm">تأكيد / OK</button>
     </div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════════
-     Scripts  —  ORDER MATTERS (dependency chain)
-     
-     1. config   → constants, translations, state
-     2. helpers  → Supabase API, UI utils, validation
-     3. kids     → children fields + hobbies modal
-     4. draft    → auto-save/load (uses val, kids data)
-     5. i18n     → setLang + buildDynamicFields
-     6. phone    → phone lookup + unit rendering
-     7. submit   → form submit + init()  ← MUST BE LAST
-     ══════════════════════════════════════════════════════════════ -->
+<!-- ── Scripts (ORDER MATTERS) ── -->
 <script src="js/intake-config.js"></script>
 <script src="js/intake-helpers.js"></script>
 <script src="js/intake-kids.js"></script>
