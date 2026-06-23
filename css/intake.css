@@ -611,8 +611,182 @@ body {
 }
 .modal-btn-confirm:hover { background: var(--gold-dark); }
 
+/* ══════════════════════════════════════════════════════════════
+   Hobby Cards
+   ══════════════════════════════════════════════════════════════ */
+.hobby-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .6rem;
+  margin-top: .35rem;
+}
+.hobby-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .35rem;
+  padding: .85rem .5rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  cursor: pointer;
+  transition: all .2s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.hobby-card:hover {
+  border-color: var(--gold);
+  background: var(--gold-bg);
+}
+.hobby-card.selected {
+  border-color: var(--gold);
+  background: var(--gold-bg);
+  box-shadow: 0 0 0 3px rgba(176,141,87,.12);
+}
+.hobby-card-emoji {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.hobby-card-label {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.3;
+}
+.hobby-card.selected .hobby-card-label {
+  color: var(--gold-dark);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Family Avatar Illustration
+   ══════════════════════════════════════════════════════════════ */
+.family-avatar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  padding: 1.25rem 1rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(180deg, var(--gold-bg) 0%, #fff 100%);
+  border-radius: var(--radius);
+  border: 1px solid #e8dece;
+  min-height: 100px;
+  overflow: hidden;
+}
+.avatar-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  animation: avatarPop .4s cubic-bezier(.34,1.56,.64,1) both;
+}
+.avatar-figure:nth-child(1) { animation-delay: 0s; }
+.avatar-figure:nth-child(2) { animation-delay: .08s; }
+.avatar-figure:nth-child(3) { animation-delay: .16s; }
+.avatar-figure:nth-child(4) { animation-delay: .24s; }
+.avatar-figure:nth-child(5) { animation-delay: .32s; }
+.avatar-figure:nth-child(6) { animation-delay: .4s; }
+.avatar-figure:nth-child(7) { animation-delay: .48s; }
+
+@keyframes avatarPop {
+  from { transform: scale(0) translateY(10px); opacity: 0; }
+  to   { transform: scale(1) translateY(0);    opacity: 1; }
+}
+
+.avatar-head {
+  border-radius: 50%;
+  background: var(--gold);
+}
+.avatar-body {
+  border-radius: 8px 8px 3px 3px;
+  background: var(--gold);
+}
+.avatar-parent .avatar-head  { width: 22px; height: 22px; }
+.avatar-parent .avatar-body  { width: 28px; height: 32px; }
+.avatar-child .avatar-head   { width: 16px; height: 16px; }
+.avatar-child .avatar-body   { width: 20px; height: 22px; }
+.avatar-child .avatar-head   { background: var(--gold-dark); opacity: .7; }
+.avatar-child .avatar-body   { background: var(--gold-dark); opacity: .7; }
+.avatar-child .avatar-name {
+  font-size: .65rem;
+  color: var(--gold-dark);
+  font-weight: 600;
+  margin-top: 2px;
+  max-width: 50px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+.avatar-heart {
+  font-size: 10px;
+  margin: 0 2px;
+  align-self: center;
+  animation: heartBeat 2s infinite;
+}
+@keyframes heartBeat {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.15); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Micro-Animations — Staggered Fade-In
+   ══════════════════════════════════════════════════════════════ */
+#state-form.active #panel-register > .section-label,
+#state-form.active #panel-register > .field,
+#state-form.active #panel-register > .divider,
+#state-form.active #panel-register > .channel-options,
+#state-form.active #panel-register > .acknowledgment-box,
+#state-form.active #panel-register > .btn-submit,
+#state-form.active #panel-register > .whatsapp-container,
+#state-form.active #panel-register > .card-title,
+#state-form.active #panel-register > .card-desc,
+#state-form.active #panel-register > .card-time,
+#state-form.active #panel-register > #kids-details {
+  animation: fadeInUp .45s ease both;
+}
+#state-form.active #panel-register > *:nth-child(1)  { animation-delay: .02s; }
+#state-form.active #panel-register > *:nth-child(2)  { animation-delay: .05s; }
+#state-form.active #panel-register > *:nth-child(3)  { animation-delay: .08s; }
+#state-form.active #panel-register > *:nth-child(4)  { animation-delay: .11s; }
+#state-form.active #panel-register > *:nth-child(5)  { animation-delay: .14s; }
+#state-form.active #panel-register > *:nth-child(6)  { animation-delay: .17s; }
+#state-form.active #panel-register > *:nth-child(7)  { animation-delay: .20s; }
+#state-form.active #panel-register > *:nth-child(8)  { animation-delay: .23s; }
+#state-form.active #panel-register > *:nth-child(9)  { animation-delay: .26s; }
+#state-form.active #panel-register > *:nth-child(10) { animation-delay: .29s; }
+#state-form.active #panel-register > *:nth-child(11) { animation-delay: .32s; }
+#state-form.active #panel-register > *:nth-child(12) { animation-delay: .35s; }
+#state-form.active #panel-register > *:nth-child(13) { animation-delay: .38s; }
+#state-form.active #panel-register > *:nth-child(14) { animation-delay: .41s; }
+#state-form.active #panel-register > *:nth-child(15) { animation-delay: .44s; }
+#state-form.active #panel-register > *:nth-child(16) { animation-delay: .47s; }
+#state-form.active #panel-register > *:nth-child(17) { animation-delay: .50s; }
+#state-form.active #panel-register > *:nth-child(18) { animation-delay: .53s; }
+#state-form.active #panel-register > *:nth-child(19) { animation-delay: .56s; }
+#state-form.active #panel-register > *:nth-child(20) { animation-delay: .59s; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Smooth kids-details reveal */
+#kids-details {
+  transition: all .3s ease;
+}
+
+/* Success state entrance */
+#state-success.active .success-box {
+  animation: fadeInUp .5s ease both;
+}
+
 @media (max-width: 500px) {
   body { padding: 0 .75rem 3rem; }
   .card { padding: 1.5rem; }
   .card-title { font-size: 1.2rem; }
+  .hobby-grid { gap: .5rem; }
+  .hobby-card { padding: .7rem .4rem; }
+  .hobby-card-emoji { font-size: 1.35rem; }
 }
