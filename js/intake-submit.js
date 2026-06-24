@@ -26,7 +26,7 @@ function submitForm() {
   var email2   = val('inp-email2');
   var valid    = true;
 
-  if (!name)                               { setErr('field-name');      valid = false; }
+  if (!name && !matchedClients.length)      { setErr('field-name');      valid = false; }
   if (!isValidPhone(phone))                { setErr('field-phone');     valid = false; }
   if (newPhone && !isValidPhone(newPhone)) { setErr('field-new-phone'); valid = false; }
   if (phone2 && !isValidPhone(phone2))     { setErr('field-phone2');    valid = false; }
