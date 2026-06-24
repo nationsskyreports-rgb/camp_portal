@@ -492,6 +492,11 @@ function buildFormResponseSection(extra){
     {key:'phone2',            label:'Secondary Phone'},
     {key:'email',             label:'Email'},
     {key:'email2',            label:'Secondary Email'},
+    {key:'job_title',         label:'Job Title'},
+    {key:'hobbies',           label:'Hobbies'},
+    {key:'has_children',      label:'Has Children'},
+    {key:'children_count',    label:'Children Count'},
+    {key:'children_details',  label:'Children Details'},
     {key:'preferred_channel', label:'Preferred Channel'},
     {key:'notes',             label:'Notes'}
   ];
@@ -759,6 +764,16 @@ function exportVisibleClients(){
     visCols.forEach(function(col){
       row[col.label] = extra[col.key] || c[col.key] || '';
     });
+    // Form response fields
+    row['Job Title']         = extra.job_title || '';
+    row['Hobbies']           = extra.hobbies || '';
+    row['Has Children']      = extra.has_children || '';
+    row['Children Count']    = extra.children_count || '';
+    row['Children Details']  = extra.children_details || '';
+    row['Preferred Channel'] = extra.preferred_channel || '';
+    row['Form Notes']        = extra.notes || '';
+    row['Form Submitted']    = extra.form_submitted ? 'Yes' : '';
+    row['Submitted At']      = extra.form_submitted_at || '';
     row['Campaign'] = camp ? camp.name : '';
     row['Employee'] = emp  ? emp.name  : '';
     row['Status']   = c.status || '';
