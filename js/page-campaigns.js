@@ -99,7 +99,6 @@ function showFormResponse(clientId) {
     {key:'hobbies',           label:'Hobbies'},
     {key:'has_children',      label:'Has Children'},
     {key:'children_count',    label:'Children Count'},
-    {key:'children_details',  label:'Children Details'},
     {key:'preferred_channel', label:'Preferred Channel'},
     {key:'notes',             label:'Notes'}
   ];
@@ -111,6 +110,30 @@ function showFormResponse(clientId) {
         '<span style="font-size:12px;color:#6ee7b7;font-weight:500;text-align:right;word-break:break-word">'+esc(String(extra[f.key]))+'</span>'+
       '</div>';
     }).join('');
+
+  // Children structured display
+  var childrenHtml = '';
+  var kids = extra.children;
+  if (kids && Array.isArray(kids) && kids.length) {
+    childrenHtml = '<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.08)">' +
+      '<span style="font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Children</span>';
+    kids.forEach(function(kid, i) {
+      var parts = [];
+      if (kid.name) parts.push(esc(kid.name));
+      if (kid.age)  parts.push('Age: ' + esc(kid.age));
+      if (kid.hobby) parts.push('Hobby: ' + esc(kid.hobby));
+      childrenHtml += '<div style="display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.03)">' +
+        '<span style="font-size:12px;color:#64748b">Child ' + (i+1) + '</span>' +
+        '<span style="font-size:12px;color:#6ee7b7;font-weight:500;text-align:right">' + parts.join(' · ') + '</span>' +
+      '</div>';
+    });
+    childrenHtml += '</div>';
+  } else if (extra.children_details) {
+    childrenHtml = '<div style="display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">' +
+      '<span style="font-size:12px;color:#64748b;flex-shrink:0">Children Details</span>' +
+      '<span style="font-size:12px;color:#6ee7b7;font-weight:500;text-align:right;word-break:break-word">' + esc(extra.children_details) + '</span>' +
+    '</div>';
+  }
 
   // remove old modal if any
   var old = document.getElementById('form-resp-modal');
@@ -128,6 +151,7 @@ function showFormResponse(clientId) {
       '</div>'+
       '<p style="font-size:12px;color:#64748b;margin-bottom:1rem">'+esc(c.name||'')+(submittedAt?' · '+submittedAt:'')+'</p>'+
       (rows || '<p style="font-size:12px;color:#64748b">No form data</p>')+
+      childrenHtml+
     '</div>';
   document.body.appendChild(overlay);
 }
