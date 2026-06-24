@@ -104,10 +104,21 @@ function submitForm() {
   // Children data
   extraData.has_children = kidaValue;
   if (kidaValue === 'yes') {
-    extraData.children_count    = val('inp-kids-count');
-    extraData.children_details  = getKidNamesString();
-    extraData.children_ages     = kidsAgesData.filter(Boolean).join(', ');
-    extraData.children_hobbies  = kidsTalentsData.filter(Boolean).join(', ');
+    extraData.children_count = val('inp-kids-count');
+    var childrenArr = [];
+    var count = getKidsCount();
+    for (var ci = 0; ci < count; ci++) {
+      childrenArr.push({
+        name:  kidsNamesData[ci]   || '',
+        age:   kidsAgesData[ci]    || '',
+        hobby: kidsTalentsData[ci] || ''
+      });
+    }
+    extraData.children = childrenArr;
+    // Keep flat strings for backward compatibility
+    extraData.children_details = getKidNamesString();
+    extraData.children_ages    = kidsAgesData.filter(Boolean).join(', ');
+    extraData.children_hobbies = kidsTalentsData.filter(Boolean).join(', ');
   }
 
   extraData.hobbies   = getHobbiesVal('hobbies');
