@@ -496,7 +496,6 @@ function buildFormResponseSection(extra){
     {key:'hobbies',           label:'Hobbies'},
     {key:'has_children',      label:'Has Children'},
     {key:'children_count',    label:'Children Count'},
-    {key:'children_details',  label:'Children Details'},
     {key:'preferred_channel', label:'Preferred Channel'},
     {key:'notes',             label:'Notes'}
   ];
@@ -507,12 +506,38 @@ function buildFormResponseSection(extra){
         '<span style="font-size:11px;color:#6ee7b7;font-weight:500;text-align:right;word-break:break-word">'+esc(String(extra[f.key]))+'</span>'+
       '</div>';
     }).join('');
-  if(!rows) return '';
+
+  // Children structured display
+  var childrenHtml = '';
+  var kids = extra.children;
+  if (kids && Array.isArray(kids) && kids.length) {
+    childrenHtml = '<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.08)">' +
+      '<span style="font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Children</span>';
+    kids.forEach(function(kid, i) {
+      var parts = [];
+      if (kid.name) parts.push(esc(kid.name));
+      if (kid.age)  parts.push('Age: ' + esc(kid.age));
+      if (kid.hobby) parts.push('Hobby: ' + esc(kid.hobby));
+      childrenHtml += '<div style="display:flex;justify-content:space-between;gap:12px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.03)">' +
+        '<span style="font-size:11px;color:#64748b">Child ' + (i+1) + '</span>' +
+        '<span style="font-size:11px;color:#6ee7b7;font-weight:500;text-align:right">' + parts.join(' · ') + '</span>' +
+      '</div>';
+    });
+    childrenHtml += '</div>';
+  } else if (extra.children_details) {
+    // Fallback for old data without structured array
+    childrenHtml = '<div style="display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)">' +
+      '<span style="font-size:11px;color:#64748b;flex-shrink:0">Children Details</span>' +
+      '<span style="font-size:11px;color:#6ee7b7;font-weight:500;text-align:right;word-break:break-word">' + esc(extra.children_details) + '</span>' +
+    '</div>';
+  }
+
+  if(!rows && !childrenHtml) return '';
   return '<div style="background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:.75rem 1rem;margin-bottom:8px">'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">'+
       '<p style="font-size:11px;font-weight:700;color:#6ee7b7;text-transform:uppercase;letter-spacing:.05em">📝 Form Response</p>'+
       (submittedAt?'<span style="font-size:10px;color:#64748b">'+submittedAt+'</span>':'')+
-    '</div>'+rows+'</div>';
+    '</div>'+rows+childrenHtml+'</div>';
 }
 
 // ── Activity timeline ─────────────────────────────────────────
@@ -769,7 +794,19 @@ function exportVisibleClients(){
     row['Hobbies']           = extra.hobbies || '';
     row['Has Children']      = extra.has_children || '';
     row['Children Count']    = extra.children_count || '';
-    row['Children Details']  = extra.children_details || '';
+    // Flatten children array into separate columns (max 5)
+    var kids = extra.children;
+    if (kids && Array.isArray(kids)) {
+      for (var ki = 0; ki < 5; ki++) {
+        var kid = kids[ki] || {};
+        var n = ki + 1;
+        row['Child ' + n + ' Name']  = kid.name  || '';
+        row['Child ' + n + ' Age']   = kid.age   || '';
+        row['Child ' + n + ' Hobby'] = kid.hobby || '';
+      }
+    } else if (extra.children_details) {
+      row['Children Details'] = extra.children_details;
+    }
     row['Preferred Channel'] = extra.preferred_channel || '';
     row['Form Notes']        = extra.notes || '';
     row['Form Submitted']    = extra.form_submitted ? 'Yes' : '';
