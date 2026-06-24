@@ -77,12 +77,8 @@
         <!-- ── Section: Basic Info ── -->
         <div class="section-label" id="lbl-basic">المعلومات الأساسية</div>
 
-        <!-- Name -->
-        <div class="field" id="field-name">
-          <label id="lbl-name">الاسم الكامل <span class="req">*</span></label>
-          <input type="text" id="inp-name" autocomplete="name">
-          <div class="err-msg" id="err-name">هذا الحقل مطلوب</div>
-        </div>
+        <!-- Name (auto-filled from phone lookup) -->
+        <input type="hidden" id="inp-name">
 
         <!-- Phone (primary) -->
         <div class="field" id="field-phone">
