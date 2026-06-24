@@ -27,6 +27,8 @@ function lookupPhone() {
       var notice = document.getElementById('phone-notfound-notice');
       if (matchedClients.length) {
         phoneNotFound = false;
+        var clientName = matchedClients[0].name || (matchedClients[0].extra_data || {}).customer || '';
+        document.getElementById('inp-name').value = clientName;
         renderLookupUnits();
         panel.style.display = 'block';
         notice.classList.remove('show');
