@@ -79,13 +79,15 @@ function setLang(lang) {
   if (editHobby) editHobby.textContent = t.lblEditHobby;
 
   // Placeholders
-  document.getElementById('inp-name').placeholder  = t.namePlaceholder;
+  var inpName = document.getElementById('inp-name');
+  if (inpName && inpName.type !== 'hidden') inpName.placeholder = t.namePlaceholder;
   document.getElementById('btn-label').textContent = t.btnSubmit;
   var jobInp = document.getElementById('inp-job-title');
   if (jobInp) jobInp.placeholder = t.phJobTitle;
 
   // Error messages
-  document.getElementById('err-name').textContent      = t.errRequired;
+  var errName = document.getElementById('err-name');
+  if (errName) errName.textContent = t.errRequired;
   document.getElementById('err-phone').textContent     = t.errPhone;
   document.getElementById('err-new-phone').textContent = t.errPhone;
   document.getElementById('err-phone2').textContent    = t.errPhone;
