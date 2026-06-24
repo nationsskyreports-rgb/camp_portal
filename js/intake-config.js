@@ -23,7 +23,7 @@ var NOS_PROJECTS = [
   'Zomra',
   'ISLA',
   'Upviews',
-  'Sadaf'
+  'Perla'
 ];
 
 var DROPDOWN_KEYS = {
