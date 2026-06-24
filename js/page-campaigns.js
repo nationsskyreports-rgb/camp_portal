@@ -31,7 +31,7 @@ function renderCampaigns(){
     '</div>'+
     (cc.length?(function(){
       // Columns come from THIS campaign's saved structure (mirror of its sheet)
-      var FORM_META = ['email2','old_phone','notes','preferred_channel','form_submitted','form_submitted_at'];
+      var FORM_META = ['email2','old_phone','notes','preferred_channel','form_submitted','form_submitted_at','job_title','hobbies','has_children','children_count','children_details','children_ages','children_hobbies'];
       var BASE_KEYS = ['customer','name','phone'];
       var campCols = (vc.column_config||[]).filter(function(col){
         return col.visible !== false &&
@@ -95,6 +95,11 @@ function showFormResponse(clientId) {
     {key:'phone2',            label:'Secondary Phone'},
     {key:'email',             label:'Email'},
     {key:'email2',            label:'Secondary Email'},
+    {key:'job_title',         label:'Job Title'},
+    {key:'hobbies',           label:'Hobbies'},
+    {key:'has_children',      label:'Has Children'},
+    {key:'children_count',    label:'Children Count'},
+    {key:'children_details',  label:'Children Details'},
     {key:'preferred_channel', label:'Preferred Channel'},
     {key:'notes',             label:'Notes'}
   ];
