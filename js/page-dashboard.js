@@ -12,7 +12,6 @@ function renderDashboard(){
   var closedCount      = S.clients.filter(function(c){return c.status==='Closed';}).length;
   var contactedCount   = S.clients.filter(function(c){return c.status==='Contacted';}).length;
   var newCount         = S.clients.filter(function(c){return c.status==='New';}).length;
-  var interestedCount  = S.clients.filter(function(c){return c.status==='Interested';}).length;
 
   // ── Reachability per campaign ──────────────────────────────
   var reachStats = S.campaigns.map(function(camp){
@@ -72,7 +71,6 @@ function renderDashboard(){
     '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">'+
     '<span style="font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(59,130,246,0.12);color:#93c5fd">🆕 '+newCount+' New</span>'+
     '<span style="font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(139,92,246,0.12);color:#c4b5fd">📞 '+contactedCount+' Contacted</span>'+
-    '<span style="font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(245,158,11,0.12);color:#fbbf24">⭐ '+interestedCount+' Interested</span>'+
     '<span style="font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(16,185,129,0.12);color:#34d399">✅ '+closedCount+' Closed</span>'+
     '</div>'+
   '</div>'+
