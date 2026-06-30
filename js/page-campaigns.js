@@ -185,7 +185,8 @@ function copyFormLinkBtn(campaignId) {
 
 function copyIntakeLink(campaignId) {
   var base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
-  var url  = base + 'intake.html?c=' + campaignId;
+  var fixedId = '74d8d584-a212-4735-ac2b-eb873c1c687c';
+  var url  = base + 'intake.html?c=' + fixedId;
   navigator.clipboard.writeText(url).then(function() {
     toast('Form link copied!', 'success');
   }).catch(function() {
