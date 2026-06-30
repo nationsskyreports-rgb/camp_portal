@@ -73,7 +73,7 @@ function escHtml(str) {
 
 // ── Validation ───────────────────────────────────────────────
 function isValidPhone(p) {
-  var clean = p.replace(/[\s\-\(\)]/g, '');
+  var clean = toWesternDigits(p).replace(/[\s\-\(\)]/g, '');
   return clean && /^\+?[0-9]{7,20}$/.test(clean);
 }
 
@@ -82,7 +82,16 @@ function isValidEmail(e) {
 }
 
 // ── Phone normalization ──────────────────────────────────────
-function digitsOnly(s)     { return String(s || '').replace(/\D/g, ''); }
+// Converts Arabic-Indic (٠-٩) and Extended Arabic-Indic (۰-۹) numerals
+// to standard Western digits. Many Arabic-language mobile keyboards
+// (iOS/Android with Egypt/Arabic region settings) type these instead
+// of 0-9, which \D below would otherwise strip out completely.
+function toWesternDigits(s) {
+  return String(s || '')
+    .replace(/[\u0660-\u0669]/g, function(c) { return String(c.charCodeAt(0) - 0x0660); })
+    .replace(/[\u06F0-\u06F9]/g, function(c) { return String(c.charCodeAt(0) - 0x06F0); });
+}
+function digitsOnly(s)     { return toWesternDigits(s).replace(/\D/g, ''); }
 function normalizePhone(r) { return digitsOnly(r).slice(-10); }
 
 // ── Error display ────────────────────────────────────────────
