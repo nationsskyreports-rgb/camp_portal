@@ -16,10 +16,11 @@ function renderCampaigns(){
       '<button class="btn btn-ghost" onclick="selectedCampId=null;campClientSearch=String();renderCampaigns()"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back</button>'+
       '<button class="btn btn-ghost btn-sm" onclick="openColConfig(\''+vc.id+'\')"><i data-lucide="settings-2" class="w-4 h-4"></i> Columns</button>'+
       sBadge(vc.status))+
-    '<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 fade-in">'+
+    '<div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 fade-in">'+
     '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Total</p><p class="text-2xl font-bold text-white">'+cc.length+'</p></div>'+
     '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Contacted</p><p class="text-2xl font-bold text-violet-400">'+cc.filter(function(c){return c.status==='Contacted';}).length+'</p></div>'+
-    '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Closed</p><p class="text-2xl font-bold text-emerald-400">'+cc.filter(function(c){return c.status==='Closed';}).length+'</p></div></div>'+
+    '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Closed</p><p class="text-2xl font-bold text-emerald-400">'+cc.filter(function(c){return c.status==='Closed';}).length+'</p></div>'+
+    '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">VIP</p><p class="text-2xl font-bold" style="color:#fcd34d">'+cc.filter(function(c){return isVipClient(c);}).length+'</p></div></div>'+
     '<div class="card mb-6 fade-in"><div class="flex items-center gap-3"><span class="text-sm text-slate-400">Status:</span>'+sBtns+'</div></div>'+
     '<div class="card fade-in"><div class="flex items-center justify-between mb-4 flex-wrap gap-3">'+
     '<h3 class="text-sm font-bold text-white">Clients ('+cc.length+(campClientSearch?' / '+ccAll.length:'')+')</h3>'+
