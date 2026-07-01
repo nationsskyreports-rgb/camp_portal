@@ -24,10 +24,10 @@ function renderCampaigns(){
     '<div class="card fade-in"><div class="flex items-center justify-between mb-4 flex-wrap gap-3">'+
     '<h3 class="text-sm font-bold text-white">Clients ('+cc.length+(campClientSearch?' / '+ccAll.length:'')+')</h3>'+
     searchBox('camp-client-search', campClientSearch, 'setCampClientSearch', 'Search clients...')+
-    (ccAll.filter(function(c){return !c.assigned_employee_id;}).length?
+    (ccAll.filter(function(c){return !c.assigned_employee_id && !isVipClient(c);}).length?
       '<button class="btn btn-primary btn-sm" onclick="distributeCampUnassigned(\''+vc.id+'\')">'+
       '<i data-lucide="shuffle" class="w-4 h-4"></i> Distribute Unassigned ('+
-      ccAll.filter(function(c){return !c.assigned_employee_id;}).length+')</button>':'')+
+      ccAll.filter(function(c){return !c.assigned_employee_id && !isVipClient(c);}).length+')</button>':'')+
     '</div>'+
     (cc.length?(function(){
       // Columns come from THIS campaign's saved structure (mirror of its sheet)
@@ -57,7 +57,7 @@ function renderCampaigns(){
         cc.map(function(c){
           var e=empById(c.assigned_employee_id); var extra=c.extra_data||{};
           return '<tr class="table-row border-b border-white/[0.03]">'+
-            '<td class="'+td+'">'+esc(c.name||extra.name||extra.customer||'-')+'</td>'+
+            '<td class="'+td+'">'+esc(c.name||extra.name||extra.customer||'-')+(isVipClient(c)?' <span class="badge" style="background:rgba(245,158,11,.15);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-size:10px;padding:1px 6px">VIP</span>':'')+'</td>'+
             '<td class="'+td+'">'+esc(c.phone||extra.phone||'-')+'</td>'+
             '<td class="'+td+'">'+(extra.form_submitted
               ? '<button class="btn btn-sm" style="background:rgba(16,185,129,.12);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);padding:2px 10px;font-size:11px" onclick="showFormResponse(\''+c.id+'\')"><i data-lucide="check" style="width:11px;height:11px"></i> View</button>'
@@ -205,7 +205,7 @@ function distributeCampUnassigned(campId) {
   if (!actEmps.length) { toast('No active employees', 'error'); return; }
 
   var unassigned = S.clients.filter(function(c) {
-    return c.campaign_id === campId && !c.assigned_employee_id;
+    return c.campaign_id === campId && !c.assigned_employee_id && !isVipClient(c);
   });
   if (!unassigned.length) { toast('No unassigned clients', 'error'); return; }
 

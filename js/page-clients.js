@@ -235,7 +235,7 @@ function previewRedistribute() {
 
   var pool = S.clients.filter(function(c) {
     var matchCamp = redistCampId ? c.campaign_id === redistCampId : true;
-    return matchCamp && !c.assigned_employee_id;
+    return matchCamp && !c.assigned_employee_id && !isVipClient(c);
   });
 
   if (!pool.length) {
@@ -289,7 +289,7 @@ function buildRedistributePanel() {
 
   var unassignedCount = S.clients.filter(function(c) {
     var matchCamp = redistCampId ? c.campaign_id === redistCampId : true;
-    return matchCamp && !c.assigned_employee_id;
+    return matchCamp && !c.assigned_employee_id && !isVipClient(c);
   }).length;
 
   var previewHtml = '';
@@ -1235,7 +1235,9 @@ function renderClientCard(c) {
     ? (c.assigned_employee_id
         ? '<span style="font-size:10px;padding:2px 7px;border-radius:5px;background:rgba(59,130,246,0.1);color:#93c5fd;border:1px solid rgba(59,130,246,0.2)">' +
           esc((empById(c.assigned_employee_id)||{}).name||'') + '</span>'
-        : '<span style="font-size:10px;padding:2px 7px;border-radius:5px;background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.2)">Unassigned</span>')
+        : (isVipClient(c)
+            ? '<span style="font-size:10px;padding:2px 7px;border-radius:5px;background:rgba(245,158,11,0.12);color:#fcd34d;border:1px solid rgba(245,158,11,0.3)">👑 VIP</span>'
+            : '<span style="font-size:10px;padding:2px 7px;border-radius:5px;background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.2)">Unassigned</span>'))
     : '';
 
   var isSel = !!selectedClients[c.id];

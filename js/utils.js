@@ -156,3 +156,10 @@ function restoreSearchFocus(id){
     try { el.setSelectionRange(len, len); } catch(e){}
   }
 }
+
+// ── VIP helper ────────────────────────────────────────────────
+// VIP clients are uploaded but never auto-distributed to agents.
+// They are still findable by the intake form (phone lookup ignores this flag).
+function isVipClient(c){
+  return !!(c && c.extra_data && c.extra_data.vip === true);
+}

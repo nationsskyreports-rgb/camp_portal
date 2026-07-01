@@ -133,6 +133,7 @@ function phonesMatch(stored,input){
 // ============================================================
 // ── UPLOAD ──
 function setUploadTab(tab){U.uploadTab=tab;renderUpload();}
+function setDataType(t){U.dataType=(t==='vip'?'vip':'normal');U.preview=null;renderUpload();}
 function tabBtn(tab,icon,label){var act=U.uploadTab===tab;return'<button class="btn btn-sm '+(act?'btn-primary':'btn-ghost')+'" onclick="setUploadTab(\''+tab+'\')"><i data-lucide="'+icon+'" class="w-3.5 h-3.5"></i> '+label+'</button>';}
 
 function renderUpload(){
@@ -157,6 +158,15 @@ function renderUpload(){
   '<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px">'+
   '<select class="input" style="max-width:280px;flex:1;min-width:180px" onchange="U.campaignId=this.value;U.preview=null;U.rows=[];U.detectedCols=null;renderUpload()">'+campOpts+'</select>'+
   '<button class="btn btn-ghost btn-sm" onclick="openColConfig(null)"><i data-lucide="settings-2" class="w-4 h-4"></i> Configure Columns</button></div>'+
+  // ── Data type: Normal (distribute) vs VIP (upload only) ──
+  '<div class="flex flex-wrap items-center gap-2 mb-4">'+
+  '<span class="text-xs text-slate-500 self-center mr-1">Data type:</span>'+
+  '<button class="btn btn-sm '+(U.dataType!=='vip'?'btn-primary':'btn-ghost')+'" onclick="setDataType(\'normal\')"><i data-lucide="users" class="w-3.5 h-3.5"></i> Normal (distribute to agents)</button>'+
+  '<button class="btn btn-sm '+(U.dataType==='vip'?'btn-primary':'btn-ghost')+'" onclick="setDataType(\'vip\')"><i data-lucide="crown" class="w-3.5 h-3.5"></i> VIP (upload only)</button>'+
+  '</div>'+
+  (U.dataType==='vip'
+    ? '<div class="mb-5 p-3 rounded-lg" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25)"><p class="text-xs" style="color:#fcd34d"><i data-lucide="crown" class="w-3.5 h-3.5 inline"></i> VIP data is saved to the campaign but <strong>not distributed to any agent</strong>. Clients still receive the same form link and can fill it in normally.</p></div>'
+    : '')+
   '<div class="flex flex-wrap gap-2 mb-5 p-3 rounded-lg bg-white/[0.02] border border-white/5">'+
   '<span class="text-xs text-slate-500 self-center mr-1">Columns:</span>'+cols.map(function(c){return'<span class="badge badge-new text-[11px]">'+esc(c.label)+'</span>';}).join('')+'</div>'+
   '<div class="flex gap-2 mb-4 border-b border-white/10 pb-2">'+tabBtn('paste','clipboard','Paste from Excel')+tabBtn('excel','file-spreadsheet','Upload File')+tabBtn('manual','table','Manual Entry')+'</div>'+
@@ -164,8 +174,10 @@ function renderUpload(){
   (U.uploadTab==='excel'?'<div class="space-y-3"><p class="text-xs text-slate-400">Upload .xlsx or .csv file — <strong class="text-slate-300">System will auto-detect headers</strong> from first row</p><div class="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:border-blue-500/40 transition-colors" ondrop="handleExcelDrop(event)" ondragover="event.preventDefault()"><i data-lucide="file-spreadsheet" class="w-10 h-10 text-slate-600 mx-auto mb-3"></i><p class="text-slate-400 text-sm mb-3">Drag & drop file here</p><label class="btn btn-ghost cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i> Browse<input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleExcelFile(this)"></label></div>'+(U.rows.length?'<p class="text-emerald-400 text-sm font-medium">✓ '+U.rows.length+' rows loaded</p>':'')+'</div>':'')+
   manualHtml+
   (U.rows.length?'<div class="mt-4 pt-4 border-t border-white/10 flex gap-2 flex-wrap">'+
-  '<button class="btn btn-primary" onclick="previewDistribute()"><i data-lucide="shuffle" class="w-4 h-4"></i> Distribute to agents ('+U.rows.length+' rows)</button>'+
-  '<button class="btn btn-ghost" onclick="saveWithoutDistribution()"><i data-lucide="save" class="w-4 h-4"></i> Save without distribution</button>'+
+  (U.dataType==='vip'
+    ? '<button class="btn btn-primary" onclick="saveVipData()"><i data-lucide="crown" class="w-4 h-4"></i> Save VIP data ('+U.rows.length+' rows · no distribution)</button>'
+    : '<button class="btn btn-primary" onclick="previewDistribute()"><i data-lucide="shuffle" class="w-4 h-4"></i> Distribute to agents ('+U.rows.length+' rows)</button>'+
+      '<button class="btn btn-ghost" onclick="saveWithoutDistribution()"><i data-lucide="save" class="w-4 h-4"></i> Save without distribution</button>')+
 '</div>':'')+'</div>';
   lucide.createIcons();
 }
@@ -389,7 +401,31 @@ function saveWithoutDistribution(){
     if(before>after) msg += ' ('+before+' rows merged into '+after+' unique clients)';
     toast(msg+' ✓','success');
     logAudit('upload_save', 'campaign', U.campaignId, (campById(U.campaignId)||{}).name||'', {clients: after});
-    U={campaignId:U.campaignId,rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,isNOSSheet:false};
+    U={campaignId:U.campaignId,rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,isNOSSheet:false,dataType:'normal'};
+    fetchAll().then(renderUpload);
+  });
+}
+
+// Save VIP data: stored in the campaign, marked vip, never assigned to an agent.
+// The intake form finds these clients by phone exactly like normal clients.
+function saveVipData(){
+  if(!U.rows.length){toast('No data to save','error');return;}
+  if(!U.campaignId){toast('Select a campaign first','error');return;}
+  var cols = U.detectedCols||getCurrentUploadCols();
+  var merged = mergeRowsByPhone(U.rows, cols);
+  var before = U.rows.length, after = merged.length;
+  var rows = merged.map(function(m){
+    var extra = m.extra_data || {};
+    extra.vip = true; // mark as VIP so it is excluded from all distribution
+    return {name:m.name,phone:m.phone||null,extra_data:extra,status:'New',assigned_employee_id:null,campaign_id:U.campaignId};
+  });
+  sb.from('clients').insert(rows).then(function(result){
+    if(result.error){toast(result.error.message,'error');return;}
+    var msg = after+' VIP client(s) saved (not distributed)';
+    if(before>after) msg += ' · '+before+' rows merged into '+after+' unique clients';
+    toast(msg+' ✓','success');
+    logAudit('upload_vip', 'campaign', U.campaignId, (campById(U.campaignId)||{}).name||'', {clients: after, vip: true});
+    U={campaignId:U.campaignId,rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,isNOSSheet:false,dataType:'vip'};
     fetchAll().then(renderUpload);
   });
 }
@@ -440,7 +476,7 @@ function confirmDistribute(){
     }
     toast(rows.length+' clients distributed successfully','success');
     logAudit('upload_distribute', 'campaign', U.campaignId, campName, {clients: rows.length, agents: Object.keys(U.preview).length});
-    U={campaignId:'',rows:[],preview:null,uploadTab:'paste',colConfig:null};
+    U={campaignId:'',rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,dataType:'normal'};
     fetchAll().then(renderUpload);
   });
 }
