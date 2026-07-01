@@ -21,6 +21,11 @@ function renderCampaigns(){
     '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Contacted</p><p class="text-2xl font-bold text-violet-400">'+cc.filter(function(c){return c.status==='Contacted';}).length+'</p></div>'+
     '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">Closed</p><p class="text-2xl font-bold text-emerald-400">'+cc.filter(function(c){return c.status==='Closed';}).length+'</p></div>'+
     '<div class="card text-center"><p class="text-slate-400 text-xs mb-1">VIP</p><p class="text-2xl font-bold" style="color:#fcd34d">'+cc.filter(function(c){return isVipClient(c);}).length+'</p></div></div>'+
+    '<div class="card mb-6 fade-in" style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.25)"><div class="flex items-center gap-3">'+
+      '<i data-lucide="database" style="width:22px;height:22px;color:#93c5fd"></i>'+
+      '<div><p class="text-xs text-slate-400">Regular data (excluding VIP)</p>'+
+      '<p class="text-2xl font-bold text-white">'+ccAll.filter(function(c){return !isVipClient(c);}).length+' <span class="text-sm font-normal text-slate-400">records</span></p></div>'+
+    '</div></div>'+
     '<div class="card mb-6 fade-in"><div class="flex items-center gap-3"><span class="text-sm text-slate-400">Status:</span>'+sBtns+'</div></div>'+
     '<div class="card fade-in"><div class="flex items-center justify-between mb-4 flex-wrap gap-3">'+
     '<h3 class="text-sm font-bold text-white">Clients ('+cc.length+(campClientSearch?' / '+ccAll.length:'')+')</h3>'+
