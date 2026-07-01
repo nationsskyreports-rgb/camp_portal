@@ -39,16 +39,17 @@ function buildCleanupTable(){
   var camp=campById(cleanupState.campaignId);
   var cols=camp&&camp.column_config&&camp.column_config.length?camp.column_config.filter(function(c){return c.visible;}).sort(function(a,b){return a.order-b.order;}).slice(0,5):DEFAULT_COLUMNS.slice(0,5);
   var selectedCount=Object.keys(cleanupState.selected).filter(function(k){return cleanupState.selected[k];}).length;
-  return'<div class="card"><div class="flex items-center justify-between mb-3"><p class="text-sm text-slate-400">Showing <span class="text-white font-semibold">'+rows.length+'</span> records'+(selectedCount>0?' &nbsp;·&nbsp; <span class="text-red-400 font-semibold">'+selectedCount+' selected</span>':'')+
+  var vipCount=rows.filter(function(c){return isVipClient(c);}).length;
+  return'<div class="card"><div class="flex items-center justify-between mb-3"><p class="text-sm text-slate-400">Showing <span class="text-white font-semibold">'+rows.length+'</span> records'+(vipCount>0?' &nbsp;·&nbsp; <span style="color:#fcd34d">👑 '+vipCount+' VIP protected</span>':'')+(selectedCount>0?' &nbsp;·&nbsp; <span class="text-red-400 font-semibold">'+selectedCount+' selected</span>':'')+
   '</p>'+(selectedCount>0?'<button class="btn btn-danger btn-sm" onclick="deleteSelected()"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete '+selectedCount+' records</button>':'')+
   '</div><div class="tbl-wrap"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5">'+
-  '<th class="pb-3 pr-3 w-8"><input type="checkbox" class="cursor-pointer" onchange="cleanupToggleAll(this.checked,'+JSON.stringify(rows.map(function(r){return r.id;}))+')"></th>'+
+  '<th class="pb-3 pr-3 w-8"><input type="checkbox" class="cursor-pointer" onchange="cleanupToggleAll(this.checked,'+JSON.stringify(rows.filter(function(r){return !isVipClient(r);}).map(function(r){return r.id;}))+')"></th>'+
   cols.map(function(c){return'<th class="pb-3 pr-4">'+esc(c.label)+'</th>';}).join('')+
   '<th class="pb-3 pr-4">Assigned To</th><th class="pb-3 pr-4">Imported</th><th class="pb-3">Status</th></tr></thead><tbody>'+
-  rows.map(function(c){var extra=c.extra_data||{};var emp=empById(c.assigned_employee_id);var isChecked=!!cleanupState.selected[c.id];
-    return'<tr class="table-row border-b border-white/[0.03] '+(isChecked?'bg-red-500/5':'')+'">'+'<td class="py-2.5 pr-3"><input type="checkbox" class="cursor-pointer" '+(isChecked?'checked':'')+' onchange="cleanupToggleOne(\''+c.id+'\',this.checked)"></td>'+
+  rows.map(function(c){var extra=c.extra_data||{};var emp=empById(c.assigned_employee_id);var vip=isVipClient(c);var isChecked=!!cleanupState.selected[c.id];
+    return'<tr class="table-row border-b border-white/[0.03] '+(isChecked?'bg-red-500/5':(vip?'bg-amber-500/[0.04]':''))+'">'+'<td class="py-2.5 pr-3">'+(vip?'<span title="VIP – protected from deletion" style="color:#fcd34d;font-size:13px">👑</span>':'<input type="checkbox" class="cursor-pointer" '+(isChecked?'checked':'')+' onchange="cleanupToggleOne(\''+c.id+'\',this.checked)">')+'</td>'+
     cols.map(function(col){return'<td class="py-2.5 pr-4 text-slate-300 text-xs max-w-[140px] truncate">'+esc(extra[col.key]||c[col.key]||'-')+'</td>';}).join('')+
-    '<td class="py-2.5 pr-4 text-xs text-slate-400">'+esc(emp?emp.name:'—')+'</td>'+
+    '<td class="py-2.5 pr-4 text-xs text-slate-400">'+(vip?'<span style="color:#fcd34d;font-size:10px;padding:1px 6px;border-radius:5px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3)">VIP</span>':esc(emp?emp.name:'—'))+'</td>'+
     '<td class="py-2.5 pr-4 text-xs text-slate-500">'+formatBatchLabel(c.created_at)+'</td>'+
     '<td class="py-2.5">'+sBadge(c.status)+'</td></tr>';
   }).join('')+'</tbody></table></div></div>';
@@ -72,17 +73,20 @@ function cleanupSelectAll(){
   var rows=cleanupState.clients;
   if(cleanupState.importBatch)rows=rows.filter(function(c){return getBatchKey(c.created_at)===cleanupState.importBatch;});
   if(cleanupState.searchText){var q=cleanupState.searchText.toLowerCase();rows=rows.filter(function(c){return(c.name||'').toLowerCase().indexOf(q)!==-1||(c.phone||'').toLowerCase().indexOf(q)!==-1||JSON.stringify(c.extra_data||{}).toLowerCase().indexOf(q)!==-1;});}
-  rows.forEach(function(c){cleanupState.selected[c.id]=true;});
+  rows.filter(function(c){return !isVipClient(c);}).forEach(function(c){cleanupState.selected[c.id]=true;});
   document.getElementById('cleanup-table-area').innerHTML=buildCleanupTable();lucide.createIcons();
 }
 function cleanupClearSelection(){cleanupState.selected={};document.getElementById('cleanup-table-area').innerHTML=buildCleanupTable();lucide.createIcons();}
 function cleanupSelectBatch(){
   if(!cleanupState.importBatch)return;
-  cleanupState.clients.filter(function(c){return getBatchKey(c.created_at)===cleanupState.importBatch;}).forEach(function(c){cleanupState.selected[c.id]=true;});
+  cleanupState.clients.filter(function(c){return getBatchKey(c.created_at)===cleanupState.importBatch && !isVipClient(c);}).forEach(function(c){cleanupState.selected[c.id]=true;});
   document.getElementById('cleanup-table-area').innerHTML=buildCleanupTable();lucide.createIcons();
 }
 function deleteSelected(){
   var ids=Object.keys(cleanupState.selected).filter(function(k){return cleanupState.selected[k];});
+  // Safety net: never delete VIP records, even if somehow selected.
+  var vipIds={};cleanupState.clients.forEach(function(c){if(isVipClient(c))vipIds[c.id]=true;});
+  ids=ids.filter(function(id){return !vipIds[id];});
   if(!ids.length){toast('No records selected','error');return;}
   showConfirm('Delete '+ids.length+' Records','This will permanently delete '+ids.length+' client record(s). This cannot be undone.',function(){
     sb.from('clients').delete().in('id',ids).then(function(){
