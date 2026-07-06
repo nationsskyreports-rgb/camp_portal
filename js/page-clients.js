@@ -1034,9 +1034,11 @@ function renderGroupedCard(clients){
         '</div>'+
       '</div>'+
 
-      // Right side: agent + status + expand arrow
+      // Right side: agent + campaign + status + expand arrow
+      var grpCamp = campById(primary.campaign_id);
       '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'+
         (emp ? av(emp.name, emp.color||'#3b82f6', 24)+'<span style="font-size:11px;color:#94a3b8">'+esc(emp.name)+'</span>' : '')+
+        (grpCamp && !empClientFilter ? '<span style="font-size:10px;padding:2px 7px;border-radius:5px;background:rgba(6,182,212,0.1);color:#67e8f9;border:1px solid rgba(6,182,212,0.2)">'+esc(grpCamp.name)+'</span>' : '')+
         sBadge(dominantStatus)+
         '<i data-lucide="'+(isExpanded?'chevron-up':'chevron-down')+'" style="width:16px;height:16px;color:#64748b"></i>'+
       '</div>'+
@@ -1318,6 +1320,13 @@ function renderClientCard(c) {
             : '<span style="font-size:10px;padding:2px 7px;border-radius:5px;background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.2)">Unassigned</span>'))
     : '';
 
+  // Campaign badge on card (when viewing All Campaigns)
+  var campBadge = '';
+  if (camp && !empClientFilter) {
+    campBadge = '<span style="font-size:10px;padding:2px 7px;border-radius:5px;background:rgba(6,182,212,0.1);color:#67e8f9;border:1px solid rgba(6,182,212,0.2)">' +
+      esc(camp.name) + '</span>';
+  }
+
   var isSel = !!selectedClients[c.id];
   return '<div class="card client-card ' + (isExp ? 'border-blue-500/30' : '') + (isSel ? ' border-blue-500/60 bg-blue-500/5' : '') + '">' +
     (S.role==='admin' ? '<div style="float:left;margin:0 0 4px 8px"><input type="checkbox" ' + (isSel?'checked':'') + ' onclick="toggleClientSelect(\''+c.id+'\',event)" style="width:16px;height:16px;cursor:pointer;accent-color:#3b82f6"></div>' : '') +
@@ -1341,7 +1350,7 @@ function renderClientCard(c) {
     '</div>' +
     statsBar + '</div></div>' +
     '<div class="flex items-center gap-2 flex-shrink-0">' +
-    assignBadge + sBadge(c.status) +
+    assignBadge + campBadge + sBadge(c.status) +
     (extra.form_submitted ? '<span class="badge" style="background:#064e3b;color:#6ee7b7;font-size:10px;margin-right:2px"><i data-lucide=\"check\" style=\"width:10px;height:10px;vertical-align:-1px\"></i> Form</span>' : '') +
     (function(){
       var fu=(S.reminders||[]).filter(function(r){return r.client_id===c.id&&!r.done;});
