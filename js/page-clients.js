@@ -447,8 +447,10 @@ function groupClientsByPhone(clients){
       noPhone.push([c]);
       return;
     }
-    if(!byPhone[norm]) byPhone[norm] = [];
-    byPhone[norm].push(c);
+    // Group by phone + campaign so same client in different campaigns stays separate
+    var key = norm + '_' + (c.campaign_id || '');
+    if(!byPhone[key]) byPhone[key] = [];
+    byPhone[key].push(c);
   });
 
   Object.keys(byPhone).forEach(function(k){ groups.push(byPhone[k]); });
