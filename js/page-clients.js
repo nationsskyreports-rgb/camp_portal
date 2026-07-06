@@ -1035,13 +1035,15 @@ function renderGroupedCard(clients){
       '</div>'+
 
       // Right side: agent + campaign + status + expand arrow
-      var grpCamp = campById(primary.campaign_id);
-      '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'+
-        (emp ? av(emp.name, emp.color||'#3b82f6', 24)+'<span style="font-size:11px;color:#94a3b8">'+esc(emp.name)+'</span>' : '')+
-        (grpCamp && !empClientFilter ? '<span style="font-size:10px;padding:2px 7px;border-radius:5px;background:rgba(6,182,212,0.1);color:#67e8f9;border:1px solid rgba(6,182,212,0.2)">'+esc(grpCamp.name)+'</span>' : '')+
-        sBadge(dominantStatus)+
-        '<i data-lucide="'+(isExpanded?'chevron-up':'chevron-down')+'" style="width:16px;height:16px;color:#64748b"></i>'+
-      '</div>'+
+      (function(){
+        var grpCamp = campById(primary.campaign_id);
+        return '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'+
+          (emp ? av(emp.name, emp.color||'#3b82f6', 24)+'<span style="font-size:11px;color:#94a3b8">'+esc(emp.name)+'</span>' : '')+
+          (grpCamp && !empClientFilter ? '<span style="font-size:10px;padding:2px 7px;border-radius:5px;background:rgba(6,182,212,0.1);color:#67e8f9;border:1px solid rgba(6,182,212,0.2)">'+esc(grpCamp.name)+'</span>' : '')+
+          sBadge(dominantStatus)+
+          '<i data-lucide="'+(isExpanded?'chevron-up':'chevron-down')+'" style="width:16px;height:16px;color:#64748b"></i>'+
+        '</div>';
+      })()+
 
     '</div>'+ // end header
 
