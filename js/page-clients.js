@@ -656,11 +656,13 @@ function renderMyClients() {
   var all = allRaw;
   if (empClientFilter) all = all.filter(function(c) { return c.campaign_id === empClientFilter; });
 
-  // ── Employees: Closed clients go to their own page ──
+  // ── Employees: Closed clients go to their own page (but NOT when searching) ──
   var closedCount = 0;
   if (S.role !== 'admin') {
     closedCount = all.filter(function(c){ return c.status === 'Closed'; }).length;
-    all = all.filter(function(c){ return c.status !== 'Closed'; });
+    if (!clientSearch) {
+      all = all.filter(function(c){ return c.status !== 'Closed'; });
+    }
   }
 
   if (S.role === 'admin' && formFilter === 'submitted') {
