@@ -627,7 +627,34 @@ function openCallScript(){
 
 function renderMyClients() {
   var m   = document.getElementById('main-content');
-  var all = myClients();
+  var allRaw = myClients();
+
+  // ── Build campaign dropdown from ALL clients (before any filter) ──
+  var campOpts = '<option value="">All Campaigns</option>';
+  var seenCamp = {};
+  allRaw.forEach(function(c) {
+    if (!seenCamp[c.campaign_id]) {
+      seenCamp[c.campaign_id] = true;
+      var cp = campById(c.campaign_id);
+      if (cp) campOpts += '<option value="' + c.campaign_id + '" ' + (empClientFilter === c.campaign_id ? 'selected' : '') + '>' + esc(cp.name) + '</option>';
+    }
+  });
+
+  // ── Auto-select first campaign if employee has multiple and none selected ──
+  if (!empClientFilter && S.role !== 'admin') {
+    var campIds = Object.keys(seenCamp);
+    if (campIds.length > 1) {
+      // Default to most recent campaign
+      var sorted = campIds.map(function(cid){ return campById(cid); })
+        .filter(Boolean)
+        .sort(function(a,b){ return new Date(b.created_at) - new Date(a.created_at); });
+      if (sorted.length) empClientFilter = sorted[0].id;
+    }
+  }
+
+  // ── Apply campaign filter FIRST (affects everything including closed count + KPI) ──
+  var all = allRaw;
+  if (empClientFilter) all = all.filter(function(c) { return c.campaign_id === empClientFilter; });
 
   // ── Employees: Closed clients go to their own page ──
   var closedCount = 0;
@@ -635,8 +662,6 @@ function renderMyClients() {
     closedCount = all.filter(function(c){ return c.status === 'Closed'; }).length;
     all = all.filter(function(c){ return c.status !== 'Closed'; });
   }
-
-  if (empClientFilter) all = all.filter(function(c) { return c.campaign_id === empClientFilter; });
 
   if (S.role === 'admin' && formFilter === 'submitted') {
     all = all.filter(function(c) { return c.extra_data && c.extra_data.form_submitted; });
@@ -660,15 +685,7 @@ function renderMyClients() {
     });
   }
 
-  var campOpts = '<option value="">All Campaigns</option>';
-  var seen = {};
-  all.forEach(function(c) {
-    if (!seen[c.campaign_id]) {
-      seen[c.campaign_id] = true;
-      var cp = campById(c.campaign_id);
-      if (cp) campOpts += '<option value="' + c.campaign_id + '" ' + (empClientFilter === c.campaign_id ? 'selected' : '') + '>' + esc(cp.name) + '</option>';
-    }
-  });
+  var campOptsDisplay = campOpts; // already built at top
 
   var tabDefs = [
     { key: 'all',          label: 'All',          icon: 'list',         cls: 'btn-primary' },
@@ -692,7 +709,9 @@ function renderMyClients() {
   })() +
     // ── Reachability KPI banner (employee view only) ──────────
     (S.role !== 'admin' ? (function(){
-      var myAll = myClients();
+      // Use campaign-filtered clients (not all clients across campaigns)
+      var myAll = allRaw;
+      if (empClientFilter) myAll = myAll.filter(function(c){ return c.campaign_id === empClientFilter; });
       var myIds = {};
       myAll.forEach(function(c){ myIds[c.id] = true; });
       var myHist = (S.contactHistory||[]).filter(function(h){ return myIds[h.client_id]; });
@@ -1510,6 +1529,8 @@ async function clearFollowupFromClient(cid) {
 function renderClosedClients() {
   var m      = document.getElementById('main-content');
   var closed = myClients().filter(function(c){ return c.status === 'Closed'; });
+  // Respect campaign filter
+  if (empClientFilter) closed = closed.filter(function(c){ return c.campaign_id === empClientFilter; });
 
   // Use renderClientCard for full functionality (expand, form badge, follow-ups)
   // Patch onclick to stay on Closed page instead of going to My Clients
