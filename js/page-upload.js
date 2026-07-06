@@ -143,7 +143,15 @@ function renderUpload(){
   var previewHtml='';
   if(U.preview){
     var mx=Math.max.apply(null,Object.values(U.preview).map(function(a){return a.length;}).concat([1]));
-    previewHtml='<div class="card border-emerald-500/20 mb-6 fade-in"><h3 class="text-sm font-bold text-white mb-1">Preview - '+U.rows.length+' clients → active agents</h3><p class="text-xs text-slate-500 mb-4">Inactive agents excluded from distribution</p><div class="space-y-3">'+
+    var totalNew=Object.values(U.preview).reduce(function(s,a){return s+a.length;},0);
+    var dedupeNote='';
+    if((U.pendingUpdates&&U.pendingUpdates.length)||U.skippedDupes){
+      var np=[];
+      if(U.pendingUpdates&&U.pendingUpdates.length) np.push(U.pendingUpdates.length+' existing client(s) will get new units added (staying with their current agent)');
+      if(U.skippedDupes) np.push(U.skippedDupes+' exact duplicate(s) will be skipped');
+      dedupeNote='<div class="mb-3 p-2 rounded-lg" style="background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.2)"><p class="text-xs" style="color:#fcd34d">'+np.join(' · ')+'</p></div>';
+    }
+    previewHtml='<div class="card border-emerald-500/20 mb-6 fade-in"><h3 class="text-sm font-bold text-white mb-1">Preview - '+totalNew+' new clients → active agents</h3><p class="text-xs text-slate-500 mb-4">Inactive agents excluded from distribution</p>'+dedupeNote+'<div class="space-y-3">'+
     Object.keys(U.preview).map(function(eid){var e=empById(eid);if(!e)return'';var cls=U.preview[eid];return'<div><div class="flex items-center justify-between mb-1"><div class="flex items-center gap-2">'+av(e.name,e.color||'#3b82f6',22)+'<span class="text-xs text-slate-300">'+esc(e.name)+'</span><span class="badge badge-active ml-1" style="font-size:10px">Active</span></div><span class="text-xs font-bold text-white">'+cls.length+'</span></div><div class="w-full h-2 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full bg-emerald-500/70" style="width:'+(cls.length/mx)*100+'%"></div></div></div>';}).join('')+
     '</div><div class="flex gap-2 mt-5"><button class="btn btn-success" onclick="confirmDistribute()"><i data-lucide="check" class="w-4 h-4"></i> Confirm & Distribute</button><button class="btn btn-ghost" onclick="U.preview=null;renderUpload()">Cancel</button></div></div>';
   }
@@ -386,23 +394,123 @@ function mergeRowsByPhone(rawRows, cols){
   return result;
 }
 
+// ════════════════════════════════════════════════════════════
+// DEDUPE AGAINST DATABASE — prevents re-inserting the same
+// client/unit when a second file is uploaded later.
+// ════════════════════════════════════════════════════════════
+function unitKeyOf(u){
+  return ((u && (u.contract_number || u.unit)) || '').toString().trim().toLowerCase();
+}
+function unitsFromExtra(ex){
+  ex = ex || {};
+  if(Array.isArray(ex.units) && ex.units.length) return ex.units;
+  var u = {}; UNIT_KEYS.forEach(function(k){ if(ex[k]) u[k] = ex[k]; });
+  return unitKeyOf(u) ? [u] : [];
+}
+// Fetch ALL existing clients → map keyed by normalized phone (last 9 digits)
+function fetchExistingClientsMap(){
+  return sb.from('clients')
+    .select('id,phone,campaign_id,assigned_employee_id,extra_data')
+    .then(function(res){
+      var map = {};
+      (res.data||[]).forEach(function(c){
+        var norm = normalizePhoneDigits(c.phone||'').slice(-9);
+        if(norm.length < 7) return;
+        if(!map[norm]) map[norm] = [];
+        map[norm].push(c);
+      });
+      return map;
+    });
+}
+// Compare merged upload records with what's already in the DB.
+// Returns { toInsert, toUpdate, skipped }
+//  - phone not in DB                            → insert
+//  - phone in DB & all units already exist      → skip (exact duplicate)
+//  - phone in SAME campaign & has NEW units     → update that record (append units)
+//  - phone only in ANOTHER campaign, new unit   → insert (cross-campaign allowed)
+function reconcileWithExisting(merged, existingMap, campaignId){
+  var toInsert = [], toUpdate = [], skipped = 0;
+  merged.forEach(function(m){
+    var norm = normalizePhoneDigits(m.phone||'').slice(-9);
+    var matches = (norm.length >= 7 && existingMap[norm]) ? existingMap[norm] : [];
+    if(!matches.length){ toInsert.push(m); return; }
+
+    // Every unit key this phone already has (across all campaigns)
+    var existingKeys = {};
+    matches.forEach(function(c){
+      unitsFromExtra(c.extra_data).forEach(function(u){
+        var k = unitKeyOf(u); if(k) existingKeys[k] = true;
+      });
+    });
+
+    var incomingUnits = unitsFromExtra(m.extra_data);
+    var newUnits = incomingUnits.filter(function(u){
+      var k = unitKeyOf(u); return k && !existingKeys[k];
+    });
+
+    // Phone exists and there is nothing new → exact duplicate, skip
+    if(!newUnits.length){ skipped++; return; }
+
+    // Prefer merging new units into a record in the SAME campaign
+    var target = null;
+    for(var i = 0; i < matches.length; i++){
+      if(matches[i].campaign_id === campaignId){ target = matches[i]; break; }
+    }
+    if(!target){ toInsert.push(m); return; } // exists only in another campaign
+
+    var exExtra = Object.assign({}, target.extra_data || {});
+    var mergedUnits = unitsFromExtra(exExtra).concat(newUnits);
+    // Fill blank fields from incoming data WITHOUT overwriting existing values
+    Object.keys(m.extra_data || {}).forEach(function(k){
+      if(k === 'units') return;
+      if(exExtra[k] === undefined || exExtra[k] === null || exExtra[k] === ''){
+        exExtra[k] = m.extra_data[k];
+      }
+    });
+    Object.assign(exExtra, mergedUnits[0]);   // first unit stays at top level (backwards compat)
+    exExtra.units = mergedUnits;
+    toUpdate.push({ id: target.id, assigned_employee_id: target.assigned_employee_id, extra_data: exExtra });
+    target.extra_data = exExtra; // keep map in sync for later rows in this file
+  });
+  return { toInsert: toInsert, toUpdate: toUpdate, skipped: skipped };
+}
+function applyClientUpdates(toUpdate){
+  if(!toUpdate || !toUpdate.length) return Promise.resolve();
+  return Promise.all(toUpdate.map(function(u){
+    return sb.from('clients').update({ extra_data: u.extra_data }).eq('id', u.id);
+  }));
+}
+function dedupeSummary(r){
+  var parts = [];
+  if(r.toInsert.length) parts.push(r.toInsert.length + ' new');
+  if(r.toUpdate.length) parts.push(r.toUpdate.length + ' updated with new unit(s)');
+  if(r.skipped)         parts.push(r.skipped + ' duplicate(s) skipped');
+  return parts.length ? parts.join(' · ') : 'nothing to do';
+}
+
 function saveWithoutDistribution(){
   if(!U.rows.length){toast('No data to save','error');return;}
   if(!U.campaignId){toast('Select a campaign first','error');return;}
   var cols = U.detectedCols||getCurrentUploadCols();
   var merged = mergeRowsByPhone(U.rows, cols);
-  var before = U.rows.length, after = merged.length;
-  var rows = merged.map(function(m){
-    return {name:m.name,phone:m.phone||null,extra_data:m.extra_data,status:'New',assigned_employee_id:null,campaign_id:U.campaignId};
-  });
-  sb.from('clients').insert(rows).then(function(result){
-    if(result.error){toast(result.error.message,'error');return;}
-    var msg = after+' clients saved';
-    if(before>after) msg += ' ('+before+' rows merged into '+after+' unique clients)';
-    toast(msg+' ✓','success');
-    logAudit('upload_save', 'campaign', U.campaignId, (campById(U.campaignId)||{}).name||'', {clients: after});
-    U={campaignId:U.campaignId,rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,isNOSSheet:false,dataType:'normal'};
-    fetchAll().then(renderUpload);
+  fetchExistingClientsMap().then(function(map){
+    var r = reconcileWithExisting(merged, map, U.campaignId);
+    if(!r.toInsert.length && !r.toUpdate.length){
+      toast('All rows already exist in the database — nothing saved','info');return;
+    }
+    var rows = r.toInsert.map(function(m){
+      return {name:m.name,phone:m.phone||null,extra_data:m.extra_data,status:'New',assigned_employee_id:null,campaign_id:U.campaignId};
+    });
+    var ins = rows.length ? sb.from('clients').insert(rows) : Promise.resolve({});
+    Promise.resolve(ins).then(function(result){
+      if(result && result.error){toast(result.error.message,'error');return;}
+      applyClientUpdates(r.toUpdate).then(function(){
+        toast('Saved ✓ '+dedupeSummary(r),'success');
+        logAudit('upload_save', 'campaign', U.campaignId, (campById(U.campaignId)||{}).name||'', {inserted:r.toInsert.length, updated:r.toUpdate.length, skipped:r.skipped});
+        U={campaignId:U.campaignId,rows:[],preview:null,pendingUpdates:null,uploadTab:'paste',colConfig:null,detectedCols:null,isNOSSheet:false,dataType:'normal'};
+        fetchAll().then(renderUpload);
+      });
+    });
   });
 }
 
@@ -413,37 +521,51 @@ function saveVipData(){
   if(!U.campaignId){toast('Select a campaign first','error');return;}
   var cols = U.detectedCols||getCurrentUploadCols();
   var merged = mergeRowsByPhone(U.rows, cols);
-  var before = U.rows.length, after = merged.length;
-  var rows = merged.map(function(m){
-    var extra = m.extra_data || {};
-    extra.vip = true; // mark as VIP so it is excluded from all distribution
-    return {name:m.name,phone:m.phone||null,extra_data:extra,status:'New',assigned_employee_id:null,campaign_id:U.campaignId};
-  });
-  sb.from('clients').insert(rows).then(function(result){
-    if(result.error){toast(result.error.message,'error');return;}
-    var msg = after+' VIP client(s) saved (not distributed)';
-    if(before>after) msg += ' · '+before+' rows merged into '+after+' unique clients';
-    toast(msg+' ✓','success');
-    logAudit('upload_vip', 'campaign', U.campaignId, (campById(U.campaignId)||{}).name||'', {clients: after, vip: true});
-    U={campaignId:U.campaignId,rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,isNOSSheet:false,dataType:'vip'};
-    fetchAll().then(renderUpload);
+  fetchExistingClientsMap().then(function(map){
+    var r = reconcileWithExisting(merged, map, U.campaignId);
+    if(!r.toInsert.length && !r.toUpdate.length){
+      toast('All VIP rows already exist in the database — nothing saved','info');return;
+    }
+    var rows = r.toInsert.map(function(m){
+      var extra = m.extra_data || {};
+      extra.vip = true; // mark as VIP so it is excluded from all distribution
+      return {name:m.name,phone:m.phone||null,extra_data:extra,status:'New',assigned_employee_id:null,campaign_id:U.campaignId};
+    });
+    var ins = rows.length ? sb.from('clients').insert(rows) : Promise.resolve({});
+    Promise.resolve(ins).then(function(result){
+      if(result && result.error){toast(result.error.message,'error');return;}
+      applyClientUpdates(r.toUpdate).then(function(){
+        toast('VIP saved ✓ '+dedupeSummary(r),'success');
+        logAudit('upload_vip', 'campaign', U.campaignId, (campById(U.campaignId)||{}).name||'', {inserted:r.toInsert.length, updated:r.toUpdate.length, skipped:r.skipped, vip:true});
+        U={campaignId:U.campaignId,rows:[],preview:null,pendingUpdates:null,uploadTab:'paste',colConfig:null,detectedCols:null,isNOSSheet:false,dataType:'vip'};
+        fetchAll().then(renderUpload);
+      });
+    });
   });
 }
 
 function previewDistribute(){
-  var firstKey=getCurrentUploadCols()[0]?getCurrentUploadCols()[0].key:'';
   var cols = U.detectedCols||getCurrentUploadCols();
   // Merge by phone FIRST so distribution counts are correct
   var merged = mergeRowsByPhone(U.rows, cols);
   if(!merged.length){toast('Add clients first','error');return;}
   if(!U.campaignId){toast('Select a campaign','error');return;}
   var actEmps=activeEmps();if(!actEmps.length){toast('No active employees','error');return;}
-  var dist={};actEmps.forEach(function(e){dist[e.id]=[];});
-  merged.forEach(function(c,i){dist[actEmps[i%actEmps.length].id].push(c);});
-  U.preview=dist;
-  var before=U.rows.length,after=merged.length;
-  if(before>after) toast(before+' rows merged into '+after+' unique clients','info');
-  renderUpload();
+  // Check the database so re-uploaded clients are NOT duplicated
+  fetchExistingClientsMap().then(function(map){
+    var r = reconcileWithExisting(merged, map, U.campaignId);
+    if(!r.toInsert.length && !r.toUpdate.length){
+      toast('All rows already exist in the database — nothing to distribute','info');
+      U.preview=null;U.pendingUpdates=null;renderUpload();return;
+    }
+    var dist={};actEmps.forEach(function(e){dist[e.id]=[];});
+    r.toInsert.forEach(function(c,i){dist[actEmps[i%actEmps.length].id].push(c);});
+    U.preview=dist;
+    U.pendingUpdates=r.toUpdate;   // existing clients getting new units (stay with their agent)
+    U.skippedDupes=r.skipped;      // exact duplicates ignored
+    toast(dedupeSummary(r),'info');
+    renderUpload();
+  });
 }
 function confirmDistribute(){
   if(!U.preview||!U.campaignId)return;
@@ -456,8 +578,21 @@ function confirmDistribute(){
       rows.push({name:m.name,phone:m.phone||null,extra_data:m.extra_data,status:'New',assigned_employee_id:eid,campaign_id:U.campaignId});
     });
   });
-  sb.from('clients').insert(rows).then(function(result){
-    if(result.error){toast(result.error.message,'error');return;}
+  var pendingUpdates = U.pendingUpdates || [];
+  var ins = rows.length ? sb.from('clients').insert(rows) : Promise.resolve({});
+  Promise.resolve(ins).then(function(result){
+    if(result && result.error){toast(result.error.message,'error');return;}
+    // Existing clients that received new units — updated in place, stay with their agent
+    applyClientUpdates(pendingUpdates).then(function(){
+      // Notify agents whose existing clients got new units
+      var updByEmp = {};
+      pendingUpdates.forEach(function(u){
+        if(u.assigned_employee_id) updByEmp[u.assigned_employee_id]=(updByEmp[u.assigned_employee_id]||0)+1;
+      });
+      Object.keys(updByEmp).forEach(function(eid){
+        notifyEmployee(eid,'data_updated',updByEmp[eid]+' of your existing client(s) received new unit(s) in '+campName);
+      });
+    });
     var notifs=[];
     Object.keys(U.preview).forEach(function(eid){if(U.preview[eid].length){notifs.push({employee_id:eid,type:'data_updated',message:'New data - '+U.preview[eid].length+' client(s) in '+campName,read:false});}});
     // Send notifications to employees
@@ -474,9 +609,12 @@ function confirmDistribute(){
       });
       Promise.all(notifPromises).catch(function(){});
     }
-    toast(rows.length+' clients distributed successfully','success');
-    logAudit('upload_distribute', 'campaign', U.campaignId, campName, {clients: rows.length, agents: Object.keys(U.preview).length});
-    U={campaignId:'',rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,dataType:'normal'};
+    var msg = rows.length+' clients distributed';
+    if(pendingUpdates.length) msg += ' · '+pendingUpdates.length+' existing client(s) updated with new units';
+    if(U.skippedDupes) msg += ' · '+U.skippedDupes+' duplicate(s) skipped';
+    toast(msg+' ✓','success');
+    logAudit('upload_distribute', 'campaign', U.campaignId, campName, {clients: rows.length, updated: pendingUpdates.length, skipped: U.skippedDupes||0, agents: Object.keys(U.preview).length});
+    U={campaignId:'',rows:[],preview:null,pendingUpdates:null,skippedDupes:0,uploadTab:'paste',colConfig:null,detectedCols:null,dataType:'normal'};
     fetchAll().then(renderUpload);
   });
 }
