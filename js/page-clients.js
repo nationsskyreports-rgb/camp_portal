@@ -436,35 +436,96 @@ function normalizePhoneForGroup(p){
   return d.length >= 7 ? d.slice(-9) : null;
 }
 
+// ── Merge multiple DB rows for the same phone+campaign into
+//    ONE virtual client with all units in extra_data.units[].
+//    This way renderClientCard always shows the clean card with
+//    the 🏠 badge — no more orange grouped cards.
+//    Stores _groupedIds[] so cfSave can update all rows at once.
+function mergeGroupIntoOne(group){
+  if(group.length <= 1) return group[0];
+
+  // Pick primary row = the one with most activity
+  group.sort(function(a,b){
+    var sa = (a.status !== 'New' ? 4 : 0)
+           + (clientHistory(a.id).length ? 2 : 0)
+           + ((a.extra_data||{}).form_submitted ? 1 : 0);
+    var sb2 = (b.status !== 'New' ? 4 : 0)
+           + (clientHistory(b.id).length ? 2 : 0)
+           + ((b.extra_data||{}).form_submitted ? 1 : 0);
+    return sb2 - sa;
+  });
+  var primary = group[0];
+
+  // Collect ALL unique units across all rows
+  var allUnits = [];
+  var seenKeys = {};
+  group.forEach(function(c){
+    var units = getClientUnits(c);
+    units.forEach(function(u){
+      var key = ((u.contract_number || u.unit) || '').toString().trim().toLowerCase();
+      if(!key || seenKeys[key]) return;
+      seenKeys[key] = true;
+      allUnits.push(u);
+    });
+  });
+
+  // Build merged client (shallow copy so we don't mutate S.clients)
+  var merged = {};
+  Object.keys(primary).forEach(function(k){ merged[k] = primary[k]; });
+  merged.extra_data = Object.assign({}, primary.extra_data || {});
+  if(allUnits.length > 0){
+    // Keep first unit at top level for backwards compat
+    var UNIT_KEYS = ['unit','contract_number','project','deal_type',
+                     'contract_date','contract_status','property_status'];
+    UNIT_KEYS.forEach(function(k){ if(allUnits[0][k]) merged.extra_data[k] = allUnits[0][k]; });
+    if(allUnits.length > 1) merged.extra_data.units = allUnits;
+  }
+
+  // Store all original IDs so cfSave can update them all
+  merged._groupedIds = group.map(function(c){ return c.id; });
+
+  // Use the "best" status (any non-New wins)
+  var dominated = group.find(function(c){ return c.status !== 'New'; });
+  if(dominated) merged.status = dominated.status;
+
+  return merged;
+}
+
 function groupClientsByPhone(clients){
-  var groups  = [];
   var byPhone = {};
   var noPhone = [];
+  var order   = [];
 
   clients.forEach(function(c){
     var norm = normalizePhoneForGroup(c.phone);
     if(!norm){
-      noPhone.push([c]);
+      noPhone.push(c);
       return;
     }
     // Group by phone + campaign so same client in different campaigns stays separate
     var key = norm + '_' + (c.campaign_id || '');
-    if(!byPhone[key]) byPhone[key] = [];
+    if(!byPhone[key]){ byPhone[key] = []; order.push(key); }
     byPhone[key].push(c);
   });
 
-  Object.keys(byPhone).forEach(function(k){ groups.push(byPhone[k]); });
-  noPhone.forEach(function(g){ groups.push(g); });
+  // Merge each group into a single virtual client
+  var result = [];
+  order.forEach(function(k){
+    result.push(mergeGroupIntoOne(byPhone[k]));
+  });
+  noPhone.forEach(function(c){ result.push(c); });
 
-  // Sort: multi-unit first (so they stand out at top), then by name
-  groups.sort(function(a,b){
-    if(b.length !== a.length) return b.length - a.length;
-    var na = (a[0].name||(a[0].extra_data||{}).customer||'').toLowerCase();
-    var nb = (b[0].name||(b[0].extra_data||{}).customer||'').toLowerCase();
+  // Sort: multi-unit first, then by name
+  result.sort(function(a,b){
+    var ua = getClientUnits(a).length;
+    var ub = getClientUnits(b).length;
+    if(ub !== ua) return ub - ua;
+    var na = (a.name||(a.extra_data||{}).customer||'').toLowerCase();
+    var nb = (b.name||(b.extra_data||{}).customer||'').toLowerCase();
     return na < nb ? -1 : 1;
   });
 
-  return groups;
+  return result;
 }
 
 
@@ -642,16 +703,16 @@ function renderMyClients() {
     }
   });
 
-  // ── Auto-select first campaign if employee has multiple and none selected ──
-  if (!empClientFilter && S.role !== 'admin') {
+  // ── Auto-select first campaign ONLY on initial load (not after user picks "All") ──
+  if (!empClientFilter && S.role !== 'admin' && !window._empCampFilterInitialized) {
     var campIds = Object.keys(seenCamp);
     if (campIds.length > 1) {
-      // Default to most recent campaign
       var sorted = campIds.map(function(cid){ return campById(cid); })
         .filter(Boolean)
         .sort(function(a,b){ return new Date(b.created_at) - new Date(a.created_at); });
       if (sorted.length) empClientFilter = sorted[0].id;
     }
+    window._empCampFilterInitialized = true;
   }
 
   // ── Apply campaign filter FIRST (affects everything including closed count + KPI) ──
@@ -784,7 +845,7 @@ function renderMyClients() {
     buildRedistributePanel() +
     '<div class="mb-4 fade-in" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
       searchBox('client-search', clientSearch, 'setClientSearch', 'Search name, phone, unit, contract...') +
-      '<select class="input" style="max-width:220px" onchange="empClientFilter=this.value||\'\';renderMyClients()">' + campOpts + '</select>' +
+      '<select class="input" style="max-width:220px" onchange="empClientFilter=this.value||\'\';window._empCampFilterInitialized=true;renderMyClients()">' + campOpts + '</select>' +
       (S.role==='admin' ?
         '<div style="display:flex;gap:5px">' +
         '<button class="btn btn-sm ' + (!formFilter ? 'btn-primary' : 'btn-ghost') + '" onclick="formFilter=\'\';renderMyClients()">All</button>' +
@@ -835,15 +896,15 @@ function renderMyClients() {
     '<div class="space-y-3 fade-in" id="clients-list">' +
     (cls.length
       ? (function(){
-          var groups = groupClientsByPhone(cls);
-          var multi  = groups.filter(function(g){return g.length>1;}).length;
+          var merged = groupClientsByPhone(cls);
+          var multi  = merged.filter(function(c){return getClientUnits(c).length>1;}).length;
           var banner = multi > 0
             ? '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.15);border-radius:8px;margin-bottom:12px;font-size:12px;color:#fbbf24">'+
               '<i data-lucide="layers" style="width:14px;height:14px"></i> '+
-              multi+' client'+(multi>1?'s':'')+' with multiple units — grouped below</div>'
+              multi+' client'+(multi>1?'s':'')+' with multiple units</div>'
             : '';
-          return banner + groups.map(function(g){
-            return g.length > 1 ? renderGroupedCard(g) : renderClientCard(g[0]);
+          return banner + merged.map(function(c){
+            return renderClientCard(c);
           }).join('');
         })()
       : '<div class="card text-center py-12"><p class="text-slate-500">No clients here</p></div>') +
@@ -1021,7 +1082,7 @@ function renderGroupedCard(clients){
         '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
           '<p style="font-weight:700;color:#fff;font-size:14px">'+esc(name)+'</p>'+
           '<span style="background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:5px;font-size:11px;font-weight:700;padding:2px 8px">'+
-            '🏠 '+clients.length+' units</span>'+
+            '🏠 '+clients.length+' unit'+(clients.length>1?'s':'')+'</span>'+
           (anySubmitted?'<span style="background:rgba(16,185,129,.1);color:#6ee7b7;border-radius:5px;font-size:10px;padding:2px 6px">'+(allSubmitted?'✓ All':'½ Partial')+' Form</span>':'')+
           (anyOverdueFu?'<span style="background:rgba(239,68,68,.1);color:#f87171;border-radius:5px;font-size:10px;padding:2px 6px">⏰ Overdue FU</span>':
             anyFu?'<span style="background:rgba(251,191,36,.1);color:#fbbf24;border-radius:5px;font-size:10px;padding:2px 6px">⏰ FU Set</span>':'')+
@@ -1243,7 +1304,11 @@ async function cfSave(btn){
   if(flow.action==='Contacted'&&!flow.outcome){toast('Select the call result','info');return;}
   try{
     var newStatus = flow.action==='Closed' ? 'Closed' : 'Contacted';
-    var r1 = await sb.from('clients').update({status:newStatus}).eq('id',cid);
+    // Find if this client was merged from multiple DB rows
+    var c = S.clients.find(function(x){return x.id===cid;});
+    var allIds = (c && c._groupedIds) ? c._groupedIds : [cid];
+    // Update ALL grouped rows to the same status
+    var r1 = await sb.from('clients').update({status:newStatus}).in('id', allIds);
     if(r1.error) throw r1.error;
     if(flow.outcome){
       var entry = {client_id:cid, outcome:flow.outcome, note:note};
