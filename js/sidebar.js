@@ -85,6 +85,7 @@ function renderPage(){
   setTimeout(function(){
     var fn={
       dashboard:renderDashboard,campaigns:renderCampaigns,
+      'call-scripts':renderScriptsPage,
       upload:renderUpload,qa:renderQA,reports:renderReports,
       team:renderTeam,'my-clients':renderMyClients,
       'closed-clients':renderClosedClients,
