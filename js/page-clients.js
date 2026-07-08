@@ -639,46 +639,51 @@ function buildClientTimeline(c){
 // Arabic is the primary language; English is available via toggle.
 // ══════════════════════════════════════════════════════════
 var callScriptLang = 'ar';
-var CALL_SCRIPT = {
-  ar: {
-    title: 'اسكريبت المكالمة',
-    dir: 'rtl',
-    paras: [
-      'حبيت أتأكد إن كان وصل لحضرتك آخر تواصل من الشركة بخصوص قنوات التواصل مع خدمة العملاء، واللي من خلالها نقدر نساعد حضرتك بشكل أسرع وأسهل في أي وقت.',
-      'كمان هنشارك مع حضرتك لينك بسيط لتحديث واستكمال بعض البيانات. الهدف من البيانات دي إننا نقدر نوصل لحضرتك بسهولة عند الحاجة، بالإضافة إلى التعرف بشكل أفضل على اهتمامات واحتياجات عملائنا، وده بيساعدنا في تقديم فعاليات وأنشطة مناسبة لمختلف الفئات العمرية.',
-      'لو حضرتك عندك أي استفسار أو محتاج أي مساعدة، إحنا دائمًا في خدمتك.'
-    ]
-  },
-  en: {
-    title: 'Call Script',
-    dir: 'ltr',
-    paras: [
-      'I just wanted to check whether you received our latest message from the company regarding the customer-service communication channels, which allow us to assist you faster and more easily at any time.',
-      'We\u2019ll also share a quick link with you to update and complete some of your details. The purpose of this data is to help us reach you easily whenever needed, as well as to better understand our clients\u2019 interests and needs \u2014 which helps us offer events and activities suited to different age groups.',
-      'If you have any question or need any help, we\u2019re always at your service.'
-    ]
-  }
-};
+var callScriptCampId = null;
+
 function setCallScriptLang(lang){ callScriptLang = (lang === 'en' ? 'en' : 'ar'); openCallScript(); }
+function setCallScriptCamp(id){ callScriptCampId = id; openCallScript(); }
+
 function openCallScript(){
   var old = document.getElementById('call-script-modal');
   if (old) old.remove();
-  var s = CALL_SCRIPT[callScriptLang];
+
+  // Get campaigns that have scripts
+  var withScript = S.campaigns.filter(function(c){
+    return c.call_script && c.call_script.ar && c.call_script.ar.paras && c.call_script.ar.paras.length;
+  });
+  if (!withScript.length) { toast('No call scripts configured yet. Admin can add them in Call Scripts page.', 'info'); return; }
+
+  // Auto-select first script if none selected
+  if (!callScriptCampId || !campById(callScriptCampId)) callScriptCampId = withScript[0].id;
+  var camp = campById(callScriptCampId);
+  var script = camp.call_script || {};
+  var s = script[callScriptLang] || script.ar || { title: camp.name, paras: ['No script for this language'] };
+
   var ov = document.createElement('div');
   ov.id = 'call-script-modal';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem';
   ov.onclick = function(e){ if (e.target === ov) ov.remove(); };
-  var body = s.paras.map(function(p){
+
+  // Campaign tabs (only campaigns with scripts)
+  var tabs = withScript.map(function(c){
+    var active = c.id === callScriptCampId;
+    return '<button onclick="setCallScriptCamp(\''+c.id+'\')" class="btn btn-sm '+(active?'btn-primary':'btn-ghost')+'" style="padding:4px 12px;font-size:12px">'+esc(c.name)+'</button>';
+  }).join('');
+
+  var body = (s.paras || []).map(function(p){
     return '<p style="color:#cbd5e1;font-size:14px;line-height:2;margin-bottom:14px">' + esc(p) + '</p>';
   }).join('');
-  ov.innerHTML = '<div dir="' + s.dir + '" style="background:#0d1628;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:1.5rem;max-width:560px;width:100%;max-height:85vh;overflow:auto">' +
-    '<div dir="ltr" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:1.1rem">' +
-      '<h3 style="color:#fff;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px"><i data-lucide="phone-call" style="width:18px;height:18px;color:#60a5fa"></i> ' + esc(s.title) + '</h3>' +
+
+  ov.innerHTML = '<div dir="' + (s.dir || 'rtl') + '" style="background:#0d1628;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:1.5rem;max-width:560px;width:100%;max-height:85vh;overflow:auto">' +
+    '<div dir="ltr" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:1rem">' +
+      '<h3 style="color:#fff;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px"><i data-lucide="phone-call" style="width:18px;height:18px;color:#60a5fa"></i> ' + esc(s.title || camp.name) + '</h3>' +
       '<div style="display:flex;gap:4px;background:rgba(255,255,255,.05);padding:3px;border-radius:8px">' +
         '<button onclick="setCallScriptLang(\'ar\')" class="btn btn-sm ' + (callScriptLang === 'ar' ? 'btn-primary' : 'btn-ghost') + '" style="padding:3px 14px">عربي</button>' +
         '<button onclick="setCallScriptLang(\'en\')" class="btn btn-sm ' + (callScriptLang === 'en' ? 'btn-primary' : 'btn-ghost') + '" style="padding:3px 14px">EN</button>' +
       '</div>' +
     '</div>' +
+    (withScript.length > 1 ? '<div dir="ltr" style="display:flex;gap:4px;margin-bottom:1rem;background:rgba(255,255,255,.03);padding:4px;border-radius:8px;flex-wrap:wrap">' + tabs + '</div>' : '') +
     body +
     '<div dir="ltr" style="display:flex;justify-content:flex-end;margin-top:6px">' +
       '<button class="btn btn-ghost" onclick="document.getElementById(\'call-script-modal\').remove()">Close</button>' +
