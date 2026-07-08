@@ -1399,6 +1399,20 @@ function renderClientCard(c) {
       esc(camp.name) + '</span>';
   }
 
+  // Campaign tag badge (Jirian New / Jirian Old / Zomra Old)
+  var tagBadge = '';
+  var campTag = extra.campaign_tag;
+  if (campTag) {
+    var tagColors = {
+      'Jirian New':  'background:rgba(16,185,129,.12);color:#6ee7b7;border:1px solid rgba(16,185,129,.25)',
+      'Jirian Old':  'background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25)',
+      'Zomra Old':   'background:rgba(139,92,246,.12);color:#c4b5fd;border:1px solid rgba(139,92,246,.25)'
+    };
+    tagBadge = '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:5px;' +
+      (tagColors[campTag] || 'background:rgba(100,116,139,.12);color:#94a3b8;border:1px solid rgba(100,116,139,.25)') +
+      '">' + esc(campTag) + '</span>';
+  }
+
   var isSel = !!selectedClients[c.id];
   return '<div class="card client-card ' + (isExp ? 'border-blue-500/30' : '') + (isSel ? ' border-blue-500/60 bg-blue-500/5' : '') + '">' +
     (S.role==='admin' ? '<div style="float:left;margin:0 0 4px 8px"><input type="checkbox" ' + (isSel?'checked':'') + ' onclick="toggleClientSelect(\''+c.id+'\',event)" style="width:16px;height:16px;cursor:pointer;accent-color:#3b82f6"></div>' : '') +
@@ -1422,7 +1436,7 @@ function renderClientCard(c) {
     '</div>' +
     statsBar + '</div></div>' +
     '<div class="flex items-center gap-2 flex-shrink-0">' +
-    assignBadge + campBadge + sBadge(c.status) +
+    assignBadge + campBadge + tagBadge + sBadge(c.status) +
     (extra.form_submitted ? '<span class="badge" style="background:#064e3b;color:#6ee7b7;font-size:10px;margin-right:2px"><i data-lucide=\"check\" style=\"width:10px;height:10px;vertical-align:-1px\"></i> Form</span>' : '') +
     (function(){
       var fu=(S.reminders||[]).filter(function(r){return r.client_id===c.id&&!r.done;});
