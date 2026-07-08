@@ -25,6 +25,7 @@ var ADMIN_PAGES = [
   {id:'agent-performance', label:'Agent Performance', icon:'bar-chart-3'},
   {id:'followup-reminders', label:'Follow-up Reminders', icon:'bell-ring'},
   {id:'campaigns',      label:'Campaigns',          icon:'target'},
+  {id:'call-scripts',   label:'Call Scripts',        icon:'scroll-text'},
   {id:'upload',         label:'Upload & Distribute', icon:'upload'},
   {id:'qa',             label:'Q&A Inbox',           icon:'message-circle-question'},
   {id:'reports',        label:'Reports & Export',    icon:'file-bar-chart'},
