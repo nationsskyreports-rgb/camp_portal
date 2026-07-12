@@ -13,6 +13,19 @@ function renderDashboard(){
   var contactedCount   = S.clients.filter(function(c){return c.status==='Contacted';}).length;
   var newCount         = S.clients.filter(function(c){return c.status==='New';}).length;
 
+  // ── Customer Satisfaction (latest answered call mood per client) ──
+  var satCount = 0, neuCount = 0, unsatCount = 0;
+  S.clients.forEach(function(c){
+    var hist = clientHistory(c.id);
+    var latest = hist.find(function(h){ return h.outcome === 'answered'; });
+    if (!latest || !latest.mood) return;
+    if (latest.mood === 'interested')      satCount++;
+    else if (latest.mood === 'neutral')    neuCount++;
+    else if (latest.mood === 'refused')    unsatCount++;
+  });
+  var ratedTotal = satCount + neuCount + unsatCount;
+  var satPct = ratedTotal > 0 ? Math.round(satCount / ratedTotal * 100) : 0;
+
   // ── Reachability per campaign ──────────────────────────────
   var reachStats = S.campaigns.map(function(camp){
     var campClients = S.clients.filter(function(c){ return c.campaign_id === camp.id; });
@@ -85,6 +98,16 @@ function renderDashboard(){
     '<p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Active Agents</p>'+
     '<p class="text-3xl font-bold text-white stat-num" data-counter="'+onlineEmps.length+'">'+onlineEmps.length+'</p>'+
     '<p class="text-xs text-slate-400 mt-1">of '+S.employees.length+' total</p>'+
+  '</div>'+
+
+  '<div class="card stat-card green">'+
+    '<p class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Satisfaction</p>'+
+    '<p class="text-3xl font-bold text-white stat-num"><span data-counter="'+satPct+'">'+satPct+'</span>%</p>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">'+
+    '<span style="font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(16,185,129,0.12);color:#34d399">🟢 '+satCount+' Satisfied</span>'+
+    '<span style="font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(245,158,11,0.12);color:#fbbf24">🟡 '+neuCount+' Normal</span>'+
+    '<span style="font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(239,68,68,0.12);color:#fca5a5">🔴 '+unsatCount+' Not Satisfied</span>'+
+    '</div>'+
   '</div></div>'+
 
   '<div style="display:grid;grid-template-columns:1fr;gap:20px" class="fade-in dash-mid-grid">'+
