@@ -15,6 +15,79 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/main.css">
+<style id="solotec-login-css">
+/* ═══ SoloTec Login Enhancement — additive only ═══ */
+.st-aurora { position:absolute; border-radius:9999px; filter:blur(110px); opacity:.3; pointer-events:none; z-index:0; }
+.st-aurora-blue { width:560px; height:560px; background:radial-gradient(circle, rgba(59,130,246,0.25) 0%, transparent 65%); top:-160px; left:-120px; animation:stDrift1 24s ease-in-out infinite; }
+.st-aurora-teal { width:620px; height:620px; background:radial-gradient(circle, rgba(20,120,110,0.35) 0%, transparent 65%); bottom:-180px; right:-100px; animation:stDrift2 28s ease-in-out infinite; }
+@keyframes stDrift1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(60px,45px)} }
+@keyframes stDrift2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-55px,-40px)} }
+
+.st-stars { position:absolute; inset:0; pointer-events:none; z-index:0; }
+.st-stars span { position:absolute; width:2px; height:2px; background:#7DD3FC; border-radius:9999px; opacity:.2; animation:stTwinkle 6s ease-in-out infinite; }
+.st-stars span:nth-child(1){left:6%;top:12%} .st-stars span:nth-child(2){left:14%;top:68%;animation-delay:.5s}
+.st-stars span:nth-child(3){left:22%;top:34%;animation-delay:1s;width:2.5px;height:2.5px} .st-stars span:nth-child(4){left:31%;top:82%;animation-delay:1.5s}
+.st-stars span:nth-child(5){left:38%;top:18%;animation-delay:2s} .st-stars span:nth-child(6){left:46%;top:55%;animation-delay:2.5s}
+.st-stars span:nth-child(7){left:53%;top:8%;animation-delay:3s;width:2.5px;height:2.5px} .st-stars span:nth-child(8){left:61%;top:72%;animation-delay:3.5s}
+.st-stars span:nth-child(9){left:68%;top:28%;animation-delay:4s} .st-stars span:nth-child(10){left:74%;top:88%;animation-delay:4.5s}
+.st-stars span:nth-child(11){left:81%;top:42%;animation-delay:5s;width:2.5px;height:2.5px} .st-stars span:nth-child(12){left:88%;top:14%;animation-delay:.8s}
+.st-stars span:nth-child(13){left:94%;top:62%;animation-delay:1.3s} .st-stars span:nth-child(14){left:10%;top:46%;animation-delay:1.8s}
+.st-stars span:nth-child(15){left:27%;top:6%;animation-delay:2.3s} .st-stars span:nth-child(16){left:42%;top:92%;animation-delay:2.8s;width:2.5px;height:2.5px}
+.st-stars span:nth-child(17){left:58%;top:38%;animation-delay:3.3s} .st-stars span:nth-child(18){left:71%;top:58%;animation-delay:3.8s}
+.st-stars span:nth-child(19){left:85%;top:78%;animation-delay:4.3s} .st-stars span:nth-child(20){left:97%;top:30%;animation-delay:4.8s}
+@keyframes stTwinkle { 0%,100%{opacity:.12;transform:scale(1)} 50%{opacity:.65;transform:scale(1.4)} }
+
+.st-grid-floor {
+  position:absolute; left:0; right:0; bottom:0; height:42vh;
+  background-image: linear-gradient(rgba(59,130,246,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(52,232,165,0.04) 1px, transparent 1px);
+  background-size:54px 54px;
+  transform:perspective(600px) rotateX(58deg); transform-origin:bottom;
+  mask-image:linear-gradient(to top, rgba(0,0,0,0.65), transparent);
+  -webkit-mask-image:linear-gradient(to top, rgba(0,0,0,0.65), transparent);
+  pointer-events:none; z-index:0;
+}
+
+.solotec-side { display:none; }
+
+@media (min-width:1100px) {
+  #login-screen { justify-content:stretch !important; }
+  #login-screen > .login-left-col {
+    flex:0 0 50%; width:50%; max-width:50%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    position:relative; z-index:10;
+  }
+  #login-screen > .login-left-col > .fade-in { width:100%; max-width:28rem; }
+
+  .solotec-side {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:34px; position:relative; z-index:1;
+    flex:0 0 50%; width:50%; max-width:50%;
+  }
+  .st-hex-core { position:relative; width:380px; height:380px; }
+  .st-hex { position:absolute; inset:0; width:100%; height:100%; }
+  .st-hex-outer { animation:stSpin 40s linear infinite; }
+  .st-hex-mid   { animation:stSpinRev 28s linear infinite; }
+  .st-hex-inner { animation:stBreathe 7s ease-in-out infinite; filter:drop-shadow(0 0 26px rgba(52,232,165,0.35)); }
+  @keyframes stSpin    { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  @keyframes stSpinRev { from{transform:rotate(360deg)} to{transform:rotate(0deg)} }
+  @keyframes stBreathe { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+  .st-orbit { position:absolute; inset:-14px; animation:stSpin 12s linear infinite; }
+  .st-orbit-dot { position:absolute; top:6px; left:50%; width:10px; height:10px; margin-left:-5px; border-radius:9999px; background:#34E8A5; box-shadow:0 0 16px rgba(52,232,165,0.9), 0 0 36px rgba(52,232,165,0.4); }
+  .st-hex-glow { position:absolute; inset:20%; border-radius:9999px; background:radial-gradient(circle, rgba(52,232,165,0.1) 0%, transparent 70%); animation:stBreathe 7s ease-in-out infinite; }
+
+  .st-hero-text { text-align:center; max-width:480px; }
+  .st-hero-text h2 { color:#F1F5F9; font-family:'Syne',sans-serif; font-size:27px; font-weight:800; line-height:1.35; margin:0 0 10px; letter-spacing:-0.3px; }
+  .st-grad-text { background:linear-gradient(90deg,#34E8A5,#3B82F6); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent; }
+  .st-hero-text p { color:#64748B; font-size:13.5px; margin:0 0 22px; line-height:1.6; }
+  .st-powered { display:inline-flex; align-items:center; gap:8px; padding:8px 16px; border-radius:999px; background:rgba(255,255,255,0.03); border:1px solid rgba(52,232,165,0.18); color:#64748B; font-size:12.5px; }
+  .st-powered b { color:#E2E8F0; font-weight:800; }
+  .st-powered b i { color:#34E8A5; font-style:normal; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .st-aurora, .st-stars span, .st-hex, .st-orbit, .st-hex-glow { animation:none !important; }
+}
+</style>
 </head>
 <body class="grid-bg">
 
@@ -39,6 +112,19 @@
   <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.07] scale-[1.8] rotate-12">
     <img src="https://cdn.jsdelivr.net/gh/nationsskyreports-rgb/camp_portal@main/icon-512.png" alt="Watermark" class="w-full max-w-2xl object-contain" style="mix-blend-mode:lighten;">
   </div>
+
+  <!-- SoloTec decorative background -->
+  <div class="st-aurora st-aurora-blue"></div>
+  <div class="st-aurora st-aurora-teal"></div>
+  <div class="st-stars">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <div class="st-grid-floor"></div>
+
+  <div class="login-left-col">
   <div class="w-full max-w-md fade-in relative z-10">
     <div class="text-center mb-10 flex flex-col items-center">
       <div class="relative mb-6">
@@ -71,6 +157,41 @@
         <div onclick="loginAsEmployee()" class="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10 text-slate-300 font-semibold cursor-pointer hover:bg-white/10 hover:text-white transition-all hover:scale-[1.02] active:scale-[0.98]">
           <i data-lucide="user" class="w-5 h-5"></i>Login as Employee
         </div>
+      </div>
+    </div>
+  </div>
+  </div><!-- /login-left-col -->
+
+  <!-- ═══ SoloTec side (decorative, desktop only) ═══ -->
+  <div class="solotec-side" aria-hidden="true">
+    <div class="st-hex-core">
+      <svg class="st-hex st-hex-outer" viewBox="0 0 200 200">
+        <path d="M100 10 L178 55 V145 L100 190 L22 145 V55 Z" fill="none" stroke="url(#stGradA)" stroke-width="1.2" stroke-linejoin="round" opacity="0.5"/>
+        <defs><linearGradient id="stGradA" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#34E8A5"/><stop offset="100%" stop-color="#3B82F6"/></linearGradient></defs>
+      </svg>
+      <svg class="st-hex st-hex-mid" viewBox="0 0 200 200">
+        <path d="M100 26 L164 63 V137 L100 174 L36 137 V63 Z" fill="none" stroke="url(#stGradB)" stroke-width="2" stroke-linejoin="round" opacity="0.75"/>
+        <defs><linearGradient id="stGradB" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#22D3EE"/><stop offset="100%" stop-color="#34E8A5"/></linearGradient></defs>
+      </svg>
+      <svg class="st-hex st-hex-inner" viewBox="0 0 200 200">
+        <defs><linearGradient id="stGradC" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#34E8A5"/><stop offset="100%" stop-color="#3B82F6"/></linearGradient></defs>
+        <path d="M100 44 L148 72 V128 L100 156 L52 128 V72 Z" fill="none" stroke="url(#stGradC)" stroke-width="4" stroke-linejoin="round"/>
+        <text x="100" y="122" text-anchor="middle" font-size="58" font-weight="800" fill="url(#stGradC)" font-family="Arial, sans-serif">S</text>
+      </svg>
+      <div class="st-orbit"><span class="st-orbit-dot"></span></div>
+      <div class="st-hex-glow"></div>
+    </div>
+
+    <div class="st-hero-text">
+      <h2>Every client conversation, <span class="st-grad-text">one portal</span></h2>
+      <p>Campaigns, client profiles, call scripts and follow-ups — everything your team needs to talk to clients, in one place.</p>
+      <div class="st-powered">
+        <svg viewBox="0 0 48 48" width="18" height="18">
+          <defs><linearGradient id="stLogoG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#34E8A5"/><stop offset="100%" stop-color="#3B82F6"/></linearGradient></defs>
+          <path d="M24 3 L42 13.5 V34.5 L24 45 L6 34.5 V13.5 Z" fill="none" stroke="url(#stLogoG)" stroke-width="3.5" stroke-linejoin="round"/>
+          <text x="24" y="31" text-anchor="middle" font-size="19" font-weight="800" fill="url(#stLogoG)" font-family="Arial, sans-serif">S</text>
+        </svg>
+        <span>Powered by <b>SoloTe<i>c</i></b></span>
       </div>
     </div>
   </div>
