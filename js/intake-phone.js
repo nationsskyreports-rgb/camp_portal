@@ -19,7 +19,8 @@ function lookupPhone() {
   if (!raw || !campaignId) return;
   if (digitsOnly(raw).length < 7) return;
 
-  sbRpc('lookup_client_by_phone', { p_campaign_id: campaignId, p_phone: normalizePhone(raw) })
+  // بحث عام فى كل الكامبينز — مش مقيّد بكامبين اللينك
+  sbRpc('lookup_client_by_phone_global', { p_phone: normalizePhone(raw) })
     .then(function(clients) {
       matchedClients  = clients || [];
       phoneLookupDone = true;
