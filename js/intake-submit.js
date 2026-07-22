@@ -36,7 +36,8 @@ function submitForm() {
   // ── Phone must be registered ──
   if (isValidPhone(phone) && !phoneLookupDone) {
     showBanner(currentLang === 'ar' ? 'جاري التحقق من رقمك...' : 'Verifying your number...');
-    sbRpc('lookup_client_by_phone', { p_campaign_id: campaignId, p_phone: normalizePhone(phone) })
+    // بحث عام فى كل الكامبينز — مش مقيّد بكامبين اللينك
+    sbRpc('lookup_client_by_phone_global', { p_phone: normalizePhone(phone) })
       .then(function(clients) {
         matchedClients  = clients || [];
         phoneLookupDone = true;
@@ -92,7 +93,8 @@ function submitForm() {
 
   var finalPhone  = newPhone || phone;
   var storedPhone = normalizePhone(finalPhone);
-  var phoneKey    = campaignId + '_' + storedPhone;
+  // مفتاح منع التكرار بقى عام (مش مربوط بكامبين)
+  var phoneKey    = storedPhone;
 
   // ── Build extra_data payload ──
   var extraData = { name: name, phone: finalPhone };
@@ -157,7 +159,8 @@ function submitForm() {
   isSubmitting = true;
   setBtnLoading(true, 'btn-submit', 'btn-label', 'btn-progress', t.btnSending);
 
-  sbGet('clients', 'phone=eq.' + encodeURIComponent(storedPhone) + '&campaign_id=eq.' + campaignId + '&select=id&limit=1')
+  // التحقق من التكرار على كل الكامبينز مش الكامبين الحالية بس
+  sbGet('clients', 'phone=eq.' + encodeURIComponent(storedPhone) + '&select=id&limit=1')
     .then(function(existing) {
       if (existing && existing.length) {
         submittedPhones[phoneKey] = true;
@@ -165,8 +168,8 @@ function submitForm() {
         setBtnLoading(false, 'btn-submit', 'btn-label', 'btn-progress', t.btnSubmit);
         showBanner(
           currentLang === 'ar'
-            ? 'هذا الرقم مسجّل بالفعل في هذه الحملة. سيتواصل معك فريقنا قريباً.'
-            : 'This number is already registered in this campaign. Our team will contact you shortly.'
+            ? 'هذا الرقم مسجّل بالفعل. سيتواصل معك فريقنا قريباً.'
+            : 'This number is already registered. Our team will contact you shortly.'
         );
         return Promise.reject('duplicate');
       }
@@ -271,7 +274,8 @@ function doUpdateExisting(extraData, t) {
 function getLeastLoadedEmployee() {
   return Promise.all([
     sbGet('employees', 'is_active=eq.true&select=id,name'),
-    sbGet('clients',   'campaign_id=eq.' + campaignId + '&select=assigned_employee_id')
+    // توزيع الموظفين بناءً على كل العملاء فى البورتال (مش كامبين واحدة)
+    sbGet('clients',   'select=assigned_employee_id')
   ]).then(function(results) {
     var emps    = results[0] || [];
     var clients = results[1] || [];
