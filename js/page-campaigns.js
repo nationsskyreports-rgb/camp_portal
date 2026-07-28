@@ -189,9 +189,8 @@ function copyFormLinkBtn(campaignId) {
     '</button>';
 }
 
-function copyIntakeLink(campaignId) {
-  var base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
-  var url  = base + 'intake.html?c=' + campaignId;
+function copyIntakeLink(/* campaignId ignored — one universal link */) {
+  var url  = 'https://nationsskyreports-rgb.github.io/camp_portal/intake.html?c=74d8d584-a212-4735-ac2b-eb873c1c687c';
   navigator.clipboard.writeText(url).then(function() {
     toast('Form link copied!', 'success');
   }).catch(function() {
