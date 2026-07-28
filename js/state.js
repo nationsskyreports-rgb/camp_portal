@@ -16,9 +16,9 @@ if(localStorage.getItem('darkMode')==='false'){
 
 // Upload state
 var U = {
-  campaignId:'', rows:[], preview:null, uploadTab:'paste',
+  campaignId:'', rows:[], preview:null, smartPreview:null, uploadTab:'paste',
   colConfig: null, detectedCols: null, isNOSSheet: false,
-  dataType: 'normal',  // 'normal' = distribute to agents · 'vip' = upload only, no distribution
+  dataType: 'normal',  // 'normal' = distribute · 'vip' = upload only · 'smart' = auto split VIP + Normal
   // ─ syncCols: لازم يكون true عشان الأوبلود يغيّر column_config الكمبين
   // بالـ default false عشان نحمي الـ config الموجودة من الاتكسير
   syncCols: false
