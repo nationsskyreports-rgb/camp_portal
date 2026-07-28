@@ -29,7 +29,8 @@ function buildColsFromHeaders(headers){
       key = phoneCount === 1 ? 'phone' : 'phone_' + phoneCount;
     }
     // Customer/name column gets canonical key
-    else if (/^customer$|^client$|customer.?name|client.?name|^name$|الاسم|اسم العميل/.test(lower)) {
+    // بيقبل: customer, client, customer name, client name, client's name, name, الاسم, اسم العميل
+    else if (/^customer$|^client$|customer.{0,3}name|client.{0,3}name|^name$|الاسم|اسم العميل/.test(lower)) {
       key = 'customer';
     }
     // VIP flag column — accepts "VIP", "Vip // Non VIP", "vip_status" etc.
