@@ -85,6 +85,12 @@ function saveDetectedCols(cols){
 
   var camp = campById(U.campaignId);
   var existing = (camp && camp.column_config) || [];
+
+  // ── حماية الـ column_config الموجودة من الاتكسير ───────────────
+  // لو الكمبين عنده config موجودة والمستخدم مش طلب التحديث صراحة،
+  // بنحفظ U.detectedCols للـ session بس ومش بنكتب على السيرفر.
+  // ده بيحمي الـ labels من الاتبدال بـ headers غلط لو الملف مش صح.
+  if (existing.length > 0 && !U.syncCols) return;
   // Preserve form settings (show_in_form etc.) for keys that already exist
   var existingByKey = {};
   existing.forEach(function(c){ existingByKey[c.key] = c; });
@@ -169,6 +175,23 @@ function renderUpload(){
     : '')+
   '<div class="flex flex-wrap gap-2 mb-5 p-3 rounded-lg bg-white/[0.02] border border-white/5">'+
   '<span class="text-xs text-slate-500 self-center mr-1">Columns:</span>'+cols.map(function(c){return'<span class="badge badge-new text-[11px]">'+esc(c.label)+'</span>';}).join('')+'</div>'+
+
+  // ── تحذير تحديث الأعمدة ─────────────────────────────────────
+  // بيظهر بس لو الكمبين عنده column_config موجودة
+  (U.campaignId && (function(){
+    var _camp = campById(U.campaignId);
+    var _hasCfg = _camp && _camp.column_config && _camp.column_config.length > 0;
+    if(!_hasCfg) return '';
+    return '<div class="flex items-center gap-2 mb-4 p-2 rounded-lg cursor-pointer select-none '+(U.syncCols?'bg-amber-500/10 border border-amber-500/25':'bg-white/[0.02] border border-white/5')+'" onclick="U.syncCols=!U.syncCols;renderUpload()">'+
+      '<input type="checkbox" '+(U.syncCols?'checked':'')+' style="width:14px;height:14px;accent-color:#f59e0b;pointer-events:none" readonly>'+
+      '<span class="text-xs '+(U.syncCols?'text-amber-400':'text-slate-500')+'">'+
+        (U.syncCols
+          ? '⚠️ تحديث هيكل الأعمدة من الملف مفعّل — الـ column labels القديمة هتتعوّض بـ headers الملف الجديد'
+          : 'تحديث هيكل الأعمدة من الملف (الكمبين عنده columns موجودة — التحديث مش موصى به إلا لو عارف إيه بتعمل)')+
+      '</span>'+
+    '</div>';
+  })() || '') +
+
   '<div class="flex gap-2 mb-4 border-b border-white/10 pb-2">'+tabBtn('paste','clipboard','Paste from Excel')+tabBtn('excel','file-spreadsheet','Upload File')+tabBtn('manual','table','Manual Entry')+'</div>'+
   (U.uploadTab==='paste'?'<div class="space-y-3"><p class="text-xs text-slate-400 mb-2">Paste from Excel — first row must be headers, system auto-detects columns<strong class="text-slate-300">First row must be headers</strong> , system auto-detects columns</p><textarea id="paste-area" class="input font-mono text-xs" rows="10" placeholder="Paste tab-separated rows here..."></textarea><button class="btn btn-primary" onclick="parsePaste()"><i data-lucide="clipboard-check" class="w-4 h-4"></i> Parse & Preview</button></div>':'')+
   (U.uploadTab==='excel'?'<div class="space-y-3"><p class="text-xs text-slate-400">Upload .xlsx or .csv file — <strong class="text-slate-300">System will auto-detect headers</strong> from first row</p><div class="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:border-blue-500/40 transition-colors" ondrop="handleExcelDrop(event)" ondragover="event.preventDefault()"><i data-lucide="file-spreadsheet" class="w-10 h-10 text-slate-600 mx-auto mb-3"></i><p class="text-slate-400 text-sm mb-3">Drag & drop file here</p><label class="btn btn-ghost cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i> Browse<input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleExcelFile(this)"></label></div>'+(U.rows.length?'<p class="text-emerald-400 text-sm font-medium">✓ '+U.rows.length+' rows loaded</p>':'')+'</div>':'')+
@@ -527,7 +550,7 @@ function saveWithoutDistribution(){
     if(counts.skipped)  parts.push(counts.skipped+' duplicates skipped');
     toast((parts.join(' · ')||'No changes')+' ✓','success');
     logAudit('upload_save', 'campaign', U.campaignId, (campById(U.campaignId)||{}).name||'', {clients: after, inserted:counts.inserted, updated:counts.updated, skipped:counts.skipped});
-    U={campaignId:U.campaignId,rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,isNOSSheet:false,dataType:'normal'};
+    U={campaignId:U.campaignId,rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,isNOSSheet:false,dataType:'normal',syncCols:false};
     fetchAll().then(renderUpload);
   }).catch(function(e){toast(e.message||'Upload error','error');});
 }
@@ -553,7 +576,7 @@ function saveVipData(){
     if(counts.skipped)  parts.push(counts.skipped+' duplicates skipped');
     toast((parts.join(' · ')||'No changes')+' (not distributed) ✓','success');
     logAudit('upload_vip', 'campaign', U.campaignId, (campById(U.campaignId)||{}).name||'', {clients: after, vip: true, inserted:counts.inserted, updated:counts.updated, skipped:counts.skipped});
-    U={campaignId:U.campaignId,rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,isNOSSheet:false,dataType:'vip'};
+    U={campaignId:U.campaignId,rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,isNOSSheet:false,dataType:'vip',syncCols:false};
     fetchAll().then(renderUpload);
   }).catch(function(e){toast(e.message||'Upload error','error');});
 }
@@ -669,7 +692,7 @@ async function confirmDistribute(){
     if(skipped)         parts.push(skipped+' duplicates skipped');
     toast((parts.join(' · ')||'No changes')+' ✓','success');
     logAudit('upload_distribute', 'campaign', U.campaignId, campName, {clients: toInsert.length, updated:toUpdate.length, skipped:skipped, agents: Object.keys(U.preview).length});
-    U={campaignId:'',rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,dataType:'normal'};
+    U={campaignId:'',rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,dataType:'normal',syncCols:false};
     fetchAll().then(renderUpload);
   } catch(e){ toast(e.message||'Distribution error','error'); }
 }
