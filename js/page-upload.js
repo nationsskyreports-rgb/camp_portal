@@ -32,6 +32,11 @@ function buildColsFromHeaders(headers){
     else if (/^customer$|^client$|customer.?name|client.?name|^name$|الاسم|اسم العميل/.test(lower)) {
       key = 'customer';
     }
+    // VIP flag column — accepts "VIP", "Vip // Non VIP", "vip_status" etc.
+    // بيتحول لـ key = '_vip_flag' عشان يتفصل بعدين
+    else if (/^vip\b|vip.?non.?vip|vip.?status|vip.?flag|non.?vip/.test(lower)) {
+      key = '_vip_flag';
+    }
     // Everything else: slugified from the header itself
     else {
       key = label.toLowerCase()
@@ -139,7 +144,11 @@ function phonesMatch(stored,input){
 // ============================================================
 // ── UPLOAD ──
 function setUploadTab(tab){U.uploadTab=tab;renderUpload();}
-function setDataType(t){U.dataType=(t==='vip'?'vip':'normal');U.preview=null;renderUpload();}
+function setDataType(t){
+  U.dataType = (t==='vip' ? 'vip' : (t==='smart' ? 'smart' : 'normal'));
+  U.preview = null;
+  renderUpload();
+}
 function tabBtn(tab,icon,label){var act=U.uploadTab===tab;return'<button class="btn btn-sm '+(act?'btn-primary':'btn-ghost')+'" onclick="setUploadTab(\''+tab+'\')"><i data-lucide="'+icon+'" class="w-3.5 h-3.5"></i> '+label+'</button>';}
 
 function renderUpload(){
@@ -164,14 +173,18 @@ function renderUpload(){
   '<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px">'+
   '<select class="input" style="max-width:280px;flex:1;min-width:180px" onchange="U.campaignId=this.value;U.preview=null;U.rows=[];U.detectedCols=null;renderUpload()">'+campOpts+'</select>'+
   '<button class="btn btn-ghost btn-sm" onclick="openColConfig(null)"><i data-lucide="settings-2" class="w-4 h-4"></i> Configure Columns</button></div>'+
-  // ── Data type: Normal (distribute) vs VIP (upload only) ──
+  // ── Data type: Normal (distribute) vs VIP (upload only) vs Smart Split ──
   '<div class="flex flex-wrap items-center gap-2 mb-4">'+
   '<span class="text-xs text-slate-500 self-center mr-1">Data type:</span>'+
-  '<button class="btn btn-sm '+(U.dataType!=='vip'?'btn-primary':'btn-ghost')+'" onclick="setDataType(\'normal\')"><i data-lucide="users" class="w-3.5 h-3.5"></i> Normal (distribute to agents)</button>'+
+  '<button class="btn btn-sm '+(U.dataType==='normal'?'btn-primary':'btn-ghost')+'" onclick="setDataType(\'normal\')"><i data-lucide="users" class="w-3.5 h-3.5"></i> Normal (distribute to agents)</button>'+
   '<button class="btn btn-sm '+(U.dataType==='vip'?'btn-primary':'btn-ghost')+'" onclick="setDataType(\'vip\')"><i data-lucide="crown" class="w-3.5 h-3.5"></i> VIP (upload only)</button>'+
+  '<button class="btn btn-sm '+(U.dataType==='smart'?'btn-primary':'btn-ghost')+'" onclick="setDataType(\'smart\')"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Smart Split (VIP + Normal)</button>'+
   '</div>'+
   (U.dataType==='vip'
     ? '<div class="mb-5 p-3 rounded-lg" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25)"><p class="text-xs" style="color:#fcd34d"><i data-lucide="crown" class="w-3.5 h-3.5 inline"></i> VIP data is saved to the campaign but <strong>not distributed to any agent</strong>. Clients still receive the same form link and can fill it in normally.</p></div>'
+    : '')+
+  (U.dataType==='smart'
+    ? '<div class="mb-5 p-3 rounded-lg" style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.25)"><p class="text-xs" style="color:#c4b5fd"><i data-lucide="sparkles" class="w-3.5 h-3.5 inline"></i> <strong>Smart Split:</strong> بيبص على column اسمه "VIP" في الملف — الصفوف اللي فيها VIP هتتحفظ بدون توزيع، والباقي هيتوزع على الـ agents. لازم يكون في الملف column اسمه <strong>VIP</strong> أو <strong>Vip // Non VIP</strong> بقيم زي "VIP" / "Non VIP".</p></div>'
     : '')+
   '<div class="flex flex-wrap gap-2 mb-5 p-3 rounded-lg bg-white/[0.02] border border-white/5">'+
   '<span class="text-xs text-slate-500 self-center mr-1">Columns:</span>'+cols.map(function(c){return'<span class="badge badge-new text-[11px]">'+esc(c.label)+'</span>';}).join('')+'</div>'+
@@ -199,8 +212,14 @@ function renderUpload(){
   (U.rows.length?'<div class="mt-4 pt-4 border-t border-white/10 flex gap-2 flex-wrap">'+
   (U.dataType==='vip'
     ? '<button class="btn btn-primary" onclick="saveVipData()"><i data-lucide="crown" class="w-4 h-4"></i> Save VIP data ('+U.rows.length+' rows · no distribution)</button>'
-    : '<button class="btn btn-primary" onclick="previewDistribute()"><i data-lucide="shuffle" class="w-4 h-4"></i> Distribute to agents ('+U.rows.length+' rows)</button>'+
-      '<button class="btn btn-ghost" onclick="saveWithoutDistribution()"><i data-lucide="save" class="w-4 h-4"></i> Save without distribution</button>')+
+    : U.dataType==='smart'
+      ? (function(){
+          var _s = countVipInRows(U.rows);
+          return '<button class="btn btn-primary" onclick="smartSplitPreview()"><i data-lucide="sparkles" class="w-4 h-4"></i> Split & Distribute ('+_s.vip+' VIP + '+_s.normal+' Normal)</button>'+
+            (_s.vip === 0 ? '<span class="text-xs text-amber-400 self-center ml-2">⚠️ لا توجد VIP في الملف — فعّل mode "Normal" بدل ما ترفع كله كـ Normal</span>' : '');
+        })()
+      : '<button class="btn btn-primary" onclick="previewDistribute()"><i data-lucide="shuffle" class="w-4 h-4"></i> Distribute to agents ('+U.rows.length+' rows)</button>'+
+        '<button class="btn btn-ghost" onclick="saveWithoutDistribution()"><i data-lucide="save" class="w-4 h-4"></i> Save without distribution</button>')+
 '</div>':'')+'</div>';
   lucide.createIcons();
 }
@@ -356,6 +375,25 @@ function readExcelFile(file){
 var UNIT_KEYS = ['unit','contract_number','project','deal_type',
                  'contract_date','contract_status','property_status'];
 
+// ── Smart Split helpers ──────────────────────────────────────
+// بيتحقق إن السطر VIP لو _vip_flag = "vip" (case-insensitive)
+// "Non VIP" أو "" أو أي حاجة تانية = Normal
+function isRowVip(row){
+  var v = row && row._vip_flag;
+  if(!v) return false;
+  var s = String(v).trim().toLowerCase();
+  // أي قيمة فيها "vip" ومش "non vip" تعتبر VIP
+  if(s.indexOf('non') > -1) return false;
+  return s === 'vip' || s.indexOf('vip') === 0 || s === 'yes' || s === 'y' || s === '1' || s === 'true';
+}
+
+// عدّ الـ VIP و Normal في الـ rows قبل الـ split
+function countVipInRows(rows){
+  var vip = 0, normal = 0;
+  (rows||[]).forEach(function(r){ if(isRowVip(r)) vip++; else normal++; });
+  return { vip: vip, normal: normal };
+}
+
 function mergeRowsByPhone(rawRows, cols){
   var byPhone = {}, order = [], noPhone = [];
 
@@ -363,10 +401,16 @@ function mergeRowsByPhone(rawRows, cols){
     var name  = r['customer']||r['Customer']||r[cols[0]?cols[0].key:'']||r['name']||Object.values(r)[0]||'';
     var phone = r['phone']||r['Phone']||'';
     var norm  = normalizePhoneDigits(phone).slice(-9);
+    var rowIsVip = isRowVip(r);
 
-    // Build extra_data for this row
+    // Build extra_data for this row — استبعاد _vip_flag من الحفظ (بيستخدم للـ split بس)
     var extra = {};
-    cols.forEach(function(col){ extra[col.key] = r[col.key]||''; });
+    cols.forEach(function(col){
+      if(col.key === '_vip_flag') return;
+      extra[col.key] = r[col.key]||'';
+    });
+    // Mark VIP inside extra_data (backwards compatible with existing isVipClient check)
+    if(rowIsVip) extra.vip = true;
 
     // Extract unit info for the units[] array
     var unitEntry = {};
@@ -374,14 +418,17 @@ function mergeRowsByPhone(rawRows, cols){
 
     if(!norm || norm.length < 7){
       // No phone — treat as standalone
-      noPhone.push({ name:name.trim(), phone:phone||null, extra:extra, units:[unitEntry] });
+      noPhone.push({ name:name.trim(), phone:phone||null, extra:extra, units:[unitEntry], isVip:rowIsVip });
       return;
     }
 
     if(!byPhone[norm]){
-      byPhone[norm] = { name:name.trim(), phone:phone, extra:extra, units:[] };
+      byPhone[norm] = { name:name.trim(), phone:phone, extra:extra, units:[], isVip:rowIsVip };
       order.push(norm);
     }
+    // لو أي unit للـ client ده VIP، الـ client كله يبقى VIP
+    if(rowIsVip){ byPhone[norm].isVip = true; byPhone[norm].extra.vip = true; }
+
     // Add unit to this client's units array (avoid exact duplicates)
     var key = unitEntry.contract_number || unitEntry.unit;
     var alreadyHas = byPhone[norm].units.some(function(u){ return (u.contract_number||u.unit) === key; });
@@ -397,14 +444,14 @@ function mergeRowsByPhone(rawRows, cols){
       Object.assign(m.extra, m.units[0]); // first unit's data at top level
       if(m.units.length > 1) m.extra.units = m.units; // multi-unit: add array
     }
-    result.push({ name:m.name, phone:m.phone, extra_data:m.extra });
+    result.push({ name:m.name, phone:m.phone, extra_data:m.extra, isVip:m.isVip });
   });
   noPhone.forEach(function(m){
     if(m.units.length > 0){
       Object.assign(m.extra, m.units[0]);
       if(m.units.length > 1) m.extra.units = m.units;
     }
-    result.push({ name:m.name, phone:m.phone, extra_data:m.extra });
+    result.push({ name:m.name, phone:m.phone, extra_data:m.extra, isVip:m.isVip });
   });
   return result;
 }
@@ -695,4 +742,227 @@ async function confirmDistribute(){
     U={campaignId:'',rows:[],preview:null,uploadTab:'paste',colConfig:null,detectedCols:null,dataType:'normal',syncCols:false};
     fetchAll().then(renderUpload);
   } catch(e){ toast(e.message||'Distribution error','error'); }
+}
+
+// ════════════════════════════════════════════════════════════
+// SMART SPLIT — بيقسم الملف تلقائياً VIP + Normal
+// الـ VIP بتتحفظ من غير توزيع، الـ Normal بتتوزع على الـ active agents
+// ════════════════════════════════════════════════════════════
+function smartSplitPreview(){
+  if(!U.rows.length){ toast('Add data first','error'); return; }
+  if(!U.campaignId){ toast('Select a campaign','error'); return; }
+
+  var cols = U.detectedCols || getCurrentUploadCols();
+  var merged = mergeRowsByPhone(U.rows, cols);
+  if(!merged.length){ toast('No valid rows','error'); return; }
+
+  // فصل الـ merged clients لـ VIP و Normal
+  var vipClients    = merged.filter(function(m){ return m.isVip; });
+  var normalClients = merged.filter(function(m){ return !m.isVip; });
+
+  if(vipClients.length === 0){
+    toast('لا توجد VIP في الملف — استخدم mode "Normal" بدل ما ترفع كله','info');
+    return;
+  }
+
+  // توزيع الـ Normal على الـ active agents (round-robin)
+  var actEmps = activeEmps();
+  if(normalClients.length > 0 && !actEmps.length){
+    toast('No active employees to distribute Normal clients','error');
+    return;
+  }
+
+  var dist = {};
+  actEmps.forEach(function(e){ dist[e.id] = []; });
+  normalClients.forEach(function(c, i){
+    if(actEmps.length) dist[actEmps[i % actEmps.length].id].push(c);
+  });
+
+  // نحفظ الـ VIP و normal preview في state جديدة عشان confirmSmartSplit يستعملها
+  U.smartPreview = { vip: vipClients, normal: dist, vipCount: vipClients.length, normalCount: normalClients.length };
+  U.preview = null;
+  renderSmartSplitPreview();
+}
+
+function renderSmartSplitPreview(){
+  if(!U.smartPreview) return;
+  var sp = U.smartPreview;
+  var mx = Math.max.apply(null, Object.values(sp.normal).map(function(a){ return a.length; }).concat([1]));
+
+  var html = '<div class="card border-purple-500/30 mb-6 fade-in">'+
+    '<h3 class="text-sm font-bold text-white mb-1"><i data-lucide="sparkles" class="w-4 h-4 inline"></i> Smart Split Preview</h3>'+
+    '<p class="text-xs text-slate-400 mb-4">'+sp.vipCount+' VIP (بدون توزيع) + '+sp.normalCount+' Normal (توزيع على الـ agents)</p>'+
+
+    // VIP section
+    '<div class="mb-4 p-3 rounded-lg" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25)">'+
+      '<div class="flex items-center justify-between mb-2">'+
+        '<span class="text-xs font-bold" style="color:#fcd34d">👑 VIP Clients (upload only)</span>'+
+        '<span class="text-xs font-bold text-white">'+sp.vipCount+'</span>'+
+      '</div>'+
+      '<p class="text-[11px] text-slate-500">هيتحفظوا في الكمبين بدون توزيع على أي agent</p>'+
+    '</div>'+
+
+    // Normal distribution
+    (sp.normalCount > 0
+      ? '<div class="space-y-3">'+
+          '<p class="text-xs text-slate-500 mb-2">📊 Normal distribution (round-robin على الـ active agents)</p>'+
+          Object.keys(sp.normal).map(function(eid){
+            var e = empById(eid); if(!e) return '';
+            var cls = sp.normal[eid];
+            return '<div><div class="flex items-center justify-between mb-1"><div class="flex items-center gap-2">'+
+              av(e.name, e.color||'#3b82f6', 22)+
+              '<span class="text-xs text-slate-300">'+esc(e.name)+'</span>'+
+              '</div><span class="text-xs font-bold text-white">'+cls.length+'</span></div>'+
+              '<div class="w-full h-2 bg-white/5 rounded-full overflow-hidden">'+
+                '<div class="h-full rounded-full bg-emerald-500/70" style="width:'+(cls.length/mx)*100+'%"></div>'+
+              '</div></div>';
+          }).join('')+
+        '</div>'
+      : '<p class="text-xs text-slate-500">لا يوجد Normal clients للتوزيع</p>')+
+
+    '<div class="flex gap-2 mt-5">'+
+      '<button class="btn btn-success" onclick="confirmSmartSplit()"><i data-lucide="check" class="w-4 h-4"></i> Confirm & Save</button>'+
+      '<button class="btn btn-ghost" onclick="U.smartPreview=null;renderUpload()">Cancel</button>'+
+    '</div>'+
+  '</div>';
+
+  var main = document.getElementById('main-content');
+  main.insertAdjacentHTML('afterbegin', html);
+  lucide.createIcons();
+}
+
+async function confirmSmartSplit(){
+  if(!U.smartPreview || !U.campaignId) return;
+  var sp = U.smartPreview;
+  var campName = (campById(U.campaignId)||{}).name || 'Campaign';
+
+  // 1. Fetch existing clients في الكمبين للـ dedup
+  var existRes = await sb.from('clients')
+    .select('id,phone,extra_data,status,assigned_employee_id')
+    .eq('campaign_id', U.campaignId);
+  var existing = (existRes.data || []);
+  var existingByPhone = {};
+  existing.forEach(function(c){
+    var norm = normalizePhoneDigits(c.phone).slice(-9);
+    if(norm.length >= 7){
+      if(!existingByPhone[norm]) existingByPhone[norm] = [];
+      existingByPhone[norm].push(c);
+    }
+  });
+
+  var toInsert = [];
+  var toUpdate = [];
+  var skipped  = 0;
+  var vipInserted = 0, vipUpdated = 0;
+  var normalInsertedByAgent = {};
+
+  // ── نفس اللوجيك بتاع confirmDistribute بس مطبق على VIP + Normal ──
+  function processClient(m, assignedEid, isVipFlag){
+    var norm = normalizePhoneDigits(m.phone).slice(-9);
+    var matches = (norm.length >= 7) ? existingByPhone[norm] : null;
+
+    if(matches && matches.length > 0){
+      var target = matches[0];
+      var existingExtra = JSON.parse(JSON.stringify(target.extra_data || {}));
+      var existingUnits = [];
+      if(existingExtra.units && Array.isArray(existingExtra.units)){
+        existingUnits = existingExtra.units.slice();
+      } else if(existingExtra.unit || existingExtra.contract_number){
+        existingUnits = [{ unit:existingExtra.unit||'', contract_number:existingExtra.contract_number||'', project:existingExtra.project||'', deal_type:existingExtra.deal_type||'' }];
+      }
+
+      var newExtra = m.extra_data || {};
+      var newUnits = [];
+      if(newExtra.units && Array.isArray(newExtra.units)){
+        newUnits = newExtra.units;
+      } else if(newExtra.unit || newExtra.contract_number){
+        newUnits = [{ unit:newExtra.unit||'', contract_number:newExtra.contract_number||'', project:newExtra.project||'', deal_type:newExtra.deal_type||'' }];
+      }
+
+      var added = 0;
+      newUnits.forEach(function(nu){
+        var key = nu.contract_number || nu.unit;
+        if(!key) return;
+        var alreadyHas = existingUnits.some(function(eu){ return (eu.contract_number || eu.unit) === key; });
+        if(!alreadyHas){ existingUnits.push(nu); added++; }
+      });
+
+      // لو الـ row الجديد VIP، upgrade الـ existing client لـ VIP
+      if(isVipFlag) existingExtra.vip = true;
+
+      if(added > 0 || isVipFlag){
+        if(existingUnits.length > 1) existingExtra.units = existingUnits;
+        if(existingUnits.length > 0) UNIT_KEYS.forEach(function(k){ if(existingUnits[0][k]) existingExtra[k] = existingUnits[0][k]; });
+        toUpdate.push({ id: target.id, extra_data: existingExtra });
+        if(isVipFlag) vipUpdated++;
+      } else {
+        skipped++;
+      }
+    } else {
+      // New client — insert
+      var extra = m.extra_data || {};
+      if(isVipFlag) extra.vip = true;
+      toInsert.push({
+        name: m.name,
+        phone: m.phone || null,
+        extra_data: extra,
+        status: 'New',
+        assigned_employee_id: assignedEid,  // null للـ VIP، employee_id للـ normal
+        campaign_id: U.campaignId
+      });
+      if(isVipFlag){
+        vipInserted++;
+      } else if(assignedEid){
+        normalInsertedByAgent[assignedEid] = (normalInsertedByAgent[assignedEid] || 0) + 1;
+      }
+    }
+  }
+
+  // Process VIP (بدون assignment)
+  sp.vip.forEach(function(m){ processClient(m, null, true); });
+  // Process Normal (بـ assignment)
+  Object.keys(sp.normal).forEach(function(eid){
+    sp.normal[eid].forEach(function(m){ processClient(m, eid, false); });
+  });
+
+  // Execute
+  try {
+    var promises = [];
+    toUpdate.forEach(function(u){
+      promises.push(sb.from('clients').update({ extra_data: u.extra_data }).eq('id', u.id));
+    });
+    if(toInsert.length) promises.push(sb.from('clients').insert(toInsert));
+    var results = await Promise.all(promises);
+    var err = results.find(function(r){ return r && r.error; });
+    if(err) throw err.error;
+
+    // Notifications للـ normal بس
+    var notifPromises = Object.keys(normalInsertedByAgent).map(function(eid){
+      var count = normalInsertedByAgent[eid];
+      if(count > 0){
+        return notifyEmployee(eid, 'new_clients', 'You have '+count+' new client(s) assigned in '+campName);
+      }
+      return Promise.resolve();
+    });
+    await Promise.all(notifPromises).catch(function(){});
+
+    var parts = [];
+    var normalInsertedTotal = Object.values(normalInsertedByAgent).reduce(function(s,n){return s+n;}, 0);
+    if(normalInsertedTotal) parts.push(normalInsertedTotal+' Normal distributed');
+    if(vipInserted)         parts.push(vipInserted+' VIP saved');
+    if(toUpdate.length)     parts.push(toUpdate.length+' updated with new units');
+    if(skipped)             parts.push(skipped+' duplicates skipped');
+    toast((parts.join(' · ')||'No changes')+' ✓','success');
+
+    logAudit('upload_smart_split', 'campaign', U.campaignId, campName, {
+      normal_inserted: normalInsertedTotal,
+      vip_inserted: vipInserted,
+      vip_updated: vipUpdated,
+      total_updated: toUpdate.length,
+      skipped: skipped
+    });
+
+    U = {campaignId:'', rows:[], preview:null, smartPreview:null, uploadTab:'paste', colConfig:null, detectedCols:null, isNOSSheet:false, dataType:'normal', syncCols:false};
+    fetchAll().then(renderUpload);
+  } catch(e){ toast(e.message||'Smart split error','error'); }
 }
