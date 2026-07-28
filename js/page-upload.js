@@ -464,13 +464,14 @@ function mergeRowsByPhone(rawRows, cols){
 // If no match    → inserts as new client.
 // ════════════════════════════════════════════════════════════
 async function upsertMergedClients(rows, campaignId){
-  // 1. Fetch existing clients in this campaign
+  // 1. Fetch existing clients across ALL campaigns (global dedup)
+  // لو الـ phone موجود في أي كمبين، بيتحدث في مكانه القديم
+  // و مايتحطش نسخة جديدة في الكمبين ده
   var res = await sb.from('clients')
-    .select('id,phone,extra_data,status,assigned_employee_id')
-    .eq('campaign_id', campaignId);
+    .select('id,phone,extra_data,status,assigned_employee_id,campaign_id');
   var existing = (res.data || []);
 
-  // 2. Build lookup by normalized phone (last 9 digits)
+  // 2. Build lookup by normalized phone (last 9 digits) — across all campaigns
   var existingByPhone = {};
   existing.forEach(function(c){
     var norm = normalizePhoneDigits(c.phone).slice(-9);
@@ -648,10 +649,9 @@ async function confirmDistribute(){
   if(!U.preview||!U.campaignId)return;
   var campName=(campById(U.campaignId)||{}).name||'Campaign';
 
-  // 1. Fetch existing clients in this campaign for duplicate detection
+  // 1. Fetch existing clients across ALL campaigns for global duplicate detection
   var existRes = await sb.from('clients')
-    .select('id,phone,extra_data,status,assigned_employee_id')
-    .eq('campaign_id', U.campaignId);
+    .select('id,phone,extra_data,status,assigned_employee_id,campaign_id');
   var existing = (existRes.data || []);
   var existingByPhone = {};
   existing.forEach(function(c){
@@ -837,10 +837,9 @@ async function confirmSmartSplit(){
   var sp = U.smartPreview;
   var campName = (campById(U.campaignId)||{}).name || 'Campaign';
 
-  // 1. Fetch existing clients في الكمبين للـ dedup
+  // 1. Fetch existing clients across ALL campaigns for global dedup
   var existRes = await sb.from('clients')
-    .select('id,phone,extra_data,status,assigned_employee_id')
-    .eq('campaign_id', U.campaignId);
+    .select('id,phone,extra_data,status,assigned_employee_id,campaign_id');
   var existing = (existRes.data || []);
   var existingByPhone = {};
   existing.forEach(function(c){
