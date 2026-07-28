@@ -17,8 +17,11 @@ if(localStorage.getItem('darkMode')==='false'){
 // Upload state
 var U = {
   campaignId:'', rows:[], preview:null, uploadTab:'paste',
-  colConfig: null, detectedCols: null,
-  dataType: 'normal'   // 'normal' = distribute to agents · 'vip' = upload only, no distribution
+  colConfig: null, detectedCols: null, isNOSSheet: false,
+  dataType: 'normal',  // 'normal' = distribute to agents · 'vip' = upload only, no distribution
+  // ─ syncCols: لازم يكون true عشان الأوبلود يغيّر column_config الكمبين
+  // بالـ default false عشان نحمي الـ config الموجودة من الاتكسير
+  syncCols: false
 };
 
 // Team form state
