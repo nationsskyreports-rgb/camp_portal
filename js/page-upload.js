@@ -29,7 +29,7 @@ function buildColsFromHeaders(headers){
       key = phoneCount === 1 ? 'phone' : 'phone_' + phoneCount;
     }
     // Customer/name column gets canonical key
-    else if (/^customer$|^client$|customer name|client name|^name$|الاسم|اسم العميل/.test(lower)) {
+    else if (/^customer$|^client$|customer.?name|client.?name|^name$|الاسم|اسم العميل/.test(lower)) {
       key = 'customer';
     }
     // Everything else: slugified from the header itself
