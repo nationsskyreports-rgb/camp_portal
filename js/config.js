@@ -28,6 +28,7 @@ var ADMIN_PAGES = [
   {id:'call-scripts',   label:'Call Scripts',        icon:'scroll-text'},
   {id:'upload',         label:'Upload & Distribute', icon:'upload'},
   {id:'qa',             label:'Q&A Inbox',           icon:'message-circle-question'},
+  {id:'project-stats',  label:'Project Stats',       icon:'pie-chart'},
   {id:'reports',        label:'Reports & Export',    icon:'file-bar-chart'},
   {id:'team',           label:'Team Management',     icon:'users'},
   {id:'my-clients',     label:'All Clients',         icon:'contact'},
