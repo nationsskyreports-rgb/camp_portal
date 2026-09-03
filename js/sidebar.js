@@ -92,6 +92,7 @@ function renderPage(){
       'ask-question':renderAskQuestion,'my-questions':renderMyQuestions,
       notifications:renderNotifPage,cleanup:renderCleanup,
       'form-tracking':renderFormTracking,
+      'project-stats':renderProjectStats,
       'activity-log':renderActivityLog,
       'team-qa':renderTeamQA,
       'agent-performance':renderAgentPerformance,
