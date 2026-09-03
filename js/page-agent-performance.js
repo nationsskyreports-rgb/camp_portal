@@ -114,7 +114,12 @@ function renderAgentPerformance() {
       return '<option value="'+c.id+'" '+(performanceFilter.campaign===c.id?'selected':'')+'>'+esc(c.name)+'</option>';
     }).join('');
 
-  m.innerHTML = hdr('Agent Performance','Live metrics based on calls & client statuses')+
+  m.innerHTML = hdr('Agent Performance','Live metrics based on calls & client statuses',
+    '<button class="btn btn-ghost btn-sm" onclick="showAgentPerformanceReport()" style="display:flex;align-items:center;gap:6px">'+
+      '<i data-lucide="file-bar-chart-2" class="w-4 h-4" style="color:#a78bfa"></i>'+
+      '<span style="color:#e2e8f0">Agent Report</span>'+
+    '</button>'
+  )+
 
     // ── Campaign filter ──
     '<div class="card mb-5 fade-in" style="padding:.75rem 1rem">'+
@@ -234,4 +239,189 @@ function perfCard(label, val, color, icon){
 function perfPct(pct, clr){
   var c = clr === 'emerald' ? '#6ee7b7' : clr === 'amber' ? '#fbbf24' : clr === 'blue' ? '#93c5fd' : clr === 'violet' ? '#c4b5fd' : '#94a3b8';
   return '<span style="font-size:12px;font-weight:600;color:'+c+'">'+pct+'%</span>';
+}
+
+// ── Agent Performance Report Modal ──────────────────────────
+function showAgentPerformanceReport() {
+  var all = getAllEmployeesMetrics();
+
+  // ── Totals row ──
+  var T = all.reduce(function(acc, s) {
+    acc.clients    += s.totalClients;
+    acc.closed     += s.closedClients;
+    acc.calls      += s.totalCalls;
+    acc.answered   += s.answeredCalls;
+    acc.untouched  += s.untouched;
+    acc.reached    += s.reachedClients;
+    acc.fuDone     += s.fuDone;
+    acc.fuOverdue  += s.fuOverdue;
+    acc.fuPending  += s.fuPending;
+    return acc;
+  }, {clients:0, closed:0, calls:0, answered:0, untouched:0, reached:0, fuDone:0, fuOverdue:0, fuPending:0});
+
+  var totalReachRate  = T.clients  > 0 ? Math.round(T.reached  / T.clients  * 100) : 0;
+  var totalAnswerRate = T.calls    > 0 ? Math.round(T.answered / T.calls    * 100) : 0;
+  var totalCloseRate  = T.clients  > 0 ? Math.round(T.closed   / T.clients  * 100) : 0;
+
+  var campLabel = performanceFilter.campaign
+    ? (function() {
+        var c = S.campaigns.find(function(x){ return x.id === performanceFilter.campaign; });
+        return c ? esc(c.name) : 'Filtered';
+      })()
+    : 'All Campaigns';
+
+  var now = new Date().toLocaleString('en-GB', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+
+  // ── Per-agent cards ──
+  var agentCards = all.map(function(s, i) {
+    var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '<span style="color:#64748b;font-size:12px;font-weight:700">#'+(i+1)+'</span>';
+    var closeColor = s.closeRate >= 50 ? '#6ee7b7' : s.closeRate >= 25 ? '#fbbf24' : '#f87171';
+    var reachColor = s.reachabilityRate >= 60 ? '#a78bfa' : s.reachabilityRate >= 30 ? '#fbbf24' : '#f87171';
+    var contactColor = s.answerRate >= 60 ? '#93c5fd' : s.answerRate >= 30 ? '#fbbf24' : '#f87171';
+
+    return '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:16px;margin-bottom:10px">'+
+
+      // ── Agent header ──
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">'+
+        '<span style="min-width:26px;text-align:center;font-size:16px">'+medal+'</span>'+
+        av(s.name, s.color, 36)+
+        '<div style="flex:1;min-width:0">'+
+          '<p style="font-size:15px;font-weight:700;color:#f1f5f9;margin:0">'+esc(s.name)+'</p>'+
+          '<p style="font-size:11px;color:#64748b;margin:2px 0 0">'+
+            s.totalClients+' clients · '+s.totalCalls+' calls total'+
+          '</p>'+
+        '</div>'+
+        sBadge(s.isActive ? 'online' : 'offline')+
+      '</div>'+
+
+      // ── Metrics grid ──
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">'+
+        rptMetric('Clients',        s.totalClients,        '#93c5fd', 'users')+
+        rptMetric('Calls Made',     s.totalCalls,          '#67e8f9', 'phone')+
+        rptMetric('Answered',       s.answeredCalls,        '#6ee7b7', 'phone-call')+
+        rptMetric('Closed',         s.closedClients,        '#a78bfa', 'check-circle')+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">'+
+        rptPctMetric('Close Rate',      s.closeRate,       closeColor)+
+        rptPctMetric('Reachability',    s.reachabilityRate, reachColor)+
+        rptPctMetric('Contact Rate',    s.answerRate,       contactColor)+
+        rptNumMetric('Calls / Client',  s.productivity,    '#cbd5e1')+
+      '</div>'+
+
+      // ── Follow-up row ──
+      '<div style="background:rgba(255,255,255,0.02);border-radius:8px;padding:10px;display:flex;gap:16px;flex-wrap:wrap">'+
+        '<div style="display:flex;align-items:center;gap:5px">'+
+          '<i data-lucide="bell" style="width:12px;height:12px;color:#64748b"></i>'+
+          '<span style="font-size:11px;color:#94a3b8">Follow-ups: </span>'+
+          '<span style="font-size:11px;font-weight:600;color:#e2e8f0">'+s.fuPending+' pending</span>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:5px">'+
+          '<i data-lucide="alert-triangle" style="width:12px;height:12px;color:'+(s.fuOverdue>0?'#f87171':'#6ee7b7')+'"></i>'+
+          '<span style="font-size:11px;color:#94a3b8">Overdue: </span>'+
+          '<span style="font-size:11px;font-weight:700;color:'+(s.fuOverdue>0?'#f87171':'#6ee7b7')+'">'+s.fuOverdue+'</span>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:5px">'+
+          '<i data-lucide="check-circle-2" style="width:12px;height:12px;color:#6ee7b7"></i>'+
+          '<span style="font-size:11px;color:#94a3b8">Done: </span>'+
+          '<span style="font-size:11px;font-weight:600;color:#6ee7b7">'+s.fuDone+' ('+s.fuDoneOfDue+'%)</span>'+
+        '</div>'+
+        (s.untouched > 0
+          ? '<div style="display:flex;align-items:center;gap:5px">'+
+              '<i data-lucide="user-x" style="width:12px;height:12px;color:#f87171"></i>'+
+              '<span style="font-size:11px;color:#94a3b8">Untouched: </span>'+
+              '<span style="font-size:11px;font-weight:700;color:#fca5a5">'+s.untouched+'</span>'+
+            '</div>'
+          : '')+
+      '</div>'+
+
+    '</div>';
+  }).join('');
+
+  // ── Summary totals ──
+  var summaryHtml =
+    '<div style="background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:14px;margin-bottom:16px">'+
+      '<p style="font-size:11px;font-weight:700;color:#60a5fa;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Overall Summary — '+campLabel+'</p>'+
+      '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">'+
+        rptMetric('Total Clients',  T.clients,   '#93c5fd', 'users')+
+        rptMetric('Total Calls',    T.calls,     '#67e8f9', 'phone')+
+        rptMetric('Answered',       T.answered,  '#6ee7b7', 'phone-call')+
+        rptMetric('Closed',         T.closed,    '#a78bfa', 'check-circle')+
+        rptMetric('Untouched',      T.untouched, T.untouched>0?'#f87171':'#6ee7b7', 'user-x')+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">'+
+        rptPctMetric('Avg Close Rate',    totalCloseRate,  totalCloseRate>=50?'#6ee7b7':'#fbbf24')+
+        rptPctMetric('Avg Reachability',  totalReachRate,  totalReachRate>=60?'#a78bfa':'#fbbf24')+
+        rptPctMetric('Avg Contact Rate',  totalAnswerRate, totalAnswerRate>=60?'#93c5fd':'#fbbf24')+
+      '</div>'+
+    '</div>';
+
+  // ── Export CSV button ──
+  var exportBtn =
+    '<button onclick="exportAgentReportCSV()" class="btn btn-ghost btn-sm" style="margin-bottom:14px;display:flex;align-items:center;gap:5px">'+
+      '<i data-lucide="download" class="w-4 h-4"></i> Export CSV'+
+    '</button>';
+
+  openGenModal(
+    '📊 Agent Performance Report',
+    '<p style="font-size:11px;color:#64748b;margin:0 0 12px">Generated '+now+' &nbsp;·&nbsp; '+campLabel+'</p>'+
+    summaryHtml+
+    exportBtn+
+    '<div style="max-height:55vh;overflow-y:auto;padding-right:2px">'+
+    (all.length ? agentCards : '<p style="color:#64748b;text-align:center;padding:32px 0">No agent data yet</p>')+
+    '</div>'
+  );
+}
+
+// ── Report helper: single metric cell ────────────────────────
+function rptMetric(label, val, color, icon) {
+  return '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:8px;text-align:center">'+
+    '<div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:3px">'+
+      '<i data-lucide="'+icon+'" style="width:11px;height:11px;color:'+color+'"></i>'+
+      '<p style="font-size:10px;color:#64748b;margin:0">'+label+'</p>'+
+    '</div>'+
+    '<p style="font-size:18px;font-weight:700;color:'+color+';margin:0">'+val+'</p>'+
+  '</div>';
+}
+
+function rptPctMetric(label, pct, color) {
+  return '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:8px;text-align:center">'+
+    '<p style="font-size:10px;color:#64748b;margin:0 0 3px">'+label+'</p>'+
+    '<p style="font-size:18px;font-weight:700;color:'+color+';margin:0">'+pct+'%</p>'+
+    '<div style="width:100%;height:3px;background:rgba(255,255,255,0.06);border-radius:2px;margin-top:4px">'+
+      '<div style="width:'+Math.min(pct,100)+'%;height:3px;border-radius:2px;background:'+color+'"></div>'+
+    '</div>'+
+  '</div>';
+}
+
+function rptNumMetric(label, val, color) {
+  return '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:8px;text-align:center">'+
+    '<p style="font-size:10px;color:#64748b;margin:0 0 3px">'+label+'</p>'+
+    '<p style="font-size:18px;font-weight:700;color:'+color+';margin:0">'+val+'</p>'+
+  '</div>';
+}
+
+// ── Export CSV ────────────────────────────────────────────────
+function exportAgentReportCSV() {
+  var all = getAllEmployeesMetrics();
+  var campLabel = performanceFilter.campaign
+    ? (function() {
+        var c = S.campaigns.find(function(x){ return x.id === performanceFilter.campaign; });
+        return c ? c.name : 'Filtered';
+      })()
+    : 'All Campaigns';
+
+  csvExport(
+    'agent-report-' + new Date().toISOString().slice(0,10) + '.csv',
+    ['Agent','Campaign','Clients','Calls Made','Answered','Contact %','Reachability %','Contacted %','Closed','Close %','Calls/Client','Untouched','FU Pending','FU Overdue','FU Done %','Status'],
+    all.map(function(s) {
+      return [
+        s.name, campLabel, s.totalClients, s.totalCalls, s.answeredCalls,
+        s.answerRate+'%', s.reachabilityRate+'%', s.contactRate+'%',
+        s.closedClients, s.closeRate+'%', s.productivity, s.untouched,
+        s.fuPending, s.fuOverdue, s.fuDoneOfDue+'%',
+        s.isActive ? 'Online' : 'Offline'
+      ];
+    })
+  );
+  toast('CSV exported ✓', 'success');
 }
