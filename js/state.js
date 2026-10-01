@@ -19,8 +19,8 @@ var U = {
   campaignId:'', rows:[], preview:null, smartPreview:null, uploadTab:'paste',
   colConfig: null, detectedCols: null, isNOSSheet: false,
   dataType: 'normal',  // 'normal' = distribute · 'vip' = upload only · 'smart' = auto split VIP + Normal
-  // ─ syncCols: لازم يكون true عشان الأوبلود يغيّر column_config الكمبين
-  // بالـ default false عشان نحمي الـ config الموجودة من الاتكسير
+  // syncCols: must be true for an upload to overwrite the campaign's column_config.
+  // Defaults to false to protect the existing config from being broken.
   syncCols: false
 };
 
@@ -107,16 +107,33 @@ function updateNotifBadge(){
   }
 }
 
+// ── Fetch every row of a table (Supabase caps one request at 1000 rows) ──
+// buildQuery() must return a NEW query each time, e.g.
+//   function(){ return sb.from('clients').select('*').order('created_at',{ascending:false}); }
+var FETCH_PAGE = 1000;
+function fetchAllRows(buildQuery){
+  var out = [];
+  function page(from){
+    return buildQuery().range(from, from + FETCH_PAGE - 1).then(function(res){
+      if (res.error) throw res.error;
+      var rows = res.data || [];
+      out = out.concat(rows);
+      return rows.length === FETCH_PAGE ? page(from + FETCH_PAGE) : { data: out, error: null };
+    });
+  }
+  return page(0);
+}
+
 function fetchAll(){
   if(S.role === 'admin'){
     // ── Admin: all 7 queries in ONE parallel round-trip ──────
     return Promise.all([
       sb.from('employees').select('*').order('name'),
       sb.from('campaigns').select('*').order('created_at',{ascending:false}),
-      sb.from('clients').select('*').order('created_at',{ascending:false}),
+      fetchAllRows(function(){ return sb.from('clients').select('*').order('created_at',{ascending:false}).order('id'); }),
       sb.from('questions').select('*').order('created_at',{ascending:false}).limit(300),
       sb.from('notifications').select('*').is('employee_id',null).order('created_at',{ascending:false}).limit(100),
-      sb.from('contact_history').select('*').order('created_at',{ascending:false}).limit(1000),
+      fetchAllRows(function(){ return sb.from('contact_history').select('*').order('created_at',{ascending:false}).order('id'); }),
       sb.from('reminders').select('*').order('remind_at',{ascending:true})
     ]).then(function(res){
       S.employees      = res[0].data||[];
@@ -136,7 +153,7 @@ function fetchAll(){
     return Promise.all([
       sb.from('employees').select('*').order('name'),
       sb.from('campaigns').select('*').order('created_at',{ascending:false}),
-      sb.from('clients').select('*').order('created_at',{ascending:false}),
+      fetchAllRows(function(){ return sb.from('clients').select('*').order('created_at',{ascending:false}).order('id'); }),
       sb.from('questions').select('*').order('created_at',{ascending:false}).limit(300),
       sb.from('notifications').select('*').eq('employee_id',S.employee.id).order('created_at',{ascending:false}),
       sb.from('reminders').select('*').eq('employee_id',S.employee.id).order('remind_at',{ascending:true})
@@ -156,8 +173,7 @@ function fetchAll(){
         .map(function(c){return c.id;});
 
       return ids.length
-        ? sb.from('contact_history').select('*').in('client_id',ids).order('created_at',{ascending:false})
-            .then(function(r){S.contactHistory = r.data||[];})
+        ? fetchHistoryForClients(ids).then(function(rows){S.contactHistory = rows;})
         : (S.contactHistory=[], Promise.resolve());
 
     }).then(function(){
@@ -165,6 +181,22 @@ function fetchAll(){
       updateNotifBadge();
     }).catch(function(e){console.error('Fetch error:',e);});
   }
+}
+
+// Employee history: query in chunks of ids (keeps URLs short), then sort newest-first
+function fetchHistoryForClients(ids){
+  var chunks = [];
+  for (var i = 0; i < ids.length; i += 150) chunks.push(ids.slice(i, i + 150));
+  return Promise.all(chunks.map(function(chunk){
+    return fetchAllRows(function(){
+      return sb.from('contact_history').select('*').in('client_id', chunk).order('created_at',{ascending:false}).order('id');
+    });
+  })).then(function(results){
+    var all = [];
+    results.forEach(function(r){ all = all.concat(r.data || []); });
+    all.sort(function(a, b){ return a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0; });
+    return all;
+  });
 }
 
 // ============================================================
