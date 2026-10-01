@@ -22,7 +22,7 @@ var RPT_MOODS = [
 
 var RPT_DEFAULTS = {
   campaign: '', campType: '', employee: '', status: '', result: '', mood: '',
-  form: '', attempts: '', dateBasis: 'created', dateFrom: '', dateTo: '',
+  form: '', vip: '', attempts: '', dateBasis: 'created', dateFrom: '', dateTo: '',
   search: '', view: 'clients', page: 0
 };
 
@@ -109,6 +109,9 @@ function rptPreset(p){
   renderReports();
 }
 
+// Did the client ever pick up? (independent of Closed status)
+function rptReached(r){ return r.answeredCalls > 0 ? 'Answered' : (r.attempts > 0 ? 'No Answer' : 'Not Called'); }
+
 function rptPct(a, b){ return b > 0 ? Math.round(a / b * 100) : 0; }
 function rptResultMeta(v){ return RPT_RESULTS.find(function(r){ return r.value === v; }); }
 function rptMoodMeta(v){ return RPT_MOODS.find(function(m){ return m.value === v; }); }
@@ -158,6 +161,8 @@ function rptBuild(){
     var ex = c.extra_data || {};
     if (rptFilter.form === 'submitted' && !ex.form_submitted) return false;
     if (rptFilter.form === 'pending' && ex.form_submitted) return false;
+    if (rptFilter.vip === 'vip' && ex.vip !== true) return false;
+    if (rptFilter.vip === 'normal' && ex.vip === true) return false;
     if (rptFilter.search && !clientMatchesSearch(c, rptFilter.search)) return false;
     if (rptHasRange()){
       if (callMode){ if (!histMap[c.id]) return false; }
@@ -184,6 +189,7 @@ function rptBuild(){
       result: result,
       mood: lastAns ? (lastAns.mood || '') : '',
       attempts: hist.length,
+      vip: (c.extra_data || {}).vip === true,
       answeredCalls: hist.filter(function(h){ return h.outcome === 'answered'; }).length,
       // attempts until the first answer (counted oldest-first)
       attemptsToAnswer: firstAnsIdx >= 0 ? (hist.length - firstAnsIdx) : null,
@@ -328,6 +334,7 @@ function renderReports(){
       sel('result', 'All Call Results', RPT_RESULTS.map(function(r){ return { v: r.value, l: r.emoji + ' ' + r.label }; })) +
       sel('mood', 'All Satisfaction', RPT_MOODS.map(function(mo){ return { v: mo.value, l: mo.emoji + ' ' + mo.label }; })) +
       sel('form', 'Form: Any', [{ v: 'submitted', l: 'Form Submitted' }, { v: 'pending', l: 'Form Not Submitted' }]) +
+      sel('vip', 'VIP + Normal', [{ v: 'vip', l: 'VIP only' }, { v: 'normal', l: 'Normal only' }]) +
       sel('attempts', 'Any # of Attempts', [{ v: '0', l: '0 attempts' }, { v: '1', l: '1 attempt' }, { v: '2', l: '2 attempts' }, { v: '3+', l: '3+ attempts' }]) +
       '<input id="rpt-search" class="input" placeholder="Search name / phone..." value="' + esc(rptFilter.search) + '" oninput="rptSearchInput(this.value)">' +
     '</div>' +
@@ -373,6 +380,7 @@ function renderReports(){
       rptMini('Coverage', S2.coverage + '%', 'clients called at least once') +
       rptMini('Avg tries to answer', S2.avgAttToAns || '-', 'average attempts until the first answer') +
       rptMini('Satisfaction', S2.satPct + '%', 'satisfied ÷ rated answered clients') +
+      rptMini('VIP', D.rows.filter(function(r){ return r.vip; }).length) +
       rptMini('Form submitted', S2.form + ' (' + rptPct(S2.form, S2.clients) + '%)') +
     '</div></div>';
 
@@ -437,7 +445,7 @@ function rptRenderClients(rows){
   out += '<div class="tbl-wrap"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase tracking-wider border-b border-white/5">' +
     visCols.map(function(c){ return th(esc(c.label)); }).join('') +
     (rptFilter.campaign ? '' : th('Campaign')) +
-    th('Employee') + th('Status') + th('Call Result') + th('Satisfaction') + th('Attempts') + th('Last Call') + th('Last Note') + th('Form') +
+    th('VIP') + th('Employee') + th('Status') + th('Call Result') + th('Satisfaction') + th('Attempts') + th('Last Call') + th('Last Note') + th('Form') +
     '</tr></thead><tbody>' +
     pageRows.map(function(r){
       var c = r.c, ex = c.extra_data || {};
@@ -447,6 +455,7 @@ function rptRenderClients(rows){
       return '<tr class="table-row border-b border-white/[0.03]">' +
         visCols.map(function(col){ return td(esc(ex[col.key] || c[col.key] || '-')); }).join('') +
         (rptFilter.campaign ? '' : td(esc(cp ? cp.name : '-'), 'text-slate-400')) +
+        td(r.vip ? '👑 VIP' : '-', r.vip ? 'text-amber-400' : 'text-slate-500') +
         td(esc(ep ? ep.name : '-'), 'text-slate-400') +
         '<td class="py-2.5 pr-4">' + sBadge(c.status) + '</td>' +
         '<td class="py-2.5 pr-4">' + rptResultBadge(r.result) + '</td>' +
@@ -575,6 +584,7 @@ function rptFilterDescription(){
   if (rptFilter.result) parts.push(['Call Result', rptResultMeta(rptFilter.result).label]);
   if (rptFilter.mood) parts.push(['Satisfaction', rptMoodMeta(rptFilter.mood).label]);
   if (rptFilter.form) parts.push(['Form', rptFilter.form === 'submitted' ? 'Submitted' : 'Not submitted']);
+  if (rptFilter.vip) parts.push(['Client Type', rptFilter.vip === 'vip' ? 'VIP only' : 'Normal only']);
   if (rptFilter.attempts) parts.push(['Attempts', rptFilter.attempts]);
   if (rptHasRange()) parts.push(['Date (' + (rptFilter.dateBasis === 'call' ? 'call date' : 'client added') + ')', (rptFilter.dateFrom || '…') + ' → ' + (rptFilter.dateTo || '…')]);
   if (rptFilter.search) parts.push(['Search', rptFilter.search]);
@@ -617,17 +627,18 @@ function exportReportXLSX(){
   D.rows.forEach(function(r){ campIds[r.c.campaign_id] = true; });
   Object.keys(campIds).forEach(function(cid){
     (campById(cid) ? getVisibleCols(cid) : DEFAULT_COLUMNS.filter(function(x){ return x.visible; })).forEach(function(c){
+      if (c.key === 'vip' || c.key === '_vip_flag') return;
       if (!colMap[c.key]){ colMap[c.key] = true; cols.push(c); }
     });
   });
-  var head = cols.map(function(c){ return c.label; }).concat(['Campaign', 'Campaign Type', 'Employee', 'Status', 'Call Result', 'Satisfaction',
+  var head = cols.map(function(c){ return c.label; }).concat(['Campaign', 'Campaign Type', 'Client Type', 'Employee', 'Status', 'Call Result', 'Reached', 'Satisfaction',
     'Attempts', 'Answered Calls', 'Tries to First Answer', 'Last Call', 'Last Note', 'Form Submitted', 'Form Submitted At', 'Added']);
   var body = D.rows.map(function(r){
     var c = r.c, ex = c.extra_data || {}, cp = campById(c.campaign_id), ep = empById(c.assigned_employee_id);
     var res = rptResultMeta(r.result), mo = rptMoodMeta(r.mood);
     return cols.map(function(col){ return ex[col.key] || c[col.key] || ''; }).concat([
-      cp ? cp.name : '', cp ? (cp.type || '') : '', ep ? ep.name : '', c.status || '',
-      res ? res.label : '', mo ? mo.label : '', r.attempts, r.answeredCalls, r.attemptsToAnswer || '',
+      cp ? cp.name : '', cp ? (cp.type || '') : '', r.vip ? 'VIP' : 'Normal', ep ? ep.name : '', c.status || '',
+      res ? res.label : '', rptReached(r), mo ? mo.label : '', r.attempts, r.answeredCalls, r.attemptsToAnswer || '',
       r.lastCall ? fmtDT(r.lastCall) : '', r.lastNote, ex.form_submitted ? 'Yes' : '', ex.form_submitted_at || '',
       c.created_at ? c.created_at.slice(0, 10) : ''
     ]);
