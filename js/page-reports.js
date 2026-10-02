@@ -380,7 +380,14 @@ function renderReports(){
       rptMini('Coverage', S2.coverage + '%', 'clients called at least once') +
       rptMini('Avg tries to answer', S2.avgAttToAns || '-', 'average attempts until the first answer') +
       rptMini('Satisfaction', S2.satPct + '%', 'satisfied ÷ rated answered clients') +
-      rptMini('VIP', D.rows.filter(function(r){ return r.vip; }).length) +
+      (function(){
+        var vipAll = D.kpiRows.filter(function(r){ return r.vip; }).length;
+        var vipRes = D.rows.filter(function(r){ return r.vip; }).length;
+        var active = rptFilter.vip === 'vip';
+        return '<div class="cursor-pointer" title="Click to show VIP only" onclick="rptToggle(\'vip\',\'vip\')"' + (active ? ' style="color:#fcd34d"' : '') + '>' +
+          '<p class="text-lg font-bold" style="color:#fcd34d">👑 ' + vipAll + '</p>' +
+          '<p class="text-xs text-slate-500">VIP' + (vipRes !== vipAll ? ' · ' + vipRes + ' in results' : '') + '</p></div>';
+      })() +
       rptMini('Form submitted', S2.form + ' (' + rptPct(S2.form, S2.clients) + '%)') +
     '</div></div>';
 
